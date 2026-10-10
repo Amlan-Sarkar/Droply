@@ -1,16 +1,8 @@
- <div align="center">
-
-<table>
-  <tr>
-    <td align="center" valign="middle" style="border: none;">
-      <img src="assets/icon.png" width="64" height="64" alt="Droply Logo">
-    </td>
-    <td align="center" valign="middle" style="border: none;">
-      <h1>Droply</h1>
-    </td>
-  </tr>
-</table>
-
+<div align="center">
+  <h1>
+    <img src="assets/icon.png" width="48" height="48" alt="Droply" valign="middle">
+    Droply
+  </h1>
 </div>
 
 **Universal High-Performance Video, Audio & Social Media Downloader for Windows, macOS, Linux, Android & iOS**
