@@ -233,7 +233,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1A0000132A00000100000001 /* Build configuration list for PBXProject "Droply" */;
+		1A0000132A00000100000001 /* Build configuration list for PBXProject "Droply" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A0000142A00000100000001 /* Debug */,
@@ -242,7 +242,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1A00000F2A00000100000001 /* Build configuration list for PBXNativeTarget "Droply" */;
+		1A00000F2A00000100000001 /* Build configuration list for PBXNativeTarget "Droply" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1A0000162A00000100000001 /* Debug */,

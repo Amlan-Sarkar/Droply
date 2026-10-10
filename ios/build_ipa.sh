@@ -24,7 +24,13 @@ xcodebuild -project Droply.xcodeproj \
 
 echo "==> Packaging into Payload archive..."
 mkdir -p build/Payload
-cp -r build/DerivedData/Build/Products/Release-iphoneos/Droply.app build/Payload/
+APP_PATH=$(find build/DerivedData -name "Droply.app" -type d | head -n 1)
+if [ -z "$APP_PATH" ]; then
+  echo "Error: Droply.app not found in build/DerivedData!"
+  exit 1
+fi
+echo "Found app bundle at: $APP_PATH"
+cp -r "$APP_PATH" build/Payload/
 
 echo "==> Compressing Droply-iOS.ipa..."
 cd build

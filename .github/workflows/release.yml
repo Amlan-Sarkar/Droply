@@ -99,12 +99,17 @@ jobs:
       - name: Build Android APK with Gradle
         run: |
           cd android
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+            echo "Fetching gradle-wrapper.jar fallback..."
+            mkdir -p gradle/wrapper
+            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          fi
           ./gradlew assembleRelease --no-daemon
           cd ..
-          # Find generated apk and copy to root
-          APK_FILE=$(find android/app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then
-            APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
+            echo "Error: No APK found after build!"
+            exit 1
           fi
           cp "$APK_FILE" Droply-Android.apk
           ls -lh Droply-Android.apk
