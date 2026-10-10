@@ -11,6 +11,10 @@ cd "$SCRIPT_DIR"
 rm -rf build Droply-iOS.ipa
 mkdir -p build
 
+echo "==> Syncing web UI assets into ios/web..."
+rm -rf web
+cp -r ../web ./web
+
 echo "==> Running xcodebuild..."
 xcodebuild -project Droply.xcodeproj \
   -scheme Droply \

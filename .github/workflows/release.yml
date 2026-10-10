@@ -131,6 +131,7 @@ jobs:
 
       - name: Build and Package Droply-iOS.ipa
         run: |
+          cp -r web ios/web
           chmod +x ios/build_ipa.sh
           ./ios/build_ipa.sh
           ls -lh Droply-iOS.ipa
