@@ -1,0 +1,5 @@
+<resources>
+    <color name="bg_primary">#0a0d14</color>
+    <color name="accent_primary">#6366f1</color>
+    <color name="accent_secondary">#a855f7</color>
+</resources>

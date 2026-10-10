@@ -1,0 +1,35 @@
+#!/bin/bash
+set -e
+
+echo "=========================================="
+echo "  Building Droply Standalone for iOS"
+echo "=========================================="
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+rm -rf build Droply-iOS.ipa
+mkdir -p build
+
+echo "==> Running xcodebuild..."
+xcodebuild -project Droply.xcodeproj \
+  -scheme Droply \
+  -configuration Release \
+  -sdk iphoneos \
+  -derivedDataPath build/DerivedData \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGN_IDENTITY="" \
+  CODE_SIGNING_REQUIRED=NO \
+  build
+
+echo "==> Packaging into Payload archive..."
+mkdir -p build/Payload
+cp -r build/DerivedData/Build/Products/Release-iphoneos/Droply.app build/Payload/
+
+echo "==> Compressing Droply-iOS.ipa..."
+cd build
+zip -q -r ../Droply-iOS.ipa Payload
+cd ..
+
+echo "==> Successfully created Droply-iOS.ipa!"
+ls -lh Droply-iOS.ipa

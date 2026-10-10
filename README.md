@@ -1,8 +1,8 @@
-﻿<div align="center">
+<div align="center">
 
 # ⚡ Droply
 
-**Universal High-Performance Video, Audio & Social Media Downloader for Windows, macOS & Linux**
+**Universal High-Performance Video, Audio & Social Media Downloader for Windows, macOS, Linux, Android & iOS**
 
 *Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X (Twitter), Bilibili, and 1,000+ sites at full quality with real-time speed & progress tracking.*
 
@@ -11,6 +11,8 @@
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: macOS](https://img.shields.io/badge/macOS-Universal-000000.svg?style=flat-square&logo=apple)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Linux](https://img.shields.io/badge/Linux-x86__64-FCC624.svg?style=flat-square&logo=linux&logoColor=black)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Platform: Android](https://img.shields.io/badge/Platform-Android%20(APK)-3ddc84.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Platform: iOS](https://img.shields.io/badge/Platform-iOS%20(IPA)-000000.svg?style=flat-square&logo=apple)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Execution: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-10b981.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply)
 
 [**Download Releases**](https://github.com/Amlan-Sarkar/Droply/releases/latest) • [**Features**](#-features) • [**Quick Start (No Python Required)**](#-quick-start-no-python-required) • [**How to Use**](#-how-to-use) • [**Developer Guide**](#-developer-quick-start)
@@ -34,31 +36,36 @@
   - **Bilibili**: High-resolution video and animated episodes.
   - **Facebook, Reddit, Pinterest, Twitch, Vimeo, SoundCloud**, and 1,000+ supported sites.
   - **Direct Links**: Direct `.mp4`, `.webm`, `.mp3`, and `.wav` streaming links with accelerated chunking.
+- **📱 True Cross-Platform (Desktop + Mobile)**: Run natively on **Windows, macOS, Linux, Android (`.apk`), and iOS (`.ipa`)**.
 - **⚡ Real-Time Progress & Speed Tracking**: Millisecond-accurate live progress bar, real-time download speed (`MB/s`), downloaded file size counter, and dynamic Estimated Time of Arrival (ETA).
 - **🎧 High-Fidelity Audio Extraction**: Built-in audio conversion supporting **MP3 (320 kbps High Quality)**, **Apple AAC (M4A)**, **Lossless WAV**, and **Opus**.
 - **📑 Smart Multi-Link Batch Downloader**: Paste multiple URLs at once (one per line or comma-separated), automatically parse valid links, apply global quality presets, and manage downloads concurrently.
 - **🎬 Authentic Quality Selection**: Dynamically detects and displays only genuine available qualities (4K UHD, 2K QHD, 1080p FHD, 720p HD, 480p, 360p) with container details and estimated file sizes.
 - **🏷️ Clean Operating System Filename Sanitization**: Automatically preserves authentic media titles while removing reserved filesystem characters (`:`, `*`, `?`, `"`, `<`, `>`, `|`) and prevents accidental file overwriting.
 - **📁 Local History & 1-Click File Explorer**: Preserves download logs with 1-click **"Reveal in Folder"** and **"Play File"** shortcuts.
-- **🎨 Modern Glassmorphic Dark UI**: Clean desktop design with vibrant glowing accents, smooth transitions, and 4 curated themes (*Neon Midnight*, *OLED Pure Black*, *Cyberpunk Cyan*, and *Nordic Slate*).
-- **🛡️ 100% Local & Privacy-Focused**: Runs completely on your computer. No third-party servers, zero telemetry, no login accounts, and no data tracking.
+- **🎨 Modern Glassmorphic Dark UI**: Clean desktop and touch-friendly mobile design with ergonomic bottom tabs, vibrant glowing accents, and 4 curated themes (*Neon Midnight*, *OLED Pure Black*, *Cyberpunk Cyan*, and *Nordic Slate*).
+- **🛡️ 100% Local & Privacy-Focused**: Runs completely on your device. No third-party servers, zero telemetry, no login accounts, and no data tracking.
 
 ---
 
 ## 📦 Quick Start (No Python Required!)
 
-For regular users, Droply provides pre-compiled standalone releases for Windows, macOS, and Linux that run out-of-the-box without installing Python:
+For regular users, Droply provides pre-compiled standalone releases for Windows, macOS, Linux, Android, and iOS that run out-of-the-box without installing Python:
 
 ### 1. Download
-Visit the [**Latest GitHub Releases**](https://github.com/Amlan-Sarkar/Droply/releases/latest) page and download the version for your operating system:
+Visit the [**Latest GitHub Releases**](https://github.com/Amlan-Sarkar/Droply/releases/latest) page and download the version for your device:
 - **Windows**: Download `Droply-Windows-x64.zip`
 - **macOS**: Download `Droply-macOS.zip`
 - **Linux**: Download `Droply-Linux-x86_64.tar.gz`
+- **Android**: Download `Droply-Android.apk`
+- **iOS**: Download `Droply-iOS.ipa`
 
 ### 2. Launch
 - **Windows**: Extract the zip and double-click **`Droply.exe`**.
 - **macOS**: Extract the zip and open **`Droply`**.
 - **Linux**: Extract the archive and execute **`./Droply`**.
+- **Android**: Tap the downloaded **`Droply-Android.apk`** to install. Launch Droply from your app drawer! *(Supports the system Share Sheet: share any video from YouTube or Instagram directly to Droply)*.
+- **iOS**: Sideload **`Droply-iOS.ipa`** using **AltStore**, **SideStore**, **TrollStore**, **Sideloadly**, or **Scarlet**. Downloaded media is saved to the Files app and camera roll.
 
 **Droply immediately launches as a standalone desktop window!**
 
@@ -86,7 +93,7 @@ If you are a developer looking to run Droply from source on any operating system
 - Python 3.10+
 - Git
 
-### Run from Source
+### Run from Source (Desktop)
 ```bash
 # 1. Clone the repository
 git clone https://github.com/Amlan-Sarkar/Droply.git
@@ -99,6 +106,21 @@ pip install -r requirements.txt
 python app.py
 ```
 *(On Windows, you can also simply double-click `start.bat`)*
+
+### Build Android APK Locally
+```bash
+cd android
+./gradlew assembleRelease
+# Generated APK: android/app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+### Build iOS IPA Locally
+```bash
+cd ios
+chmod +x build_ipa.sh
+./build_ipa.sh
+# Generated IPA: ios/Droply-iOS.ipa
+```
 
 ---
 

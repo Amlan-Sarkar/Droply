@@ -1,4 +1,4 @@
-﻿# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,3 +26,17 @@ Desktop.ini
 
 # Bundled binaries
 bin/
+
+# Android & Gradle
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+# iOS & Xcode
+ios/build/
+ios/Droply.xcodeproj/xcuserdata/
+ios/Droply.xcodeproj/project.xcworkspace/xcuserdata/
+*.ipa
