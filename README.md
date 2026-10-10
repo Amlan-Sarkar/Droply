@@ -118,21 +118,6 @@ python app.py
 ```
 *(On Windows, you can also simply double-click `start.bat`)*
 
-### Build Android APK Locally
-```bash
-cd android
-./gradlew assembleRelease
-# Generated APK: android/app/build/outputs/apk/release/app-release-unsigned.apk
-```
-
-### Build iOS IPA Locally
-```bash
-cd ios
-chmod +x build_ipa.sh
-./build_ipa.sh
-# Generated IPA: ios/Droply-iOS.ipa
-```
-
 ---
 
 ## ⚖️ Legal Disclaimer & Fair Use Notice
