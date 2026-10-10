@@ -1,6 +1,15 @@
-<div align="center">
+ <div align="center">
 
-<img src="assets/icon.png" width="48" height="48" alt="Droply Logo"> &nbsp; <strong style="font-size: 32px;">Droply</strong>
+<table>
+  <tr>
+    <td align="center" valign="middle" style="border: none;">
+      <img src="assets/icon.png" width="64" height="64" alt="Droply Logo">
+    </td>
+    <td align="center" valign="middle" style="border: none;">
+      <h1>Droply</h1>
+    </td>
+  </tr>
+</table>
 
 </div>
 
