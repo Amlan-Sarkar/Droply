@@ -1,0 +1,408 @@
+"""
+Droply - FastAPI Server & WebSocket Bridge
+Provides REST endpoints and real-time WebSocket broadcasting.
+"""
+
+import os
+import re
+import sys
+import asyncio
+from pathlib import Path
+from typing import Dict, Any, List, Optional
+from pydantic import BaseModel
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+
+import yt_dlp
+import imageio_ffmpeg
+
+from engine.providers.registry import registry
+from engine.providers.ytdlp_provider import humanize_error
+from engine.settings_manager import settings_manager
+from engine.history_manager import history_manager
+from engine.queue_manager import queue_manager, DownloadTask
+from engine.file_manager import (
+    open_folder,
+    open_in_folder,
+    open_file,
+    get_default_download_dir
+)
+
+
+app = FastAPI(title="Droply API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Active WebSocket connections
+active_connections: List[WebSocket] = []
+loop: Optional[asyncio.AbstractEventLoop] = None
+
+
+@app.on_event("startup")
+async def startup_event():
+    global loop
+    loop = asyncio.get_running_loop()
+
+    # Forward queue manager events to WebSocket clients
+    def on_queue_event(data: Dict[str, Any]):
+        if active_connections and loop:
+            asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
+
+    queue_manager.add_listener(on_queue_event)
+
+
+async def broadcast_ws(message: Dict[str, Any]):
+    dead = []
+    for ws in active_connections:
+        try:
+            await ws.send_json(message)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        if ws in active_connections:
+            active_connections.remove(ws)
+
+
+@app.websocket("/ws/events")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    active_connections.append(websocket)
+    try:
+        # Send initial snapshot of all active tasks
+        await websocket.send_json({
+            "event": "initial_state",
+            "tasks": queue_manager.get_all_tasks()
+        })
+        while True:
+            # Keep connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+    except Exception:
+        if websocket in active_connections:
+            active_connections.remove(websocket)
+
+
+# ---------------- API REQUEST MODELS ----------------
+
+class DetectRequest(BaseModel):
+    url: str
+
+class AnalyzeRequest(BaseModel):
+    url: str
+
+class DownloadRequest(BaseModel):
+    url: str
+    format_id: str = "bestvideo+bestaudio/best"
+    format_label: str = "Best Quality"
+    is_audio: bool = False
+    audio_format: str = "mp3"
+    output_dir: Optional[str] = None
+    title: Optional[str] = None
+    thumbnail: Optional[str] = None
+
+class BatchParseRequest(BaseModel):
+    text: str
+
+class BatchEnqueueRequest(BaseModel):
+    urls: List[str]
+    is_audio: bool = False
+    format_id: str = "bestvideo+bestaudio/best"
+    format_label: str = "Best Quality"
+    audio_format: str = "mp3"
+    output_dir: Optional[str] = None
+
+class PathRequest(BaseModel):
+    path: Optional[str] = None
+
+class FileRequest(BaseModel):
+    file_path: str
+
+class SettingsUpdateRequest(BaseModel):
+    settings: Dict[str, Any]
+
+
+# ---------------- REST ENDPOINTS ----------------
+
+@app.post("/api/detect-platform")
+async def detect_platform(req: DetectRequest):
+    url = req.url.strip()
+    valid = registry.is_valid_url(url)
+    platform = registry.detect_platform(url) if valid else "Unknown"
+    return {"valid": valid, "platform": platform}
+
+
+@app.post("/api/analyze")
+async def analyze_url(req: AnalyzeRequest):
+    url = req.url.strip()
+    if not registry.is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Invalid URL provided. Please provide a valid web link.")
+
+    try:
+        provider = registry.get_provider_for_url(url)
+        # Run blocking metadata extraction in executor to keep event loop free
+        loop = asyncio.get_event_loop()
+        meta = await loop.run_in_executor(None, provider.get_metadata, url)
+
+        # Convert to response dict
+        return {
+            "id": meta.id,
+            "url": meta.url,
+            "title": meta.title,
+            "platform": meta.platform,
+            "uploader": meta.uploader,
+            "uploader_url": meta.uploader_url,
+            "duration": meta.duration,
+            "duration_str": meta.duration_str,
+            "thumbnail": meta.thumbnail,
+            "description": meta.description,
+            "formats": [
+                {
+                    "format_id": f.format_id,
+                    "ext": f.ext,
+                    "resolution": f.resolution,
+                    "label": f.label,
+                    "filesize_approx": f.filesize_approx,
+                    "filesize_str": f.filesize_str,
+                    "has_video": f.has_video,
+                    "has_audio": f.has_audio,
+                    "is_audio_only": f.is_audio_only
+                } for f in meta.formats
+            ],
+            "audio_formats": [
+                {
+                    "format_id": f.format_id,
+                    "ext": f.ext,
+                    "resolution": f.resolution,
+                    "label": f.label,
+                    "filesize_approx": f.filesize_approx,
+                    "filesize_str": f.filesize_str,
+                    "has_video": f.has_video,
+                    "has_audio": f.has_audio,
+                    "is_audio_only": f.is_audio_only
+                } for f in meta.audio_formats
+            ],
+            "default_download_dir": settings_manager.get("download_dir", get_default_download_dir())
+        }
+    except Exception as e:
+        err_str = str(e)
+        friendly = "Unable to analyze media at this URL."
+        technical = err_str
+        if "|SPLIT|" in err_str:
+            parts = err_str.split("|SPLIT|")
+            friendly = parts[0]
+            technical = parts[1]
+        elif hasattr(e, "detail"):
+            friendly = str(e.detail)
+        return JSONResponse(status_code=422, content={"error_friendly": friendly, "error_technical": technical})
+
+
+@app.post("/api/download")
+async def start_download(req: DownloadRequest):
+    url = req.url.strip()
+    if not registry.is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Invalid URL provided.")
+
+    out_dir = req.output_dir or settings_manager.get("download_dir", get_default_download_dir())
+    task = queue_manager.add_task(
+        url=url,
+        title=req.title or "",
+        thumbnail=req.thumbnail or "",
+        format_id=req.format_id,
+        format_label=req.format_label,
+        is_audio=req.is_audio,
+        audio_format=req.audio_format,
+        output_dir=out_dir
+    )
+    return task.to_dict()
+
+
+@app.post("/api/batch/parse")
+async def batch_parse(req: BatchParseRequest):
+    """
+    Parses pasted text (one per line, comma, whitespace separated) into clean unique URLs.
+    """
+    raw = req.text
+    # Extract all http/https URLs using regex
+    urls = re.findall(r'https?://[^\s,;"\'<>]+', raw)
+    unique_urls = []
+    seen = set()
+    for u in urls:
+        u_clean = u.rstrip('.,;)]}>')
+        if u_clean not in seen and registry.is_valid_url(u_clean):
+            seen.add(u_clean)
+            unique_urls.append(u_clean)
+
+    items = []
+    for u in unique_urls:
+        items.append({
+            "url": u,
+            "platform": registry.detect_platform(u)
+        })
+
+    return {"count": len(unique_urls), "items": items}
+
+
+@app.post("/api/batch/enqueue")
+async def batch_enqueue(req: BatchEnqueueRequest):
+    out_dir = req.output_dir or settings_manager.get("download_dir", get_default_download_dir())
+    created_tasks = []
+    for u in req.urls:
+        if registry.is_valid_url(u):
+            task = queue_manager.add_task(
+                url=u,
+                format_id=req.format_id,
+                format_label=req.format_label,
+                is_audio=req.is_audio,
+                audio_format=req.audio_format,
+                output_dir=out_dir
+            )
+            created_tasks.append(task.to_dict())
+
+    return {"count": len(created_tasks), "tasks": created_tasks}
+
+
+@app.get("/api/tasks")
+async def get_tasks():
+    return queue_manager.get_all_tasks()
+
+
+@app.post("/api/tasks/{task_id}/cancel")
+async def cancel_task(task_id: str):
+    success = queue_manager.cancel_task(task_id)
+    return {"success": success}
+
+
+@app.post("/api/tasks/{task_id}/retry")
+async def retry_task(task_id: str):
+    success = queue_manager.retry_task(task_id)
+    return {"success": success}
+
+
+@app.delete("/api/tasks/{task_id}")
+async def remove_task(task_id: str):
+    success = queue_manager.remove_task(task_id)
+    return {"success": success}
+
+
+@app.post("/api/tasks/clear-finished")
+async def clear_finished():
+    queue_manager.clear_finished()
+    return {"success": True}
+
+
+@app.get("/api/history")
+async def get_history():
+    return history_manager.get_all()
+
+
+@app.delete("/api/history/{item_id}")
+async def delete_history_item(item_id: str, delete_file: bool = False):
+    success = history_manager.remove_entry(item_id, delete_file=delete_file)
+    return {"success": success}
+
+
+@app.post("/api/history/clear")
+async def clear_history():
+    history_manager.clear_all()
+    return {"success": True}
+
+
+@app.get("/api/settings")
+async def get_settings():
+    return settings_manager.get_all()
+
+
+@app.post("/api/settings")
+async def update_settings(req: SettingsUpdateRequest):
+    updated = settings_manager.update(req.settings)
+    return updated
+
+
+@app.post("/api/open-folder")
+async def api_open_folder(req: PathRequest):
+    folder = req.path or settings_manager.get("download_dir", get_default_download_dir())
+    success = open_folder(folder)
+    return {"success": success, "path": folder}
+
+
+@app.post("/api/reveal-file")
+async def api_reveal_file(req: FileRequest):
+    success = open_in_folder(req.file_path)
+    return {"success": success}
+
+
+@app.post("/api/open-file")
+async def api_open_file(req: FileRequest):
+    success = open_file(req.file_path)
+    return {"success": success}
+
+
+@app.post("/api/browse-folder")
+async def browse_folder():
+    """
+    Opens native Windows folder picker modal and returns the chosen directory.
+    """
+    loop = asyncio.get_event_loop()
+    def _picker():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            initial = settings_manager.get("download_dir", get_default_download_dir())
+            chosen = filedialog.askdirectory(initialdir=initial, title="Select Droply Download Directory")
+            root.destroy()
+            return chosen if chosen else None
+        except Exception as e:
+            print("Folder picker dialog error:", e)
+            return None
+
+    folder = await loop.run_in_executor(None, _picker)
+    if folder:
+        settings_manager.update({"download_dir": folder})
+        return {"folder": folder, "updated": True}
+    return {"folder": None, "updated": False}
+
+
+@app.get("/api/system/status")
+async def system_status():
+    base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+    bundled = base_dir / "bin" / "ffmpeg.exe"
+    ffmpeg_exe = str(bundled) if bundled.exists() else None
+    if not ffmpeg_exe:
+        try:
+            ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+        except Exception:
+            pass
+
+    return {
+        "ffmpeg_ready": bool(ffmpeg_exe and os.path.exists(ffmpeg_exe)),
+        "ffmpeg_path": ffmpeg_exe,
+        "ytdlp_version": getattr(yt_dlp, "__version__", getattr(yt_dlp.version, "__version__", "installed")),
+        "default_dir": settings_manager.get("download_dir", get_default_download_dir()),
+        "python_version": sys.version.split()[0]
+    }
+
+
+# Static web app mounting
+base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)); web_dir = base_dir / "web"
+if web_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
+
+    @app.get("/")
+    async def index_page():
+        return FileResponse(str(web_dir / "index.html"))
+
+
