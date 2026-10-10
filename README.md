@@ -1,127 +1,109 @@
-# Droply — Universal Local Media Downloader
-*High-Performance, Privacy-First, Local Desktop Media Engine*
+﻿<div align="center">
 
-![Droply](https://img.shields.io/badge/Droply-v1.0.0-6366f1)
-![Platform](https://img.shields.io/badge/Platform-Windows-06b6d4)
-![Python](https://img.shields.io/badge/Python-3.11+-10b981)
-![Privacy](https://img.shields.io/badge/Execution-100%25%20Local-8b5cf6)
+# ⚡ Droply
 
----
+**Universal High-Performance Video, Audio & Social Media Downloader for Windows**
 
-## ⚡ Overview
+*Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X (Twitter), Bilibili, and 1,000+ sites at full quality with real-time speed & progress tracking.*
 
-**Droply** is a sleek, ultra-fast, local-first desktop application engineered to extract, preview, convert, and download media directly to your local device. It requires **zero cloud servers**, collects no analytics, and operates with complete privacy.
+[![Latest Release](https://img.shields.io/github/v/release/Amlan-Sarkar/Droply?color=6366f1&label=Release&style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0e121a.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Execution: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-10b981.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
 
-Droply pairs a hardware-accelerated **FFmpeg / yt-dlp core engine** with a fluid, modern glassmorphic interface that runs as a native Windows desktop application window (powered by Microsoft Edge WebView2).
+[**Download Windows App**](https://github.com/Amlan-Sarkar/Droply/releases/latest) • [**Features**](#-features) • [**Quick Start (No Python Required)**](#-quick-start-no-python-required) • [**How to Use**](#-how-to-use) • [**Developer Guide**](#-developer-quick-start)
 
----
-
-## ✨ Key Features
-
-- **Instant Source Detection**: Real-time regex heuristics recognize platform origins (YouTube, Twitter/X, TikTok, Reddit, Instagram, Vimeo, SoundCloud, Twitch, Direct media files) before network requests occur.
-- **Dynamic Quality & Format Discovery**: Formats are inspected dynamically from the source stream. Only genuine available resolutions (4K UHD, 2K QHD, 1080p FHD, 720p HD, 480p, 360p) and bitrates are shown.
-- **Adaptive Stream Muxing**: Automatically downloads and merges separated high-bitrate video and audio streams using bundled local FFmpeg binaries.
-- **Audio Extraction**: Dedicated Audio Mode supporting lossless PCM WAV, high-quality 320 kbps MP3, Apple AAC M4A, and Opus.
-- **Multi-URL Batch Downloader**: Paste multiple links (one per line, comma-separated, or pasted text), parse unique URLs, configure batch quality presets, and monitor concurrent downloads.
-- **Concurrent Queue Management**: Configurable background worker pool with real-time speed, progress bars, byte counters, and ETA updates over WebSockets.
-- **Local Download History**: Keeps track of completed and failed downloads with instant "Reveal in Explorer" and "Play / Open" actions without touching your files upon history clearing.
-- **Native Folder Browser**: Integrates directly with Windows folder selection dialogs and Explorer file highlighting (`explorer.exe /select,"path"`).
-- **Human-Friendly Error Translation**: Translates obscure HTTP codes and platform restrictions into clear, actionable explanations with expandable technical details.
-- **Curated Visual Aesthetics**: Glassmorphic dark design system with four switchable themes (*Neon Midnight*, *OLED Pure Black*, *Cyberpunk Cyan*, and *Nordic Slate*).
+</div>
 
 ---
 
-## 🏗️ Architecture
-
-```
-Droply
-├── app.py                      # Desktop window launcher (WebView2 / Browser fallback)
-├── start.bat                   # 1-Click Windows execution script
-├── requirements.txt            # Python dependencies
-├── engine/
-│   ├── providers/
-│   │   ├── base.py             # Modular provider abstract interface & dataclasses
-│   │   ├── registry.py         # Provider registration & instant platform detection
-│   │   ├── direct_provider.py  # Direct HTTP/HTTPS streaming media provider
-│   │   └── ytdlp_provider.py   # Universal yt-dlp engine & FFmpeg integration
-│   ├── file_manager.py         # Duplicate collision avoidance, filename sanitization
-│   ├── queue_manager.py        # Multi-worker async queue, retry, and cancellation
-│   ├── settings_manager.py     # Local configuration persistence (~/.Droply)
-│   └── history_manager.py      # Local download history records (~/.Droply)
-├── server/
-│   └── api.py                  # FastAPI REST endpoints & WebSocket broadcaster
-├── web/
-│   ├── index.html              # Modern single-page desktop application UI
-│   ├── css/style.css           # Glassmorphism, animations, responsive design
-│   └── js/
-│       ├── api.js              # Client API client & WebSocket listener
-│       ├── components.js       # Dynamic format chips, queue & history cards
-│       ├── theme.js            # Multi-theme manager
-│       └── app.js              # State management & user flows
-└── tests/
-    ├── test_engine.py          # Core provider, sanitization & queue tests
-    ├── test_api.py             # FastAPI REST endpoint integration tests
-    └── test_real_download.py   # Live media stream extraction & download test
-```
+<!-- UI Screenshot Placeholder: Upload your screenshot to your repo or assets folder and link it here -->
+<!-- <div align="center"><img src="assets/droply-preview.png" alt="Droply UI Preview" width="850"></div> -->
 
 ---
 
-## 🚀 Getting Started
+## ✨ Features
 
-### 1. Prerequisites
-- **Python 3.10+** (Tested on Python 3.11)
-- **Windows 10/11** (Microsoft Edge WebView2 is built-in)
+- **🌐 Universal Platform Coverage**: Extract media seamlessly across:
+  - **YouTube**: Videos and Shorts up to 4K UHD 60fps with automatic high-bitrate stream merging.
+  - **Instagram**: Reels, Stories, Posts, and Carousel video clips.
+  - **TikTok**: Crisp high-definition video without platform watermarks.
+  - **Twitter / X**: Video posts, status clips, and embedded media threads.
+  - **Bilibili**: High-resolution video and animated episodes.
+  - **Facebook, Reddit, Pinterest, Twitch, Vimeo, SoundCloud**, and 1,000+ supported sites.
+  - **Direct Links**: Direct `.mp4`, `.webm`, `.mp3`, and `.wav` streaming links with multi-part acceleration.
+- **⚡ Real-Time Progress & Speed Tracking**: Millisecond-accurate live progress bar, real-time download speed (`MB/s`), downloaded file size counter, and dynamic Estimated Time of Arrival (ETA).
+- **🎧 High-Fidelity Audio Extraction**: Built-in audio conversion supporting **MP3 (320 kbps High Quality)**, **Apple AAC (M4A)**, **Lossless WAV**, and **Opus**.
+- **📑 Smart Multi-Link Batch Downloader**: Paste multiple URLs at once (one per line or comma-separated), automatically parse valid links, apply global quality presets, and manage downloads concurrently.
+- **🎬 Authentic Quality Selection**: Dynamically detects and displays only genuine available qualities (4K UHD, 2K QHD, 1080p FHD, 720p HD, 480p, 360p) with container details and estimated file sizes.
+- **🏷️ Clean Windows Filename Sanitization**: Automatically preserves authentic media titles while removing reserved filesystem characters (`:`, `*`, `?`, `"`, `<`, `>`, `|`) and prevents accidental file overwriting.
+- **📁 Local History & 1-Click File Explorer**: Preserves download logs with 1-click **"Reveal in Explorer"** and **"Play File"** shortcuts.
+- **🎨 Modern Glassmorphic Dark UI**: Clean desktop design with vibrant glowing accents, smooth transitions, and 4 curated themes (*Neon Midnight*, *OLED Pure Black*, *Cyberpunk Cyan*, and *Nordic Slate*).
+- **🛡️ 100% Local & Privacy-Focused**: Runs completely on your PC. No third-party servers, zero telemetry, no login accounts, and no data tracking.
 
-### 2. Install Dependencies
-Open PowerShell or Command Prompt in the project folder and run:
-```bash
-python -m pip install -r requirements.txt
-```
+---
 
-### 3. Launch the Application
+## 📦 Quick Start (No Python Required!)
 
-#### Option A: One-Click Launcher (Windows)
-Double-click `start.bat`.
+For standard Windows users, Droply is distributed as a pre-built standalone desktop application that runs out-of-the-box without installing Python:
 
-#### Option B: Native Desktop Window
-```bash
+### 1. Download
+1. Head over to the [**Latest GitHub Releases**](https://github.com/Amlan-Sarkar/Droply/releases/latest) page.
+2. Under **Assets**, download **`Droply-Windows-x64.zip`**.
+
+### 2. Launch
+1. Extract the downloaded `.zip` file anywhere on your computer (e.g., Desktop or Documents).
+2. Double-click **`Droply.exe`**.
+3. **Droply opens immediately as a desktop application window!**
+
+---
+
+## 🎯 How to Use
+
+1. **Paste a Link**: Copy any media URL and paste it into the search bar (or click the **Paste** button).
+2. **Instant Detection**: Droply instantly detects the platform origin (YouTube, Twitter/X, TikTok, Instagram, etc.).
+3. **Analyze**: Click **Analyze** (or press <kbd>Enter</kbd>) to load media details, thumbnail, and duration.
+4. **Choose Format**:
+   - **Video Mode**: Select your desired quality (`Best Quality`, `1080p`, `720p`, etc.).
+   - **Audio Mode**: Switch to Audio mode and select your format (`MP3 320k`, `M4A`, `WAV`).
+5. **Download**: Click **Download Media**.
+6. **Open File**: When completed, click **Open Containing Folder** to reveal your downloaded media in Windows Explorer, or **Play File** to watch it immediately!
+
+---
+
+## 💻 Developer Quick Start
+
+If you are a developer looking to run or build Droply from source:
+
+### Prerequisites
+- Windows 10 or 11
+- Python 3.10+
+- Git
+
+### Run from Source
+```powershell
+# 1. Clone the repository
+git clone https://github.com/Amlan-Sarkar/Droply.git
+cd Droply
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Launch application (or double-click start.bat)
 python app.py
 ```
 
-#### Option C: Browser Mode
-```bash
-python app.py --web
-```
+---
 
-#### Option D: Headless / Server-Only Mode
-```bash
-python app.py --headless --port 8765
-```
+## ⚖️ Legal Disclaimer & Fair Use Notice
+
+Droply is an open-source tool intended strictly for personal archival, educational, and authorized fair-use purposes (such as downloading public content you own, have created, or have explicit permission to access offline). 
+
+Users are solely responsible for complying with applicable copyright laws, platform Terms of Service, and intellectual property rights. Droply does not bypass DRM (Digital Rights Management), paywalls, or private authentication barriers.
 
 ---
 
-## 🧪 Running Automated Tests
+## 📄 License
 
-Run the complete test suite:
-```bash
-python -m unittest discover tests
-```
-
----
-
-## 📦 Packaging to Standalone Executable (.exe)
-
-To bundle Droply into an independent Windows `.exe`:
-```bash
-python -m pip install pyinstaller
-pyinstaller --name Droply --onefile --windowed --add-data "web;web" --add-data "engine;engine" app.py
-```
-
----
-
-## 🔒 Privacy & Legal Boundaries
-
-- Droply operates strictly locally on your computer.
-- No user URLs, metadata, or downloaded files are ever transmitted to third-party cloud servers.
-- Droply is intended for downloading authorized, publicly accessible media resources. It does not circumvent DRM, paywalls, access controls, or authentication mechanisms.
-
+This project is licensed under the [MIT License](LICENSE).
