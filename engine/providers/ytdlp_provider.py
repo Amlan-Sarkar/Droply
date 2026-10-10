@@ -88,7 +88,8 @@ def humanize_error(raw_err: str) -> Dict[str, str]:
 class YtDlpProvider(BaseProvider):
     def __init__(self):
         base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent.parent))
-        bundled = base_dir / "bin" / "ffmpeg.exe"
+        binary_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
+        bundled = base_dir / "bin" / binary_name
         if bundled.exists():
             self.ffmpeg_path = str(bundled)
         else:
@@ -395,9 +396,10 @@ class YtDlpProvider(BaseProvider):
             'no_warnings': True,
             'noplaylist': True,
             'progress_hooks': [ytdl_hook],
-            'windowsfilenames': True,
-            'restrictfilenames': False,
+                        'restrictfilenames': False
         }
+        if sys.platform == 'win32':
+            ydl_opts['windowsfilenames'] = True
 
         if self.ffmpeg_path and os.path.exists(self.ffmpeg_path):
             ydl_opts['ffmpeg_location'] = self.ffmpeg_path
@@ -477,5 +479,9 @@ class YtDlpProvider(BaseProvider):
             supports_audio_extraction=True,
             supported_audio_codecs=["mp3", "m4a", "wav", "opus"]
         )
+
+
+
+
 
 

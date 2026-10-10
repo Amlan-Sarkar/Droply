@@ -1,0 +1,75 @@
+﻿name: Build and Publish Multi-OS Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: Droply-Windows-x64.zip
+            asset_path: Droply-Windows-x64.zip
+          - os: macos-latest
+            artifact_name: Droply-macOS.zip
+            asset_path: Droply-macOS.zip
+          - os: ubuntu-latest
+            artifact_name: Droply-Linux-x86_64.tar.gz
+            asset_path: Droply-Linux-x86_64.tar.gz
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install System Dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || true
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build Standalone (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --noconfirm --name Droply --onedir --add-data "web;web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
+          Compress-Archive -Path dist/Droply -DestinationPath Droply-Windows-x64.zip -Force
+
+      - name: Build Standalone (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller --noconfirm --name Droply --onedir --add-data "web:web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
+          cd dist && zip -r ../Droply-macOS.zip Droply && cd ..
+
+      - name: Build Standalone (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pyinstaller --noconfirm --name Droply --onedir --add-data "web:web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
+          cd dist && tar -czf ../Droply-Linux-x86_64.tar.gz Droply && cd ..
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ matrix.asset_path }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
