@@ -164,5 +164,27 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release-assets/*
+          name: Droply ${{ github.ref_name }} - Universal Release (PC & Mobile)
+          body: |
+            ### 💻 PC / Desktop
+
+            | Platform | Package | Direct Link |
+            | :--- | :--- | :--- |
+            | 🪟 **Windows** (Recommended) | Standalone ZIP | [Download for Windows (x64)](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
+            | 🍎 **macOS** | Universal ZIP | [Download for macOS](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-macOS.zip) |
+            | 🐧 **Linux** | x86_64 Archive | [Download for Linux](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Linux-x86_64.tar.gz) |
+
+            *No Python required. Extract and run directly.*
+
+            ---
+
+            ### 📱 Phone / Mobile
+
+            | Platform | Package | Direct Link |
+            | :--- | :--- | :--- |
+            | 🤖 **Android** | Standalone APK | [Download for Android](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Android.apk) |
+            | 🍏 **iOS** | Sideloadable IPA | [Download for iOS](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-iOS.ipa) |
+
+            *Runs locally on your phone. Saves media directly to storage & Photos.*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

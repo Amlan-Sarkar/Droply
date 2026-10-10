@@ -53,12 +53,23 @@
 For regular users, Droply provides pre-compiled standalone releases for Windows, macOS, Linux, Android, and iOS that run out-of-the-box without installing Python:
 
 ### 1. Download
-Visit the [**Latest GitHub Releases**](https://github.com/Amlan-Sarkar/Droply/releases/latest) page and download the version for your device:
-- **Windows**: Download `Droply-Windows-x64.zip`
-- **macOS**: Download `Droply-macOS.zip`
-- **Linux**: Download `Droply-Linux-x86_64.tar.gz`
-- **Android**: Download `Droply-Android.apk`
-- **iOS**: Download `Droply-iOS.ipa`
+
+#### 💻 PC / Desktop
+| Platform | Package | Direct Link |
+| :--- | :--- | :--- |
+| 🪟 **Windows** (Recommended) | Standalone ZIP | [Download for Windows (x64)](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| 🍎 **macOS** | Universal ZIP | [Download for macOS](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-macOS.zip) |
+| 🐧 **Linux** | x86_64 Archive | [Download for Linux](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Linux-x86_64.tar.gz) |
+
+*No Python required. Extract and run directly.*
+
+#### 📱 Phone / Mobile
+| Platform | Package | Direct Link |
+| :--- | :--- | :--- |
+| 🤖 **Android** | Standalone APK | [Download for Android](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
+| 🍏 **iOS** | Sideloadable IPA | [Download for iOS](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-iOS.ipa) |
+
+*Runs locally on your phone. Saves directly to device storage & Photos.*
 
 ### 2. Launch
 - **Windows**: Extract the zip and double-click **`Droply.exe`**.
