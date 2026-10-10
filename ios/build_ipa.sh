@@ -43,3 +43,4 @@ cd ..
 
 echo "==> Successfully created Droply-iOS.ipa!"
 ls -lh Droply-iOS.ipa
+cp Droply-iOS.ipa ../Droply-iOS.ipa

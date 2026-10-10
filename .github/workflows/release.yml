@@ -134,6 +134,7 @@ jobs:
           cp -r web ios/web
           chmod +x ios/build_ipa.sh
           ./ios/build_ipa.sh
+          cp ios/Droply-iOS.ipa ./Droply-iOS.ipa || true
           ls -lh Droply-iOS.ipa
 
       - name: Upload iOS IPA Artifact
