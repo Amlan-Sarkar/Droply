@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="assets/icon.png" width="96" height="96" alt="Droply Logo" style="border-radius: 20px; margin-bottom: 8px;">
+<img src="assets/icon.png" width="48" height="48" alt="Droply Logo"> &nbsp; <strong style="font-size: 32px;">Droply</strong>
 
-# Droply
+</div>
 
 **Universal High-Performance Video, Audio & Social Media Downloader for Windows, macOS, Linux, Android & iOS**
 
