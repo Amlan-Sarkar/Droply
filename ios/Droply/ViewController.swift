@@ -133,7 +133,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
         if let data = try? JSONSerialization.data(withJSONObject: jsonPayload),
            let jsonStr = String(data: data, encoding: .utf8) {
             let js = "window.dispatchEvent(new CustomEvent('droply_analyzed', { detail: \(jsonStr) }));"
-            webView.evaluateJavascript(js, completionHandler: nil)
+            webView.evaluateJavaScript(js, completionHandler: nil)
         }
     }
 
@@ -166,7 +166,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
     private func notifyError(message: String) {
         let safeMsg = message.replacingOccurrences(of: "\"", with: "\\\"")
         let js = "window.dispatchEvent(new CustomEvent('droply_error', { detail: { error: \"\(safeMsg)\" } }));"
-        webView.evaluateJavascript(js, completionHandler: nil)
+        webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
     // MARK: - URLSessionDownloadDelegate
@@ -193,7 +193,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
             }
         }));
         """
-        webView.evaluateJavascript(js, completionHandler: nil)
+        webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
@@ -212,7 +212,7 @@ class ViewController: UIViewController, WKNavigationDelegate, WKScriptMessageHan
             }
 
             let js = "window.dispatchEvent(new CustomEvent('droply_completed', { detail: { status: 'completed', path: '\(dest.path)' } }));"
-            webView.evaluateJavascript(js, completionHandler: nil)
+            webView.evaluateJavaScript(js, completionHandler: nil)
 
         } catch {
             notifyError(message: error.localizedDescription)
