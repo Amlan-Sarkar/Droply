@@ -397,12 +397,26 @@ async def system_status():
 
 
 # Static web app mounting
-base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)); web_dir = base_dir / "web"
+base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
+web_dir = base_dir / "web"
 if web_dir.exists():
     app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
+    if (web_dir / "css").exists():
+        app.mount("/css", StaticFiles(directory=str(web_dir / "css")), name="css")
+    if (web_dir / "js").exists():
+        app.mount("/js", StaticFiles(directory=str(web_dir / "js")), name="js")
+    if (web_dir / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(web_dir / "assets")), name="assets")
 
     @app.get("/")
     async def index_page():
         return FileResponse(str(web_dir / "index.html"))
+
+    @app.get("/favicon.ico")
+    async def favicon():
+        fav = web_dir / "favicon.ico"
+        if fav.exists():
+            return FileResponse(str(fav))
+        return JSONResponse({"status": "not found"}, status_code=404)
 
 

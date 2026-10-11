@@ -47,11 +47,24 @@ android {
 
     sourceSets {
         main {
-            assets.srcDirs = ['src/main/assets', '../../web']
+            assets.srcDirs = ['src/main/assets']
             python.srcDirs = ['src/main/python']
         }
     }
 }
+
+task copyWebAssets(type: Copy) {
+    from '../../web'
+    into 'src/main/assets/web'
+}
+
+task copyRootWebAssets(type: Copy) {
+    from '../../web'
+    into 'src/main/assets'
+}
+
+preBuild.dependsOn copyWebAssets
+preBuild.dependsOn copyRootWebAssets
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'

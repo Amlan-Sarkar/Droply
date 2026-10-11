@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0d14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Droply</title>
+  <meta name="description" content="High-performance, private, local media downloader and stream extractor.">
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Favicon and App Icons -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" href="assets/icon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="dark">
+  <div class="app-layout">
+    
+    <!-- TOP NAVIGATION HEADER -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <img src="assets/icon.png" alt="Droply" class="brand-icon-img">
+          <div class="brand-glow"></div>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">Drop<span class="gradient-text">ly</span></span>
+          <span class="brand-tagline">Local Media Engine</span>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TABS -->
+      <nav class="nav-tabs" id="nav-tabs">
+        <button class="nav-tab active" data-tab="single" id="tab-btn-single">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+          </svg>
+          <span>Single Downloader</span>
+        </button>
+        <button class="nav-tab" data-tab="batch" id="tab-btn-batch">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+          <span>Batch Queue</span>
+          <span class="badge-counter" id="batch-badge" style="display: none;">0</span>
+        </button>
+        <button class="nav-tab" data-tab="history" id="tab-btn-history">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v5h5"></path>
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+            <path d="M12 7v5l4 2"></path>
+          </svg>
+          <span>Library & History</span>
+        </button>
+        <button class="nav-tab" data-tab="settings" id="tab-btn-settings">
+          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+
+      <!-- SYSTEM STATUS INDICATORS -->
+      <div class="header-status">
+        <div class="status-pill status-ready" id="server-status-pill" title="Local Engine Server Online">
+          <span class="status-dot"></span>
+          <span class="status-label">Server Online</span>
+        </div>
+        <button class="icon-btn" id="header-open-folder" title="Open Download Folder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT VIEW CONTAINER -->
+    <main class="app-main">
+      
+      <!-- ================= TAB 1: SINGLE DOWNLOADER ================= -->
+      <section class="tab-pane active" id="pane-single">
+        <div class="pane-content-single">
+          
+          <!-- PROMINENT URL INPUT AREA -->
+          <div class="input-hero-card">
+            <div class="input-header-row">
+              <div class="input-title-wrap">
+                <h2>Download Any Media Locally</h2>
+                <p>Paste a video, audio, or social stream link to analyze and download in high definition.</p>
+              </div>
+              <!-- Instant Detected Platform Badge -->
+              <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
+                <span class="detect-icon" id="detect-icon">🌐</span>
+                <span class="detect-text">Detected source: <strong id="detect-name">None</strong></span>
+              </div>
+            </div>
+
+            <div class="url-input-container">
+              <div class="url-icon-wrapper">
+                <svg class="url-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              </div>
+              <input 
+                type="text" 
+                id="single-url-input" 
+                class="url-input" 
+                placeholder="Paste a video or media link (e.g., YouTube, X/Twitter, TikTok, Reddit, Vimeo...)" 
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <div class="url-actions">
+                <button class="url-action-btn" id="btn-paste" title="Paste from clipboard">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  </svg>
+                  <span>Paste</span>
+                </button>
+                <button class="url-action-btn" id="btn-clear" title="Clear input" style="display: none;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+                <button class="primary-btn btn-analyze" id="btn-analyze">
+                  <span class="btn-text">Analyze</span>
+                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick Platform Badges Bar -->
+            <div class="quick-sources-bar">
+              <span class="quick-title">Supported Sources:</span>
+              <span class="source-chip"><span class="chip-dot yt"></span>YouTube</span>
+              <span class="source-chip"><span class="chip-dot tw"></span>Twitter / X</span>
+              <span class="source-chip"><span class="chip-dot tt"></span>TikTok</span>
+              <span class="source-chip"><span class="chip-dot rd"></span>Reddit</span>
+              <span class="source-chip"><span class="chip-dot ig"></span>Instagram</span>
+              <span class="source-chip"><span class="chip-dot vm"></span>Vimeo</span>
+              <span class="source-chip"><span class="chip-dot sc"></span>SoundCloud</span>
+              <span class="source-chip"><span class="chip-dot dir"></span>Direct MP4/MP3</span>
+            </div>
+          </div>
+
+          <!-- SKELETON LOADING STATE -->
+          <div class="skeleton-card" id="analyze-skeleton" style="display: none;">
+            <div class="skeleton-thumb shimmer"></div>
+            <div class="skeleton-details">
+              <div class="skeleton-line shimmer title"></div>
+              <div class="skeleton-line shimmer subtitle"></div>
+              <div class="skeleton-line shimmer meta"></div>
+              <div class="skeleton-line shimmer formats"></div>
+            </div>
+          </div>
+
+          <!-- ERROR STATE CARD -->
+          <div class="error-card" id="analyze-error" style="display: none;">
+            <div class="error-icon-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <div class="error-body">
+              <h3 id="error-friendly-text">Unable to download media from this source</h3>
+              <p class="error-suggestion" id="error-suggestion">Make sure the URL is accessible and the media is public.</p>
+              
+              <!-- Technical details accordion -->
+              <details class="error-details">
+                <summary>Technical Details & Logs</summary>
+                <pre class="technical-log" id="error-tech-log"></pre>
+              </details>
+            </div>
+            <button class="icon-btn-close" id="btn-close-error" title="Dismiss error">×</button>
+          </div>
+
+          <!-- MEDIA PREVIEW & CONFIGURATION CARD -->
+          <div class="media-card" id="media-card" style="display: none;">
+            <div class="media-preview-grid">
+              
+              <!-- LEFT: THUMBNAIL & BADGES -->
+              <div class="media-thumb-container">
+                <img id="media-thumb-img" class="media-thumb-img" src="" alt="Thumbnail preview" />
+                <div class="thumb-duration-badge" id="media-duration">00:00</div>
+                <div class="thumb-platform-tag" id="media-platform-tag">YouTube</div>
+              </div>
+
+              <!-- RIGHT: METADATA & CONTROLS -->
+              <div class="media-info-column">
+                <div class="media-title-row">
+                  <h3 class="media-title" id="media-title" title="Click to copy title">Media Title</h3>
+                  <button class="icon-btn-mini" id="btn-copy-title" title="Copy title to clipboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="media-uploader-row">
+                  <div class="uploader-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span id="media-uploader">Channel / Author</span>
+                  </div>
+                  <span class="meta-dot">•</span>
+                  <span class="media-duration-text" id="media-duration-text">Duration: 3m 42s</span>
+                </div>
+
+                <!-- DESCRIPTION PREVIEW -->
+                <p class="media-desc" id="media-desc">Brief description preview of the media...</p>
+
+                <!-- MODE SELECTOR: VIDEO vs AUDIO -->
+                <div class="mode-selector-wrap">
+                  <label class="section-label">Download Mode</label>
+                  <div class="mode-toggle-group">
+                    <button class="mode-btn active" id="mode-btn-video" data-mode="video">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                      </svg>
+                      <span>VIDEO (MP4)</span>
+                    </button>
+                    <button class="mode-btn" id="mode-btn-audio" data-mode="audio">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                      </svg>
+                      <span>AUDIO ONLY (MP3 / M4A)</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- FORMAT SELECTION SECTION -->
+                <div class="format-selection-wrap" id="video-formats-section">
+                  <div class="format-header">
+                    <label class="section-label">Select Available Quality</label>
+                    <span class="format-info-pill" id="quality-info-pill">Audio + Video Intelligently Muxed</span>
+                  </div>
+                  <div class="formats-chip-grid" id="video-formats-grid">
+                    <!-- Populated dynamically with actual qualities returned by source -->
+                  </div>
+                </div>
+
+                <div class="format-selection-wrap" id="audio-formats-section" style="display: none;">
+                  <div class="format-header">
+                    <label class="section-label">Select Audio Codec</label>
+                    <span class="format-info-pill">Converted via Local FFmpeg</span>
+                  </div>
+                  <div class="formats-chip-grid" id="audio-formats-grid">
+                    <!-- Populated dynamically with audio formats -->
+                  </div>
+                </div>
+
+                <!-- SAVE DIRECTORY PICKER -->
+                <div class="save-dir-wrap">
+                  <label class="section-label">Save To Location</label>
+                  <div class="dir-picker-box">
+                    <div class="dir-path-text" id="selected-save-dir">Downloads/Droply</div>
+                    <button class="dir-change-btn" id="btn-change-dir">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                      <span>Change Folder</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- ACTION ROW -->
+                <div class="media-actions-row">
+                  <button class="primary-btn btn-start-download" id="btn-start-download">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Download Media</span>
+                  </button>
+                  <button class="secondary-btn btn-add-to-batch" id="btn-add-single-to-batch">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"></line>
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>Queue for Later</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ACTIVE DOWNLOAD PROGRESS CARD (SINGLE) -->
+          <div class="active-download-card" id="single-download-card" style="display: none;">
+            <div class="download-card-header">
+              <div class="download-card-title-group">
+                <span class="download-status-badge" id="single-status-badge">Downloading</span>
+                <h4 class="download-title" id="single-progress-title">Video Title</h4>
+              </div>
+              <button class="icon-btn-cancel" id="btn-cancel-single" title="Cancel Download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>Cancel</span>
+              </button>
+            </div>
+
+            <!-- ANIMATED PROGRESS BAR -->
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="single-progress-fill" style="width: 0%;"></div>
+            </div>
+
+            <!-- METRIC COUNTERS -->
+            <div class="progress-metrics-row">
+              <div class="metric-item">
+                <span class="metric-label">Progress</span>
+                <span class="metric-val" id="single-metric-percent">0.0%</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Downloaded</span>
+                <span class="metric-val" id="single-metric-size">0 MB / 0 MB</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Current Speed</span>
+                <span class="metric-val speed" id="single-metric-speed">-- KB/s</span>
+              </div>
+              <div class="metric-item">
+                <span class="metric-label">Estimated Time</span>
+                <span class="metric-val" id="single-metric-eta">--:--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOWNLOAD COMPLETE / SUCCESS CELEBRATION -->
+          <div class="success-card" id="single-success-card" style="display: none;">
+            <div class="success-check-badge">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <div class="success-content">
+              <h3>Download Successfully Completed!</h3>
+              <p class="success-filename" id="success-filename">media_title.mp4</p>
+              <div class="success-actions">
+                <button class="primary-btn btn-open-folder" id="btn-success-open-folder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                  <span>Open Containing Folder</span>
+                </button>
+                <button class="secondary-btn btn-play-file" id="btn-success-play">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Play / Open File</span>
+                </button>
+                <button class="subtle-btn" id="btn-download-another">Download Another</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 2: BATCH QUEUE ================= -->
+      <section class="tab-pane" id="pane-batch">
+        <div class="pane-content-batch">
+          
+          <!-- BATCH INPUT SECTION -->
+          <div class="batch-input-card">
+            <div class="batch-header-row">
+              <div>
+                <h2>Batch Download Queue</h2>
+                <p>Paste multiple video or audio links below. One URL per line or separated by commas.</p>
+              </div>
+              <div class="batch-preset-select">
+                <label>Quality Preset:</label>
+                <select id="batch-quality-preset" class="custom-select">
+                  <option value="best_video">Best Video (Up to 4K / 1080p)</option>
+                  <option value="1080p">1080p Full HD</option>
+                  <option value="720p">720p HD</option>
+                  <option value="audio_mp3">Audio Only (MP3 320 kbps)</option>
+                  <option value="audio_m4a">Audio Only (M4A / AAC)</option>
+                </select>
+              </div>
+            </div>
+
+            <textarea 
+              id="batch-url-textarea" 
+              class="batch-textarea" 
+              placeholder="https://www.youtube.com/watch?v=...&#10;https://x.com/status/...&#10;https://vimeo.com/...&#10;https://tiktok.com/@..."></textarea>
+
+            <div class="batch-actions-bar">
+              <div class="batch-counts-info" id="batch-parsed-info">0 URLs ready</div>
+              <div class="batch-btn-group">
+                <button class="secondary-btn" id="btn-clear-batch-input">Clear Text</button>
+                <button class="primary-btn" id="btn-enqueue-batch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  <span>Add URLs to Queue</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- QUEUE CONTROLS & TABLE -->
+          <div class="queue-manager-card">
+            <div class="queue-header-row">
+              <div class="queue-status-title">
+                <h3>Active Queue</h3>
+                <span class="queue-counter" id="queue-active-count">0 items in queue</span>
+              </div>
+              <div class="queue-global-actions">
+                <button class="secondary-btn btn-sm" id="btn-queue-retry-failed">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                  <span>Retry Failed</span>
+                </button>
+                <button class="secondary-btn btn-sm" id="btn-queue-clear-finished">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  <span>Clear Completed</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- QUEUE ITEMS LIST -->
+            <div class="queue-list" id="queue-items-container">
+              <!-- Empty queue state -->
+              <div class="empty-state" id="queue-empty-state">
+                <div class="empty-icon">📥</div>
+                <h4>Queue is currently empty</h4>
+                <p>Paste multiple links above or queue individual downloads from the Single Downloader tab.</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 3: LIBRARY & HISTORY ================= -->
+      <section class="tab-pane" id="pane-history">
+        <div class="pane-content-history">
+          
+          <!-- SUMMARY METRICS CARDS -->
+          <div class="history-metrics-grid">
+            <div class="metric-card">
+              <span class="m-label">Total Downloads</span>
+              <span class="m-val" id="hist-stat-total">0</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">Total Media Size</span>
+              <span class="m-val" id="hist-stat-size">0 MB</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">Completed Files</span>
+              <span class="m-val green" id="hist-stat-completed">0</span>
+            </div>
+            <div class="metric-card">
+              <span class="m-label">Current Folder</span>
+              <span class="m-val dir" id="hist-stat-folder" title="Click to open">Downloads/Droply</span>
+            </div>
+          </div>
+
+          <!-- HISTORY FILTER & ACTION BAR -->
+          <div class="history-controls-row">
+            <div class="history-search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input type="text" id="hist-search-input" placeholder="Search downloaded titles, filenames..." />
+            </div>
+            
+            <div class="history-actions-group">
+              <button class="secondary-btn btn-sm" id="btn-hist-open-folder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                <span>Open Folder</span>
+              </button>
+              <button class="secondary-btn btn-sm danger" id="btn-hist-clear">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span>Clear History</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- HISTORY ITEMS CONTAINER -->
+          <div class="history-items-list" id="history-items-container">
+            <div class="empty-state" id="history-empty-state">
+              <div class="empty-icon">📁</div>
+              <h4>No downloads recorded yet</h4>
+              <p>Your finished downloads and saved files will appear here.</p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+      <!-- ================= TAB 4: SETTINGS ================= -->
+      <section class="tab-pane" id="pane-settings">
+        <div class="pane-content-settings">
+          
+          <div class="settings-card">
+            <h2>Application Preferences</h2>
+            <p>Customize storage paths, default qualities, concurrent threads, and visuals.</p>
+
+            <div class="settings-form">
+              
+              <!-- 1. Download Location -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Default Download Directory</label>
+                  <span>All completed media files will be saved into this local folder.</span>
+                </div>
+                <div class="setting-control dir-setting-control">
+                  <input type="text" id="setting-dir-input" class="text-input" readonly />
+                  <button class="secondary-btn" id="btn-settings-browse">Browse...</button>
+                </div>
+              </div>
+
+              <!-- 2. Default Video Quality -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Default Video Quality</label>
+                  <span>Pre-selects this quality tier whenever a new video link is analyzed.</span>
+                </div>
+                <div class="setting-control">
+                  <select id="setting-video-quality" class="custom-select">
+                    <option value="best">Best Available Quality</option>
+                    <option value="2160p">4K UHD (2160p)</option>
+                    <option value="1440p">2K QHD (1440p)</option>
+                    <option value="1080p">1080p Full HD</option>
+                    <option value="720p">720p HD</option>
+                    <option value="480p">480p SD</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 3. Default Audio Codec -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Default Audio Format</label>
+                  <span>Format used for audio-only extractions.</span>
+                </div>
+                <div class="setting-control">
+                  <select id="setting-audio-codec" class="custom-select">
+                    <option value="mp3">MP3 (320 kbps High Quality)</option>
+                    <option value="m4a">M4A (Apple AAC Quality)</option>
+                    <option value="wav">WAV (Uncompressed Lossless)</option>
+                    <option value="opus">Opus (Source Web Audio)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- 4. Max Concurrent Downloads -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Max Concurrent Downloads</label>
+                  <span>Controls how many simultaneous streams download at once in batch queue.</span>
+                </div>
+                <div class="setting-control concurrent-control">
+                  <input type="range" id="setting-concurrent" min="1" max="5" value="3" class="slider" />
+                  <span class="slider-badge" id="concurrent-val-badge">3</span>
+                </div>
+              </div>
+
+              <!-- 5. Theme Selector -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Application Theme</label>
+                  <span>Choose your preferred desktop aesthetic.</span>
+                </div>
+                <div class="setting-control">
+                  <div class="theme-chips-row">
+                    <button class="theme-chip active" data-theme="dark">
+                      <span class="theme-color-preview dark"></span>
+                      <span>Neon Midnight</span>
+                    </button>
+                    <button class="theme-chip" data-theme="oled">
+                      <span class="theme-color-preview oled"></span>
+                      <span>OLED Pure Black</span>
+                    </button>
+                    <button class="theme-chip" data-theme="cyber">
+                      <span class="theme-color-preview cyber"></span>
+                      <span>Cyberpunk Cyan</span>
+                    </button>
+                    <button class="theme-chip" data-theme="nord">
+                      <span class="theme-color-preview nord"></span>
+                      <span>Nordic Slate</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. Notifications & Behavior -->
+              <div class="setting-item">
+                <div class="setting-info">
+                  <label>Desktop Notifications</label>
+                  <span>Show a desktop notification banner when long downloads finish.</span>
+                </div>
+                <div class="setting-control">
+                  <label class="toggle-switch">
+                    <input type="checkbox" id="setting-notifications" checked />
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Save Settings Button -->
+              <div class="settings-footer">
+                <button class="primary-btn" id="btn-save-settings">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  <span>Save Preferences</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SYSTEM ENGINE DIAGNOSTICS -->
+          <div class="diagnostics-card">
+            <h3>Engine & Runtime Diagnostics</h3>
+            <div class="diag-grid">
+              <div class="diag-item">
+                <span class="diag-label">Core Provider:</span>
+                <span class="diag-val" id="diag-ytdlp">yt-dlp Universal Engine</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">FFmpeg Binary:</span>
+                <span class="diag-val" id="diag-ffmpeg">Local Bundled v7.1</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Runtime Engine:</span>
+                <span class="diag-val" id="diag-python">Python 3.11 Local</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Execution Mode:</span>
+                <span class="diag-val highlight">100% Local / Zero Cloud</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toast-container"></div>
+
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/api.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
+

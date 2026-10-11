@@ -96,6 +96,12 @@ jobs:
       - name: Grant Execute Permissions to Gradle
         run: chmod +x android/gradlew
 
+      - name: Prepare Web Assets for Android
+        run: |
+          mkdir -p android/app/src/main/assets/web
+          cp -r web/* android/app/src/main/assets/web/
+          cp -r web/* android/app/src/main/assets/
+
       - name: Build Android APK with Gradle
         run: |
           cd android
