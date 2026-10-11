@@ -2086,5 +2086,116 @@ input:checked + .toggle-slider:before {
     width: 100%;
     justify-content: center;
   }
+
+  /* Compact Mobile Settings & Batch Tabs */
+  .pane-content-settings,
+  .pane-content-batch,
+  .pane-content-history {
+    max-width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  .settings-card,
+  .batch-input-card,
+  .queue-manager-card,
+  .history-hero-card,
+  .diagnostics-card {
+    padding: 16px 14px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: var(--radius-md);
+  }
+
+  .setting-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .setting-control {
+    width: 100%;
+  }
+
+  .dir-setting-control {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .dir-setting-control input {
+    width: 100%;
+    font-size: 12.5px;
+  }
+
+  .dir-setting-control button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .theme-chips-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .theme-chip {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 11.5px;
+    justify-content: flex-start;
+  }
+
+  .batch-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .batch-preset-select {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .batch-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 13px;
+    padding: 10px;
+    min-height: 110px;
+  }
+
+  .queue-header-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .queue-global-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .queue-global-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .format-select-menu {
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+  }
 }
 

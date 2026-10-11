@@ -233,6 +233,41 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public String getClipboardText() {
+            final String[] result = {""};
+            final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            mainHandler.post(() -> {
+                try {
+                    android.content.ClipboardManager clipboard = (android.content.ClipboardManager) getSystemService(android.content.Context.CLIPBOARD_SERVICE);
+                    if (clipboard != null && clipboard.hasPrimaryClip() && clipboard.getPrimaryClip().getItemCount() > 0) {
+                        CharSequence text = clipboard.getPrimaryClip().getItemAt(0).getText();
+                        if (text != null) {
+                            result[0] = text.toString();
+                        }
+                    }
+                } catch (Exception ignored) {
+                } finally {
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await(600, java.util.concurrent.TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ignored) {}
+            return result[0];
+        }
+
+        @JavascriptInterface
+        public void cancelDownload() {
+            executor.execute(() -> {
+                try {
+                    Python py = Python.getInstance();
+                    PyObject module = py.getModule("droply_engine");
+                    module.callAttr("cancel_active_download");
+                } catch (Exception ignored) {}
+            });
+        }
+
+        @JavascriptInterface
         public void openDownloadFolder() {
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW);

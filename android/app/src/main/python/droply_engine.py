@@ -7,8 +7,21 @@ import os
 import sys
 import json
 import re
+import shutil
 from typing import Dict, Any, Callable, Optional
 import yt_dlp
+
+# Global cancellation flag for active Android download
+_is_cancelled = False
+
+
+def cancel_active_download():
+    global _is_cancelled
+    _is_cancelled = True
+
+
+def has_ffmpeg() -> bool:
+    return shutil.which('ffmpeg') is not None
 
 
 def sanitize_filename(name: str) -> str:
@@ -53,48 +66,91 @@ def analyze_url(url: str) -> str:
             if not info:
                 return json.dumps({"error": "No media information could be extracted."})
 
-            formats_list = []
-            audio_formats_list = []
+            formats_dict = {}
             raw_formats = info.get("formats", [])
+            duration = info.get("duration") or 0
 
-            # Video formats
-            seen_res = set()
             for f in raw_formats:
                 height = f.get("height")
                 has_video = f.get("vcodec") != "none" and bool(f.get("vcodec"))
-                if has_video and height:
+                if has_video and height and height >= 144:
                     res_key = f"{height}p"
-                    if res_key not in seen_res:
-                        seen_res.add(res_key)
-                        formats_list.append({
+                    filesize = f.get("filesize") or f.get("filesize_approx")
+                    # If filesize is missing, calculate estimate from tbr or duration
+                    if not filesize and duration > 0 and f.get("tbr"):
+                        filesize = int((f.get("tbr") * 1024 / 8) * duration)
+
+                    # Prefer formats with both audio and video or higher bitrate
+                    existing = formats_dict.get(height)
+                    if not existing or (f.get("acodec") != "none" and existing.get("has_audio") is False):
+                        formats_dict[height] = {
                             "format_id": f.get("format_id"),
+                            "height": height,
                             "ext": f.get("ext", "mp4"),
                             "resolution": res_key,
                             "label": f"{res_key} HD" if height >= 720 else f"{res_key}",
-                            "filesize_approx": f.get("filesize") or f.get("filesize_approx") or 0,
-                            "filesize_str": format_bytes(f.get("filesize") or f.get("filesize_approx")),
+                            "filesize_approx": filesize or 0,
+                            "filesize_str": format_bytes(filesize) if filesize else "Standard",
                             "has_video": True,
-                            "has_audio": f.get("acodec") != "none"
-                        })
+                            "has_audio": f.get("acodec") != "none" and bool(f.get("acodec"))
+                        }
+
+            # Sort descending by resolution (highest quality first)
+            sorted_heights = sorted(formats_dict.keys(), reverse=True)
+            formats_list = []
+
+            # Add "Best Quality (Auto)" at the top
+            formats_list.append({
+                "format_id": "best",
+                "height": 9999,
+                "ext": "mp4",
+                "resolution": "Best Auto",
+                "label": "Best Available (Auto)",
+                "filesize_approx": 0,
+                "filesize_str": "Adaptive Full Quality",
+                "has_video": True,
+                "has_audio": True
+            })
+
+            for h in sorted_heights:
+                formats_list.append(formats_dict[h])
 
             # Preset audio formats
-            audio_presets = [
-                {"id": "mp3", "label": "MP3 High Quality (320k)", "ext": "mp3"},
-                {"id": "m4a", "label": "Apple AAC (M4A)", "ext": "m4a"},
-                {"id": "wav", "label": "Lossless Audio (WAV)", "ext": "wav"}
-            ]
-            for ap in audio_presets:
-                audio_formats_list.append({
-                    "format_id": ap["id"],
-                    "ext": ap["ext"],
+            audio_formats_list = [
+                {
+                    "format_id": "bestaudio",
+                    "ext": "m4a",
                     "resolution": "Audio Only",
-                    "label": ap["label"],
-                    "filesize_approx": 0,
-                    "filesize_str": "Dynamic",
+                    "label": "M4A High Quality (Default)",
+                    "filesize_approx": int((128 * 1024 / 8) * duration) if duration > 0 else 0,
+                    "filesize_str": format_bytes(int((128 * 1024 / 8) * duration)) if duration > 0 else "High Quality",
                     "has_video": False,
                     "has_audio": True,
                     "is_audio_only": True
-                })
+                },
+                {
+                    "format_id": "mp3",
+                    "ext": "mp3",
+                    "resolution": "Audio Only",
+                    "label": "MP3 Universal Audio",
+                    "filesize_approx": int((192 * 1024 / 8) * duration) if duration > 0 else 0,
+                    "filesize_str": format_bytes(int((192 * 1024 / 8) * duration)) if duration > 0 else "HQ 320k",
+                    "has_video": False,
+                    "has_audio": True,
+                    "is_audio_only": True
+                },
+                {
+                    "format_id": "wav",
+                    "ext": "wav",
+                    "resolution": "Audio Only",
+                    "label": "Lossless WAV Audio",
+                    "filesize_approx": 0,
+                    "filesize_str": "Uncompressed",
+                    "has_video": False,
+                    "has_audio": True,
+                    "is_audio_only": True
+                }
+            ]
 
             result = {
                 "id": info.get("id", ""),
@@ -102,8 +158,8 @@ def analyze_url(url: str) -> str:
                 "title": info.get("title", "Untitled Media"),
                 "platform": info.get("extractor_key", "Web Media"),
                 "uploader": info.get("uploader", "Unknown Creator"),
-                "duration": info.get("duration", 0),
-                "duration_str": format_seconds(info.get("duration", 0)),
+                "duration": duration,
+                "duration_str": format_seconds(duration),
                 "thumbnail": info.get("thumbnail", ""),
                 "formats": formats_list,
                 "audio_formats": audio_formats_list
@@ -117,10 +173,17 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
     """
     Executes download into output_dir and reports progress via callback_obj.
     """
+    global _is_cancelled
+    _is_cancelled = False
+
     os.makedirs(output_dir, exist_ok=True)
     out_tmpl = os.path.join(output_dir, '%(title)s.%(ext)s')
 
     def hook(d):
+        global _is_cancelled
+        if _is_cancelled:
+            raise Exception("Download cancelled by user.")
+
         if callback_obj and d.get('status') == 'downloading':
             total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
             downloaded = d.get('downloaded_bytes') or 0
@@ -130,6 +193,7 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
 
             data = {
                 "status": "downloading",
+                "percent": round(pct, 1),
                 "progress_percent": round(pct, 1),
                 "downloaded_bytes": downloaded,
                 "total_bytes": total,
@@ -151,26 +215,52 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         'no_warnings': True,
     }
 
+    ffmpeg_available = has_ffmpeg()
+
     if is_audio:
         ydl_opts['format'] = 'bestaudio/best'
-        ydl_opts['postprocessors'] = [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': audio_format or 'mp3',
-            'preferredquality': '320',
-        }]
+        if ffmpeg_available:
+            ydl_opts['postprocessors'] = [{
+                'key': 'FFmpegExtractAudio',
+                'preferredcodec': audio_format or 'mp3',
+                'preferredquality': '320',
+            }]
     else:
-        if format_id and format_id != "bestvideo+bestaudio/best":
-            ydl_opts['format'] = f"{format_id}+bestaudio/best"
+        # Video download
+        if not format_id or format_id == "best":
+            # Adaptive best format: prioritize single merged stream if ffmpeg not available
+            if ffmpeg_available:
+                ydl_opts['format'] = 'bestvideo+bestaudio/best'
+            else:
+                ydl_opts['format'] = 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio/best'
         else:
-            ydl_opts['format'] = 'bestvideo+bestaudio/best'
+            if ffmpeg_available:
+                ydl_opts['format'] = f"{format_id}+bestaudio/best"
+            else:
+                # Without ffmpeg, attempt best single stream for requested quality or best available
+                ydl_opts['format'] = f"{format_id}[acodec!=none]/best[height<={format_id}]/best"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             res = ydl.download([url])
             if callback_obj:
-                callback_obj.onComplete(json.dumps({"status": "completed", "code": res}))
+                callback_obj.onComplete(json.dumps({
+                    "status": "completed",
+                    "code": res,
+                    "title": title or "Downloaded Media",
+                    "file_path": output_dir,
+                    "percent": 100.0,
+                    "progress_percent": 100.0
+                }))
             return json.dumps({"status": "completed", "code": res})
     except Exception as e:
+        err_msg = str(e)
+        if "cancelled" in err_msg.lower():
+            err_msg = "Download cancelled by user."
         if callback_obj:
-            callback_obj.onError(json.dumps({"status": "error", "error": str(e)}))
-        return json.dumps({"status": "error", "error": str(e)})
+            callback_obj.onError(json.dumps({
+                "status": "error",
+                "error": err_msg,
+                "error_friendly": err_msg
+            }))
+        return json.dumps({"status": "error", "error": err_msg})

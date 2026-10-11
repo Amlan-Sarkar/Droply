@@ -1,5 +1,6 @@
 /**
  * Droply Client API & WebSocket Manager
+ * Full desktop server bridge + native mobile persistent client engine
  */
 
 class DroplyAPI {
@@ -7,6 +8,8 @@ class DroplyAPI {
     this.baseUrl = window.location.origin;
     this.ws = null;
     this.listeners = {};
+    this.activeMobileTask = null;
+    this.isProcessingMobileQueue = false;
     this.initWebSocket();
   }
 
@@ -29,48 +32,135 @@ class DroplyAPI {
            Boolean(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.DroplyIOS);
   }
 
-  // ---------------- WEBSOCKET BRIDGE ----------------
+  // ---------------- MOBILE LOCAL STORAGE HELPERS ----------------
+  getMobileHistory() {
+    try {
+      return JSON.parse(localStorage.getItem('droply_mobile_history') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  saveMobileHistory(history) {
+    try {
+      localStorage.setItem('droply_mobile_history', JSON.stringify(history.slice(0, 100)));
+    } catch (e) {}
+  }
+
+  addMobileHistoryItem(item) {
+    const list = this.getMobileHistory();
+    const existingIdx = list.findIndex(h => h.id === item.id || (h.url && h.url === item.url && h.title === item.title));
+    if (existingIdx >= 0) {
+      list[existingIdx] = { ...list[existingIdx], ...item };
+    } else {
+      list.unshift(item);
+    }
+    this.saveMobileHistory(list);
+  }
+
+  deleteMobileHistoryItem(id) {
+    const list = this.getMobileHistory().filter(h => h.id !== id);
+    this.saveMobileHistory(list);
+  }
+
+  getMobileQueue() {
+    try {
+      return JSON.parse(localStorage.getItem('droply_mobile_queue') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  saveMobileQueue(queue) {
+    try {
+      localStorage.setItem('droply_mobile_queue', JSON.stringify(queue));
+    } catch (e) {}
+  }
+
+  updateMobileQueueTask(taskId, updates) {
+    const queue = this.getMobileQueue();
+    const idx = queue.findIndex(t => t.id === taskId);
+    if (idx >= 0) {
+      queue[idx] = { ...queue[idx], ...updates };
+      this.saveMobileQueue(queue);
+      this.emit('task_updated', { task: queue[idx] });
+    }
+  }
+
+  // ---------------- WEBSOCKET & NATIVE MOBILE BRIDGE ----------------
   initWebSocket() {
-    if (window.location.protocol === 'file:' || this.isNativeMobile()) {
+    if (window.location.protocol === 'file:' || this.isNativeMobile() || window.location.hostname === 'appassets.androidplatform.net') {
       // Setup Native Mobile Event Bridge Listeners
       window.addEventListener('droply_progress', (e) => {
-        const d = e.detail;
-        this.emit("task_progress", {
-          task: {
-            id: 'native_active',
-            status: d.status || 'downloading',
-            progress_percent: d.progress_percent || 0,
-            downloaded_bytes: d.downloaded_bytes || 0,
-            total_bytes: d.total_bytes || 0,
-            downloaded_str: d.downloaded_str || '0 B',
-            total_str: d.total_str || '0 B',
-            speed_str: d.speed_str || '0 B/s',
-            eta_str: d.eta_str || '--:--'
-          }
-        });
+        const d = e.detail || {};
+        const pct = typeof d.percent !== 'undefined' ? d.percent : (d.progress_percent || 0);
+        const taskPayload = {
+          id: d.id || (this.activeMobileTask ? this.activeMobileTask.id : 'native_active'),
+          status: d.status || 'downloading',
+          percent: pct,
+          progress_percent: pct,
+          downloaded_bytes: d.downloaded_bytes || 0,
+          total_bytes: d.total_bytes || 0,
+          downloaded_str: d.downloaded_str || '0 B',
+          total_str: d.total_str || '0 B',
+          speed_str: d.speed_str || '0 B/s',
+          eta_str: d.eta_str || '--:--'
+        };
+
+        if (this.activeMobileTask) {
+          this.activeMobileTask = { ...this.activeMobileTask, ...taskPayload };
+          this.updateMobileQueueTask(this.activeMobileTask.id, taskPayload);
+        }
+
+        this.emit("task_progress", { task: taskPayload });
       });
 
       window.addEventListener('droply_completed', (e) => {
-        this.emit("task_completed", {
-          task: {
-            id: 'native_active',
-            status: 'completed',
-            file_path: 'Downloads/Droply',
-            progress_percent: 100
-          }
-        });
+        const d = e.detail || {};
+        const taskId = d.id || (this.activeMobileTask ? this.activeMobileTask.id : 'native_active');
+        const title = d.title || (this.activeMobileTask ? this.activeMobileTask.title : 'Downloaded Media');
+        const completedTask = {
+          id: taskId,
+          title: title,
+          status: 'completed',
+          file_path: d.file_path || 'Downloads/Droply',
+          download_dir: 'Downloads/Droply',
+          percent: 100,
+          progress_percent: 100,
+          timestamp: new Date().toISOString()
+        };
+
+        this.addMobileHistoryItem(completedTask);
+        if (this.activeMobileTask) {
+          this.updateMobileQueueTask(taskId, { status: 'completed', percent: 100 });
+          this.activeMobileTask = null;
+        }
+
+        this.emit("task_completed", { task: completedTask });
+        this.processNextMobileQueueItem();
       });
 
       window.addEventListener('droply_error', (e) => {
-        const d = e.detail;
-        this.emit("task_error", {
-          task: {
-            id: 'native_active',
-            status: 'error',
-            error_message: d.error || 'Download failed on device.'
-          }
-        });
+        const d = e.detail || {};
+        const taskId = d.id || (this.activeMobileTask ? this.activeMobileTask.id : 'native_active');
+        const errTask = {
+          id: taskId,
+          title: this.activeMobileTask ? this.activeMobileTask.title : 'Media',
+          status: 'failed',
+          error_friendly: d.error || d.error_friendly || 'Download failed on device.',
+          error_technical: d.error || 'Check that media URL is accessible.'
+        };
+
+        if (this.activeMobileTask) {
+          this.updateMobileQueueTask(taskId, { status: 'failed', error_friendly: errTask.error_friendly });
+          this.activeMobileTask = null;
+        }
+
+        this.emit("task_failed", { task: errTask });
+        this.emit("task_error", { task: errTask });
+        this.processNextMobileQueueItem();
       });
+
       return;
     }
 
@@ -81,7 +171,6 @@ class DroplyAPI {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log("Droply WebSocket connected");
         this.emit("ws_connected");
       };
 
@@ -96,7 +185,6 @@ class DroplyAPI {
       };
 
       this.ws.onclose = () => {
-        console.log("Droply WebSocket disconnected, retrying in 2s...");
         setTimeout(() => this.initWebSocket(), 2000);
       };
 
@@ -104,8 +192,48 @@ class DroplyAPI {
         console.warn("WebSocket error:", err);
       };
     } catch (e) {
-      console.error("WS init exception:", e);
       setTimeout(() => this.initWebSocket(), 3000);
+    }
+  }
+
+  // ---------------- PROCESS MOBILE BATCH QUEUE ----------------
+  async processNextMobileQueueItem() {
+    if (!this.isNativeMobile() || this.isProcessingMobileQueue || this.activeMobileTask) {
+      return;
+    }
+
+    const queue = this.getMobileQueue();
+    const nextTask = queue.find(t => t.status === 'pending');
+    if (!nextTask) return;
+
+    this.isProcessingMobileQueue = true;
+    this.activeMobileTask = nextTask;
+    this.updateMobileQueueTask(nextTask.id, { status: 'downloading' });
+
+    try {
+      if (typeof window.DroplyAndroid !== 'undefined') {
+        window.DroplyAndroid.startDownload(
+          nextTask.url,
+          nextTask.format_id || 'best',
+          Boolean(nextTask.is_audio),
+          nextTask.audio_format || 'mp3',
+          nextTask.title || ''
+        );
+      } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.DroplyIOS) {
+        window.webkit.messageHandlers.DroplyIOS.postMessage({
+          action: 'download',
+          url: nextTask.url,
+          format_id: nextTask.format_id || 'best',
+          is_audio: Boolean(nextTask.is_audio),
+          audio_format: nextTask.audio_format || 'mp3',
+          title: nextTask.title || ''
+        });
+      }
+    } catch (e) {
+      this.updateMobileQueueTask(nextTask.id, { status: 'failed', error_friendly: e.message });
+      this.activeMobileTask = null;
+    } finally {
+      this.isProcessingMobileQueue = false;
     }
   }
 
@@ -124,18 +252,21 @@ class DroplyAPI {
     return data;
   }
 
+  detectPlatformQuick(url) {
+    const u = (url || '').toLowerCase();
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'YouTube';
+    if (u.includes('tiktok.com')) return 'TikTok';
+    if (u.includes('twitter.com') || u.includes('x.com')) return 'Twitter / X';
+    if (u.includes('instagram.com')) return 'Instagram';
+    if (u.includes('reddit.com')) return 'Reddit';
+    if (u.includes('vimeo.com')) return 'Vimeo';
+    if (u.includes('soundcloud.com')) return 'SoundCloud';
+    return 'Web Media';
+  }
+
   async detectPlatform(url) {
     if (this.isNativeMobile()) {
-      const u = url.toLowerCase();
-      let platform = 'Unknown';
-      if (u.includes('youtube.com') || u.includes('youtu.be')) platform = 'YouTube';
-      else if (u.includes('tiktok.com')) platform = 'TikTok';
-      else if (u.includes('twitter.com') || u.includes('x.com')) platform = 'Twitter / X';
-      else if (u.includes('instagram.com')) platform = 'Instagram';
-      else if (u.includes('reddit.com')) platform = 'Reddit';
-      else if (u.includes('vimeo.com')) platform = 'Vimeo';
-      else if (u.includes('soundcloud.com')) platform = 'SoundCloud';
-      return { valid: true, platform };
+      return { valid: true, platform: this.detectPlatformQuick(url) };
     }
     return this.request('/api/detect-platform', {
       method: 'POST',
@@ -185,6 +316,18 @@ class DroplyAPI {
   async startDownload(payload) {
     // Native Android Engine
     if (typeof window.DroplyAndroid !== 'undefined') {
+      const taskId = 'native_active';
+      this.activeMobileTask = {
+        id: taskId,
+        title: payload.title || 'Downloading media...',
+        url: payload.url,
+        status: 'downloading',
+        percent: 0,
+        format_id: payload.format_id || 'best',
+        is_audio: Boolean(payload.is_audio),
+        audio_format: payload.audio_format || 'mp3'
+      };
+
       window.DroplyAndroid.startDownload(
         payload.url,
         payload.format_id || 'best',
@@ -192,17 +335,23 @@ class DroplyAPI {
         payload.audio_format || 'mp3',
         payload.title || ''
       );
-      return {
-        id: 'native_active',
-        status: 'downloading',
-        title: payload.title || 'Downloading media...',
-        url: payload.url,
-        progress_percent: 0
-      };
+      return this.activeMobileTask;
     }
 
     // Native iOS Engine
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.DroplyIOS) {
+      const taskId = 'native_active';
+      this.activeMobileTask = {
+        id: taskId,
+        title: payload.title || 'Downloading media...',
+        url: payload.url,
+        status: 'downloading',
+        percent: 0,
+        format_id: payload.format_id || 'best',
+        is_audio: Boolean(payload.is_audio),
+        audio_format: payload.audio_format || 'mp3'
+      };
+
       window.webkit.messageHandlers.DroplyIOS.postMessage({
         action: 'download',
         url: payload.url,
@@ -211,13 +360,7 @@ class DroplyAPI {
         audio_format: payload.audio_format || 'mp3',
         title: payload.title || ''
       });
-      return {
-        id: 'native_active',
-        status: 'downloading',
-        title: payload.title || 'Downloading media...',
-        url: payload.url,
-        progress_percent: 0
-      };
+      return this.activeMobileTask;
     }
 
     return this.request('/api/download', {
@@ -231,8 +374,9 @@ class DroplyAPI {
       const urls = text.match(/https?:\/\/[^\s,;"'<>]+/g) || [];
       const unique = Array.from(new Set(urls));
       return {
+        count: unique.length,
         total: unique.length,
-        items: unique.map(u => ({ url: u, platform: 'Web Media' }))
+        items: unique.map(u => ({ url: u, platform: this.detectPlatformQuick(u) }))
       };
     }
     return this.request('/api/batch/parse', {
@@ -243,8 +387,38 @@ class DroplyAPI {
 
   async batchEnqueue(payload) {
     if (this.isNativeMobile()) {
-      return { enqueued: payload.urls.length, tasks: [] };
+      const queue = this.getMobileQueue();
+      const newTasks = [];
+      const urls = payload.urls || [];
+
+      for (const u of urls) {
+        const task = {
+          id: 'mob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          url: u,
+          title: u.split('?')[0].split('/').pop() || 'Queued Media',
+          status: 'pending',
+          percent: 0,
+          is_audio: Boolean(payload.is_audio),
+          format_id: payload.format_id || 'best',
+          format_label: payload.format_label || 'Best Quality',
+          audio_format: payload.audio_format || 'mp3',
+          output_dir: payload.output_dir || 'Downloads/Droply'
+        };
+        queue.push(task);
+        newTasks.push(task);
+        this.emit('task_added', { task });
+      }
+
+      this.saveMobileQueue(queue);
+      this.processNextMobileQueueItem();
+
+      return {
+        count: newTasks.length,
+        enqueued: newTasks.length,
+        tasks: newTasks
+      };
     }
+
     return this.request('/api/batch/enqueue', {
       method: 'POST',
       body: JSON.stringify(payload)
@@ -252,52 +426,103 @@ class DroplyAPI {
   }
 
   async getTasks() {
-    if (this.isNativeMobile()) return [];
+    if (this.isNativeMobile()) {
+      return this.getMobileQueue();
+    }
     return this.request('/api/tasks');
   }
 
   async cancelTask(taskId) {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      if (typeof window.DroplyAndroid !== 'undefined' && window.DroplyAndroid.cancelDownload) {
+        window.DroplyAndroid.cancelDownload();
+      }
+      this.updateMobileQueueTask(taskId, { status: 'cancelled' });
+      if (this.activeMobileTask && this.activeMobileTask.id === taskId) {
+        this.activeMobileTask = null;
+      }
+      return { success: true };
+    }
     return this.request(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
   }
 
   async retryTask(taskId) {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      this.updateMobileQueueTask(taskId, { status: 'pending', percent: 0 });
+      this.processNextMobileQueueItem();
+      return { success: true };
+    }
     return this.request(`/api/tasks/${taskId}/retry`, { method: 'POST' });
   }
 
   async removeTask(taskId) {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      const q = this.getMobileQueue().filter(t => t.id !== taskId);
+      this.saveMobileQueue(q);
+      if (this.activeMobileTask && this.activeMobileTask.id === taskId) {
+        this.cancelTask(taskId);
+      }
+      return { success: true };
+    }
     return this.request(`/api/tasks/${taskId}`, { method: 'DELETE' });
   }
 
   async clearFinishedTasks() {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      const q = this.getMobileQueue().filter(t => t.status === 'pending' || t.status === 'downloading');
+      this.saveMobileQueue(q);
+      return { success: true };
+    }
     return this.request('/api/tasks/clear-finished', { method: 'POST' });
   }
 
   async getHistory() {
-    if (this.isNativeMobile()) return [];
+    if (this.isNativeMobile()) {
+      return this.getMobileHistory();
+    }
     return this.request('/api/history');
   }
 
   async deleteHistoryItem(id, deleteFile = false) {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      this.deleteMobileHistoryItem(id);
+      return { success: true };
+    }
     return this.request(`/api/history/${id}?delete_file=${deleteFile}`, { method: 'DELETE' });
   }
 
   async clearHistory() {
-    if (this.isNativeMobile()) return { success: true };
+    if (this.isNativeMobile()) {
+      localStorage.removeItem('droply_mobile_history');
+      return { success: true };
+    }
     return this.request('/api/history/clear', { method: 'POST' });
   }
 
   async getSettings() {
-    if (this.isNativeMobile()) return { download_dir: 'Downloads/Droply' };
+    if (this.isNativeMobile()) {
+      return {
+        download_dir: 'Downloads/Droply',
+        video_quality: 'best',
+        audio_codec: 'mp3',
+        concurrent_downloads: 1,
+        theme: localStorage.getItem('droply_theme') || 'dark',
+        notifications: true
+      };
+    }
     return this.request('/api/settings');
   }
 
   async updateSettings(settings) {
-    if (this.isNativeMobile()) return settings;
+    if (this.isNativeMobile()) {
+      if (settings && settings.theme) {
+        localStorage.setItem('droply_theme', settings.theme);
+      }
+      return {
+        download_dir: 'Downloads/Droply',
+        ...settings
+      };
+    }
     return this.request('/api/settings', {
       method: 'POST',
       body: JSON.stringify({ settings })
@@ -329,6 +554,9 @@ class DroplyAPI {
 
   async revealFile(filePath) {
     if (this.isNativeMobile()) {
+      if (typeof window.DroplyAndroid !== 'undefined') {
+        window.DroplyAndroid.openDownloadFolder();
+      }
       return { success: true };
     }
     return this.request('/api/reveal-file', {
@@ -339,6 +567,9 @@ class DroplyAPI {
 
   async openFile(filePath) {
     if (this.isNativeMobile()) {
+      if (typeof window.DroplyAndroid !== 'undefined') {
+        window.DroplyAndroid.openDownloadFolder();
+      }
       return { success: true };
     }
     return this.request('/api/open-file', {
@@ -351,8 +582,8 @@ class DroplyAPI {
     if (this.isNativeMobile()) {
       return {
         ffmpeg_ready: true,
-        ffmpeg_path: 'Native Mobile FFmpegKit',
-        ytdlp_version: 'Embedded Mobile',
+        ffmpeg_path: 'Native Mobile Engine',
+        ytdlp_version: 'Embedded Mobile yt-dlp',
         default_dir: 'Downloads/Droply',
         python_version: '3.11'
       };
@@ -362,4 +593,3 @@ class DroplyAPI {
 }
 
 const api = new DroplyAPI();
-

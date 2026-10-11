@@ -95,23 +95,23 @@ class OmniFetchApp {
 
     // Paste button
     btnPaste.addEventListener('click', async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        if (text) {
-          urlInput.value = text.trim();
-          btnClear.style.display = 'flex';
-          this.instantDetectPlatform(text.trim());
-          btnAnalyze.click();
-        }
-      } catch (err) {
-        // Fallback prompt if clipboard permission denied
-        const text = prompt("Paste your media link here:");
-        if (text) {
-          urlInput.value = text.trim();
-          btnClear.style.display = 'flex';
-          this.instantDetectPlatform(text.trim());
-          btnAnalyze.click();
-        }
+      let text = '';
+      if (window.DroplyAndroid && window.DroplyAndroid.getClipboardText) {
+        text = window.DroplyAndroid.getClipboardText();
+      }
+      if (!text && navigator.clipboard && navigator.clipboard.readText) {
+        try {
+          text = await navigator.clipboard.readText();
+        } catch (err) {}
+      }
+      if (!text) {
+        text = prompt("Paste your media link here:");
+      }
+      if (text && text.trim()) {
+        urlInput.value = text.trim();
+        btnClear.style.display = 'flex';
+        this.instantDetectPlatform(text.trim());
+        btnAnalyze.click();
       }
     });
 
@@ -189,8 +189,13 @@ class OmniFetchApp {
     btnCancelSingle.addEventListener('click', async () => {
       if (this.activeSingleTaskId) {
         await api.cancelTask(this.activeSingleTaskId);
-        Components.showToast('Download cancelled.', 'info');
+        this.activeSingleTaskId = null;
       }
+      document.getElementById('single-download-card').style.display = 'none';
+      if (this.currentMedia) {
+        document.getElementById('media-card').style.display = 'block';
+      }
+      Components.showToast('Download cancelled.', 'info');
     });
 
     // Success actions
@@ -416,7 +421,8 @@ class OmniFetchApp {
         }
         try {
           const res = await api.batchParse(text);
-          parsedInfo.textContent = `${res.count} valid URL${res.count === 1 ? '' : 's'} identified`;
+          const c = typeof res.count !== 'undefined' ? res.count : (res.total || (res.items ? res.items.length : 0));
+          parsedInfo.textContent = `${c} valid URL${c === 1 ? '' : 's'} identified`;
         } catch (e) {
           parsedInfo.textContent = 'Parsing...';
         }
@@ -427,6 +433,23 @@ class OmniFetchApp {
       textarea.value = '';
       parsedInfo.textContent = '0 URLs ready';
     });
+
+    const btnPasteBatch = document.getElementById('btn-paste-batch-input');
+    if (btnPasteBatch) {
+      btnPasteBatch.addEventListener('click', async () => {
+        let text = '';
+        if (window.DroplyAndroid && window.DroplyAndroid.getClipboardText) {
+          text = window.DroplyAndroid.getClipboardText();
+        }
+        if (!text && navigator.clipboard && navigator.clipboard.readText) {
+          try { text = await navigator.clipboard.readText(); } catch (e) {}
+        }
+        if (text) {
+          textarea.value = (textarea.value ? textarea.value + '\n' : '') + text.trim();
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+      });
+    }
 
     btnEnqueue.addEventListener('click', async () => {
       const text = textarea.value.trim();
@@ -459,7 +482,8 @@ class OmniFetchApp {
 
       try {
         const parsed = await api.batchParse(text);
-        if (parsed.count === 0) {
+        const count = typeof parsed.count !== 'undefined' ? parsed.count : (parsed.total || (parsed.items ? parsed.items.length : 0));
+        if (count === 0) {
           Components.showToast('No valid URLs found in the text.', 'error');
           return;
         }
@@ -474,7 +498,8 @@ class OmniFetchApp {
           output_dir: this.settings.download_dir
         });
 
-        Components.showToast(`Enqueued ${res.count} downloads into queue!`, 'success');
+        const enqueuedCount = typeof res.count !== 'undefined' ? res.count : (res.enqueued || (res.tasks ? res.tasks.length : urls.length));
+        Components.showToast(`Enqueued ${enqueuedCount} downloads into queue!`, 'success');
         textarea.value = '';
         parsedInfo.textContent = '0 URLs ready';
         await this.loadTasks();
@@ -635,7 +660,7 @@ class OmniFetchApp {
       let completedCount = 0;
       items.forEach(it => {
         if (it.status === 'completed') completedCount++;
-        totalBytes += (it.file_size || 0);
+        totalBytes += (it.file_size || it.filesize || it.downloaded_bytes || 0);
       });
 
       document.getElementById('hist-stat-total').textContent = items.length;
@@ -849,9 +874,10 @@ class OmniFetchApp {
     const metricSpeed = document.getElementById('single-metric-speed');
     const metricEta = document.getElementById('single-metric-eta');
 
-    fill.style.width = `${task.percent || 0}%`;
-    badge.textContent = task.status === 'processing' ? 'Finalizing' : 'Downloading';
-    metricPercent.textContent = `${task.percent ? task.percent.toFixed(1) : '0.0'}%`;
+    const pct = typeof task.percent !== 'undefined' ? task.percent : (task.progress_percent || 0);
+    fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;
+    badge.textContent = pct >= 100 ? 'Completed' : (task.status === 'processing' ? 'Finalizing' : 'Downloading');
+    metricPercent.textContent = `${pct.toFixed(1)}%`;
     metricSize.textContent = `${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}`;
     metricSpeed.textContent = task.speed_str || '-- KB/s';
     metricEta.textContent = task.eta_str || '--:--';
@@ -869,6 +895,8 @@ class OmniFetchApp {
 
     successCard.style.display = 'flex';
     Components.showToast('Download completed successfully!', 'success');
+    this.loadHistory();
+    this.updateQueueBadge();
   }
 }
 

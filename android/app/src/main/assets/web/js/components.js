@@ -52,14 +52,39 @@ const Components = {
     if (!container) return;
     container.innerHTML = '';
 
+    // Remove existing dropdown if any
+    const existingDropdown = container.parentElement.querySelector('.video-format-dropdown-wrap');
+    if (existingDropdown) existingDropdown.remove();
+
     if (!formats || formats.length === 0) {
       container.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 13px;">Default source video stream will be downloaded.</div>`;
       return;
     }
 
+    // Auto-select the top format (highest quality) if none selected
+    if (!selectedFormatId && formats.length > 0) {
+      onSelect(formats[0]);
+    }
+
+    // Create dropdown selector for mobile & compact view
+    const dropWrap = document.createElement('div');
+    dropWrap.className = 'video-format-dropdown-wrap';
+    dropWrap.style.marginBottom = '10px';
+
+    const select = document.createElement('select');
+    select.className = 'custom-select format-select-menu';
+    select.style.width = '100%';
+
     formats.forEach((fmt, index) => {
-      const chip = document.createElement('div');
       const isSelected = selectedFormatId ? (fmt.format_id === selectedFormatId) : (index === 0);
+
+      const opt = document.createElement('option');
+      opt.value = fmt.format_id;
+      opt.textContent = `${fmt.label || fmt.resolution} • ${fmt.filesize_str || 'Standard'}`;
+      opt.selected = isSelected;
+      select.appendChild(opt);
+
+      const chip = document.createElement('div');
       chip.className = `format-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
@@ -74,11 +99,25 @@ const Components = {
       chip.addEventListener('click', () => {
         container.querySelectorAll('.format-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
+        select.value = fmt.format_id;
         onSelect(fmt);
       });
 
       container.appendChild(chip);
     });
+
+    select.addEventListener('change', (e) => {
+      const chosen = formats.find(f => f.format_id === e.target.value);
+      if (chosen) {
+        container.querySelectorAll('.format-chip').forEach(c => {
+          c.classList.toggle('selected', c.getAttribute('data-fid') === chosen.format_id);
+        });
+        onSelect(chosen);
+      }
+    });
+
+    dropWrap.appendChild(select);
+    container.parentElement.insertBefore(dropWrap, container);
   },
 
   // Render Audio Codec Chips
@@ -87,9 +126,33 @@ const Components = {
     if (!container) return;
     container.innerHTML = '';
 
+    const existingDropdown = container.parentElement.querySelector('.audio-format-dropdown-wrap');
+    if (existingDropdown) existingDropdown.remove();
+
+    if (!formats || formats.length === 0) return;
+
+    if (!selectedFormatId && formats.length > 0) {
+      onSelect(formats[0]);
+    }
+
+    const dropWrap = document.createElement('div');
+    dropWrap.className = 'audio-format-dropdown-wrap';
+    dropWrap.style.marginBottom = '10px';
+
+    const select = document.createElement('select');
+    select.className = 'custom-select format-select-menu';
+    select.style.width = '100%';
+
     formats.forEach((fmt, index) => {
-      const chip = document.createElement('div');
       const isSelected = selectedFormatId ? (fmt.format_id === selectedFormatId) : (index === 0);
+
+      const opt = document.createElement('option');
+      opt.value = fmt.format_id;
+      opt.textContent = `${fmt.label} (${fmt.ext.toUpperCase()})`;
+      opt.selected = isSelected;
+      select.appendChild(opt);
+
+      const chip = document.createElement('div');
       chip.className = `format-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
@@ -104,10 +167,26 @@ const Components = {
       chip.addEventListener('click', () => {
         container.querySelectorAll('.format-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
+        select.value = fmt.format_id;
         onSelect(fmt);
       });
 
       container.appendChild(chip);
+    });
+
+    select.addEventListener('change', (e) => {
+      const chosen = formats.find(f => f.format_id === e.target.value);
+      if (chosen) {
+        container.querySelectorAll('.format-chip').forEach(c => {
+          c.classList.toggle('selected', c.getAttribute('data-fid') === chosen.format_id);
+        });
+        onSelect(chosen);
+      }
+    });
+
+    dropWrap.appendChild(select);
+    container.parentElement.insertBefore(dropWrap, container);
+  },
     });
   },
 
