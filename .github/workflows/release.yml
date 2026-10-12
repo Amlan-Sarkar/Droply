@@ -1,4 +1,4 @@
-name: Build and Publish Multi-Platform Releases
+name: Build and Publish Releases (Windows & Android)
 
 on:
   push:
@@ -10,23 +10,10 @@ permissions:
   contents: write
 
 jobs:
-  # ---------------- 1. DESKTOP BUILDS (Windows, macOS, Linux) ----------------
-  build-desktop:
-    name: Build Desktop (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            artifact_name: Droply-Windows-x64.zip
-            asset_path: Droply-Windows-x64.zip
-          - os: macos-latest
-            artifact_name: Droply-macOS.zip
-            asset_path: Droply-macOS.zip
-          - os: ubuntu-latest
-            artifact_name: Droply-Linux-x86_64.tar.gz
-            asset_path: Droply-Linux-x86_64.tar.gz
+  # ---------------- 1. WINDOWS STANDALONE BUILD (STABLE) ----------------
+  build-windows:
+    name: Build Windows (x64)
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Repository
@@ -38,42 +25,23 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install System Dependencies (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || true
-
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
       - name: Build Standalone (Windows)
-        if: runner.os == 'Windows'
         run: |
           pyinstaller --noconfirm --name Droply --onedir --icon Droply.ico --add-data "web;web" --add-data "Droply.ico;." --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
           Compress-Archive -Path dist/Droply -DestinationPath Droply-Windows-x64.zip -Force
 
-      - name: Build Standalone (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          pyinstaller --noconfirm --name Droply --onedir --add-data "web:web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
-          cd dist && zip -r ../Droply-macOS.zip Droply && cd ..
-
-      - name: Build Standalone (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          pyinstaller --noconfirm --name Droply --onedir --add-data "web:web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
-          cd dist && tar -czf ../Droply-Linux-x86_64.tar.gz Droply && cd ..
-
-      - name: Upload Desktop Artifact
+      - name: Upload Windows Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.asset_path }}
+          name: Droply-Windows-x64.zip
+          path: Droply-Windows-x64.zip
 
-  # ---------------- 2. ANDROID STANDALONE APK BUILD ----------------
+  # ---------------- 2. ANDROID STANDALONE APK BUILD (EXPERIMENTAL) ----------------
   build-android:
     name: Build Android (APK)
     runs-on: ubuntu-latest
@@ -137,33 +105,10 @@ jobs:
           name: Droply-Android.apk
           path: Droply-Android.apk
 
-  # ---------------- 3. iOS STANDALONE IPA BUILD ----------------
-  build-ios:
-    name: Build iOS (IPA Sideloadable)
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Build and Package Droply-iOS.ipa
-        run: |
-          cp -r web ios/web
-          chmod +x ios/build_ipa.sh
-          ./ios/build_ipa.sh
-          cp ios/Droply-iOS.ipa ./Droply-iOS.ipa || true
-          ls -lh Droply-iOS.ipa
-
-      - name: Upload iOS IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Droply-iOS.ipa
-          path: Droply-iOS.ipa
-
-  # ---------------- 4. PUBLISH ALL PLATFORMS TO GITHUB RELEASE ----------------
+  # ---------------- 3. PUBLISH TO GITHUB RELEASE ----------------
   publish-release:
     name: Publish Release Assets
-    needs: [build-desktop, build-android, build-ios]
+    needs: [build-windows, build-android]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
 
@@ -181,27 +126,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: release-assets/*
-          name: Droply ${{ github.ref_name }} - Universal Release (PC & Mobile)
+          name: Droply ${{ github.ref_name }} - Windows & Android Release
           body: |
-            ### 💻 PC / Desktop
+            ### 🪟 Windows (Stable)
 
             | Platform | Package | Direct Link |
             | :--- | :--- | :--- |
-            | 🪟 **Windows** (Recommended) | Standalone ZIP | [Download for Windows (x64)](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
-            | 🍎 **macOS** | Universal ZIP | [Download for macOS](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-macOS.zip) |
-            | 🐧 **Linux** | x86_64 Archive | [Download for Linux](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Linux-x86_64.tar.gz) |
+            | 🪟 **Windows 10 / 11** | Standalone ZIP (x64) | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
 
-            *No Python required. Extract and run directly.*
+            *Tested on Windows 11. No Python required. Extract the zip and run `Droply.exe`.*
 
             ---
 
-            ### 📱 Phone / Mobile
+            ### 🤖 Android (Experimental)
 
             | Platform | Package | Direct Link |
             | :--- | :--- | :--- |
-            | 🤖 **Android** | Standalone APK | [Download for Android](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Android.apk) |
-            | 🍏 **iOS** | Sideloadable IPA | [Download for iOS](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-iOS.ipa) |
+            | 🤖 **Android (7.0+)** | Standalone APK | [Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Android.apk) |
 
-            *Runs locally on your phone. Saves media directly to storage & Photos.*
+            > [!WARNING]
+            > **Android is currently experimental:** The Android APK is provided for testing and community validation. Core download flows, storage paths, and UI interactions are under active development and may behave unexpectedly while mobile issues are being resolved.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
