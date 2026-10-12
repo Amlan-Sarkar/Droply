@@ -97,7 +97,7 @@
             <div class="input-header-row">
               <div class="input-title-wrap">
                 <h2>Download Any Media Locally</h2>
-                <p>Paste a video, audio, or social stream link to analyze and download in high definition.</p>
+                <p>Paste a video, audio, playlist, or stream link to analyze and download in high definition.</p>
               </div>
               <!-- Instant Detected Platform Badge -->
               <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
@@ -117,7 +117,7 @@
                 type="text" 
                 id="single-url-input" 
                 class="url-input" 
-                placeholder="Paste a video or media link (e.g., YouTube, X/Twitter, TikTok, Reddit, Vimeo...)" 
+                placeholder="Paste a video, playlist, or media link (e.g. YouTube, Playlists, X/Twitter, TikTok...)" 
                 autocomplete="off"
                 spellcheck="false"
               />
@@ -149,13 +149,17 @@
             <div class="quick-sources-bar">
               <span class="quick-title">Supported Sources:</span>
               <span class="source-chip"><span class="chip-dot yt"></span>YouTube</span>
-              <span class="source-chip"><span class="chip-dot tw"></span>Twitter / X</span>
-              <span class="source-chip"><span class="chip-dot tt"></span>TikTok</span>
-              <span class="source-chip"><span class="chip-dot rd"></span>Reddit</span>
+              <span class="source-chip"><span class="chip-dot fb"></span>Facebook</span>
               <span class="source-chip"><span class="chip-dot ig"></span>Instagram</span>
+              <span class="source-chip"><span class="chip-dot tt"></span>TikTok</span>
+              <span class="source-chip"><span class="chip-dot tw"></span>X / Twitter</span>
+              <span class="source-chip"><span class="chip-dot rd"></span>Reddit</span>
               <span class="source-chip"><span class="chip-dot vm"></span>Vimeo</span>
+              <span class="source-chip"><span class="chip-dot bili"></span>Bilibili</span>
               <span class="source-chip"><span class="chip-dot sc"></span>SoundCloud</span>
+              <span class="source-chip" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.45); color: #c4b5fd; font-weight:600;"><span class="chip-dot pl"></span>Playlists & Albums</span>
               <span class="source-chip"><span class="chip-dot dir"></span>Direct MP4/MP3</span>
+              <span class="source-chip" style="background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.2); color: #94a3b8; font-weight:600;" title="Full yt-dlp engine supporting over 1,800 video, audio, and social stream services">+ 1,800+ More Sites</span>
             </div>
           </div>
 
@@ -393,7 +397,7 @@
             <div class="batch-header-row">
               <div>
                 <h2>Batch Download Queue</h2>
-                <p>Paste multiple video or audio links below. One URL per line or separated by commas.</p>
+                <p>Paste multiple video, audio, or playlist links below. Playlists automatically unpack into their own folders.</p>
               </div>
               <div class="batch-preset-select">
                 <label>Quality Preset:</label>
@@ -410,7 +414,7 @@
             <textarea 
               id="batch-url-textarea" 
               class="batch-textarea" 
-              placeholder="https://www.youtube.com/watch?v=...&#10;https://x.com/status/...&#10;https://vimeo.com/...&#10;https://tiktok.com/@..."></textarea>
+              placeholder="https://www.youtube.com/playlist?list=...&#10;https://www.youtube.com/watch?v=...&#10;https://x.com/status/...&#10;https://vimeo.com/..."></textarea>
 
             <div class="batch-actions-bar">
               <div class="batch-counts-info" id="batch-parsed-info">0 URLs ready</div>

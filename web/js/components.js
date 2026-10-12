@@ -187,8 +187,6 @@ const Components = {
     dropWrap.appendChild(select);
     container.parentElement.insertBefore(dropWrap, container);
   },
-    });
-  },
 
   // Render Single Queue Item Card in Batch View
   renderQueueItem(task) {
@@ -335,6 +333,74 @@ const Components = {
         </button>
       </div>
     `;
+
+    return card;
+  },
+
+  // Render Playlist Preview Card
+  renderPlaylistCard(data, onEnqueueAll, onDownloadAll) {
+    const card = document.createElement('div');
+    card.className = 'playlist-preview-card';
+    card.style.cssText = 'background: rgba(18, 24, 38, 0.85); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); backdrop-filter: blur(12px);';
+
+    const entries = data.playlist_entries || [];
+    const count = data.playlist_count || entries.length;
+    const thumb = data.thumbnail || (entries[0] && entries[0].thumbnail) || '';
+    const saveDir = (data.default_download_dir || 'Downloads/Droply') + '/' + (data.title || 'Playlist');
+
+    let previewRows = '';
+    entries.slice(0, 5).forEach((item, idx) => {
+      previewRows += `
+        <div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="color:#818cf8; font-weight:700; width:22px; font-size:13px;">${idx + 1}</span>
+          <span style="flex:1; color:#f1f5f9; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</span>
+          <span style="color:#94a3b8; font-size:12px;">${item.duration_str || ''}</span>
+        </div>
+      `;
+    });
+    if (entries.length > 5) {
+      previewRows += `
+        <div style="padding:8px 0; text-align:center; color:#a5b4fc; font-size:13px; font-weight:600;">
+          + ${entries.length - 5} more items in playlist
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap;">
+        ${thumb ? `<img src="${thumb}" alt="thumb" style="width:130px; height:80px; object-fit:cover; border-radius:10px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 14px rgba(0,0,0,0.5);" />` : ''}
+        <div style="flex:1; min-width:240px;">
+          <div style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
+            <svg style="width:12px; height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Playlist &bull; ${count} Items
+          </div>
+          <h3 style="margin:0 0 4px 0; color:#fff; font-size:18px; font-weight:700;">${data.title}</h3>
+          <div style="color:#94a3b8; font-size:13px; margin-bottom:12px;">Curated by <span style="color:#e2e8f0; font-weight:600;">${data.uploader || 'Creator'}</span></div>
+          <div style="background:rgba(99, 102, 241, 0.12); border:1px solid rgba(99, 102, 241, 0.25); border-radius:10px; padding:10px 14px; font-size:12.5px; color:#c7d2fe; display:flex; align-items:center; gap:8px;">
+            <svg style="width:18px; height:18px; flex-shrink:0; color:#818cf8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            <span>Creates dedicated folder: <strong style="color:#fff;">${saveDir}</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px; background:rgba(0,0,0,0.25); border-radius:10px; padding:10px 14px;">
+        ${previewRows}
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
+        <button id="btn-playlist-enqueue-all" class="secondary-btn" style="flex:1; min-width:180px; justify-content:center; padding:12px 18px; font-weight:600;">
+          <svg style="width:16px; height:16px; margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add All ${count} to Queue
+        </button>
+        <button id="btn-playlist-download-now" class="primary-btn" style="flex:1; min-width:180px; justify-content:center; padding:12px 18px; font-weight:700;">
+          <svg style="width:16px; height:16px; margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          Download Playlist Folder
+        </button>
+      </div>
+    `;
+
+    card.querySelector('#btn-playlist-enqueue-all').addEventListener('click', () => onEnqueueAll(data));
+    card.querySelector('#btn-playlist-download-now').addEventListener('click', () => onDownloadAll(data));
 
     return card;
   }

@@ -600,12 +600,15 @@ body {
   border-radius: 50%;
 }
 .chip-dot.yt { background: #ff0000; box-shadow: 0 0 6px #ff0000; }
-.chip-dot.tw { background: #1d9bf0; box-shadow: 0 0 6px #1d9bf0; }
-.chip-dot.tt { background: #00f2fe; box-shadow: 0 0 6px #00f2fe; }
-.chip-dot.rd { background: #ff4500; box-shadow: 0 0 6px #ff4500; }
+.chip-dot.fb { background: #1877f2; box-shadow: 0 0 6px #1877f2; }
 .chip-dot.ig { background: #e1306c; box-shadow: 0 0 6px #e1306c; }
+.chip-dot.tt { background: #00f2fe; box-shadow: 0 0 6px #00f2fe; }
+.chip-dot.tw { background: #1d9bf0; box-shadow: 0 0 6px #1d9bf0; }
+.chip-dot.rd { background: #ff4500; box-shadow: 0 0 6px #ff4500; }
 .chip-dot.vm { background: #1ab7ea; box-shadow: 0 0 6px #1ab7ea; }
 .chip-dot.sc { background: #ff7700; box-shadow: 0 0 6px #ff7700; }
+.chip-dot.bili { background: #23ade5; box-shadow: 0 0 6px #23ade5; }
+.chip-dot.pl { background: #a855f7; box-shadow: 0 0 6px #a855f7; }
 .chip-dot.dir { background: #10b981; box-shadow: 0 0 6px #10b981; }
 
 /* Skeleton Loader */

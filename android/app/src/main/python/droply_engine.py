@@ -47,25 +47,164 @@ def format_seconds(s: Optional[int]) -> str:
     return f"{h:02d}:{m:02d}:{sec:02d}" if h > 0 else f"{m:02d}:{sec:02d}"
 
 
+def is_playlist_url(url: str) -> bool:
+    if not url:
+        return False
+    if "list=" in url and ("/playlist" in url or "watch?v=" not in url):
+        return True
+    if any(tok in url.lower() for tok in ["/playlist", "/sets/", "/album/"]):
+        return True
+    return False
+
+
 def analyze_url(url: str) -> str:
     """
     Extracts metadata, thumbnails, duration, and formats for a given URL.
-    Returns JSON string for the Java bridge.
+    Returns JSON string for the Java bridge, supporting both single media and playlists.
     """
+    is_playlist = is_playlist_url(url)
     ydl_opts = {
         'quiet': True,
         'no_warnings': True,
-        'extract_flat': False,
+        'extract_flat': 'in_playlist' if is_playlist else False,
         'skip_download': True,
         'nocheckcertificate': True,
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
     }
+    if is_playlist:
+        ydl_opts['extract_flat'] = 'in_playlist'
+    else:
+        ydl_opts['noplaylist'] = True
+        ydl_opts['extractor_args'] = {
+            'youtube': {
+                'player_client': ['android', 'web', 'mweb'],
+            }
+        }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
+            try:
+                info = ydl.extract_info(url, download=False)
+            except Exception as e:
+                # Fallback to playlist extraction if single video failed on a playlist URL
+                if not is_playlist and ("list=" in url or "playlist" in url):
+                    ydl_opts['extract_flat'] = 'in_playlist'
+                    ydl_opts.pop('noplaylist', None)
+                    ydl_opts.pop('extractor_args', None)
+                    with yt_dlp.YoutubeDL(ydl_opts) as p_ydl:
+                        info = p_ydl.extract_info(url, download=False)
+                else:
+                    raise e
+
             if not info:
                 return json.dumps({"error": "No media information could be extracted."})
 
+            # Check if extracted resource is a Playlist
+            if info.get('_type') == 'playlist' or 'entries' in info:
+                raw_entries = info.get('entries') or []
+                entries = []
+                total_duration = 0
+                for idx, e in enumerate(raw_entries):
+                    if not e:
+                        continue
+                    eid = str(e.get('id') or '')
+                    e_title = e.get('title') or f"Track {idx + 1}"
+                    e_url = e.get('url') or e.get('webpage_url') or ""
+                    if not e_url.startswith("http"):
+                        e_url = f"https://www.youtube.com/watch?v={eid}" if eid else ""
+                    e_dur = int(e.get('duration') or 0)
+                    total_duration += e_dur
+                    entries.append({
+                        "id": eid,
+                        "title": e_title,
+                        "url": e_url,
+                        "duration": e_dur,
+                        "duration_str": format_seconds(e_dur),
+                        "thumbnail": e.get('thumbnail') or info.get('thumbnail', ''),
+                        "uploader": e.get('uploader') or info.get('uploader', '')
+                    })
+
+                playlist_formats = [
+                    {
+                        "format_id": "best",
+                        "height": 9999,
+                        "ext": "mp4",
+                        "resolution": "Best Auto",
+                        "label": "Best Available (Auto)",
+                        "filesize_approx": 0,
+                        "filesize_str": "Adaptive Full Quality",
+                        "has_video": True,
+                        "has_audio": True
+                    },
+                    {
+                        "format_id": "1080p",
+                        "height": 1080,
+                        "ext": "mp4",
+                        "resolution": "1080p",
+                        "label": "1080p HD",
+                        "filesize_approx": 0,
+                        "filesize_str": "High Definition",
+                        "has_video": True,
+                        "has_audio": True
+                    },
+                    {
+                        "format_id": "720p",
+                        "height": 720,
+                        "ext": "mp4",
+                        "resolution": "720p",
+                        "label": "720p HD",
+                        "filesize_approx": 0,
+                        "filesize_str": "Standard HD",
+                        "has_video": True,
+                        "has_audio": True
+                    }
+                ]
+
+                audio_formats_list = [
+                    {
+                        "format_id": "bestaudio",
+                        "ext": "m4a",
+                        "resolution": "Audio Only",
+                        "label": "M4A High Quality (Default)",
+                        "filesize_approx": 0,
+                        "filesize_str": "High Quality",
+                        "has_video": False,
+                        "has_audio": True,
+                        "is_audio_only": True
+                    },
+                    {
+                        "format_id": "mp3",
+                        "ext": "mp3",
+                        "resolution": "Audio Only",
+                        "label": "MP3 Universal Audio",
+                        "filesize_approx": 0,
+                        "filesize_str": "HQ 320k",
+                        "has_video": False,
+                        "has_audio": True,
+                        "is_audio_only": True
+                    }
+                ]
+
+                result = {
+                    "id": str(info.get("id", "playlist")),
+                    "url": url,
+                    "title": info.get("title", "Untitled Playlist"),
+                    "platform": info.get("extractor_key", "Playlist"),
+                    "uploader": info.get("uploader", "Various Artists"),
+                    "duration": total_duration,
+                    "duration_str": format_seconds(total_duration),
+                    "thumbnail": info.get("thumbnail") or (entries[0]["thumbnail"] if entries else ""),
+                    "is_playlist": True,
+                    "playlist_count": len(entries),
+                    "playlist_entries": entries,
+                    "formats": playlist_formats,
+                    "audio_formats": audio_formats_list
+                }
+                return json.dumps(result)
+
+            # Single Video Extraction
             formats_dict = {}
             raw_formats = info.get("formats", [])
             duration = info.get("duration") or 0
@@ -76,11 +215,9 @@ def analyze_url(url: str) -> str:
                 if has_video and height and height >= 144:
                     res_key = f"{height}p"
                     filesize = f.get("filesize") or f.get("filesize_approx")
-                    # If filesize is missing, calculate estimate from tbr or duration
                     if not filesize and duration > 0 and f.get("tbr"):
                         filesize = int((f.get("tbr") * 1024 / 8) * duration)
 
-                    # Prefer formats with both audio and video or higher bitrate
                     existing = formats_dict.get(height)
                     if not existing or (f.get("acodec") != "none" and existing.get("has_audio") is False):
                         formats_dict[height] = {
@@ -95,11 +232,9 @@ def analyze_url(url: str) -> str:
                             "has_audio": f.get("acodec") != "none" and bool(f.get("acodec"))
                         }
 
-            # Sort descending by resolution (highest quality first)
             sorted_heights = sorted(formats_dict.keys(), reverse=True)
             formats_list = []
 
-            # Add "Best Quality (Auto)" at the top
             formats_list.append({
                 "format_id": "best",
                 "height": 9999,
@@ -115,7 +250,6 @@ def analyze_url(url: str) -> str:
             for h in sorted_heights:
                 formats_list.append(formats_dict[h])
 
-            # Preset audio formats
             audio_formats_list = [
                 {
                     "format_id": "bestaudio",
@@ -161,6 +295,9 @@ def analyze_url(url: str) -> str:
                 "duration": duration,
                 "duration_str": format_seconds(duration),
                 "thumbnail": info.get("thumbnail", ""),
+                "is_playlist": False,
+                "playlist_count": 0,
+                "playlist_entries": [],
                 "formats": formats_list,
                 "audio_formats": audio_formats_list
             }
@@ -169,12 +306,18 @@ def analyze_url(url: str) -> str:
         return json.dumps({"error": str(e)})
 
 
-def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, output_dir: str, title: str, callback_obj=None) -> str:
+
+def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, output_dir: str, title: str, callback_obj=None, playlist_folder: str = "") -> str:
     """
     Executes download into output_dir and reports progress via callback_obj.
+    Automatically places playlist items into a dedicated playlist subfolder if specified.
     """
     global _is_cancelled
     _is_cancelled = False
+
+    if playlist_folder:
+        clean_p = sanitize_filename(playlist_folder)
+        output_dir = os.path.join(output_dir, clean_p)
 
     os.makedirs(output_dir, exist_ok=True)
     out_tmpl = os.path.join(output_dir, '%(title)s.%(ext)s')
@@ -213,6 +356,14 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         'nocheckcertificate': True,
         'quiet': True,
         'no_warnings': True,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'web', 'mweb'],
+            }
+        },
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        }
     }
 
     ffmpeg_available = has_ffmpeg()

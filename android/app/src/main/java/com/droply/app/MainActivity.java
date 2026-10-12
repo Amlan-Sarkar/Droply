@@ -211,8 +211,17 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void startDownload(String url, String formatId, boolean isAudio, String audioFormat, String title) {
+            startDownloadWithFolder(url, formatId, isAudio, audioFormat, title, "");
+        }
+
+        @JavascriptInterface
+        public void startDownloadWithFolder(String url, String formatId, boolean isAudio, String audioFormat, String title, String playlistFolder) {
             executor.execute(() -> {
                 File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
+                if (playlistFolder != null && !playlistFolder.trim().isEmpty()) {
+                    String cleanFolder = playlistFolder.replaceAll("[\\\\/*?:\"<>|]", "").trim();
+                    downloadDir = new File(downloadDir, cleanFolder);
+                }
                 if (!downloadDir.exists()) {
                     downloadDir.mkdirs();
                 }
@@ -222,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
                     PyObject module = py.getModule("droply_engine");
 
                     EngineCallback callback = new EngineCallback();
-                    module.callAttr("download_media", url, formatId, isAudio, audioFormat, downloadDir.getAbsolutePath(), title, callback);
+                    module.callAttr("download_media", url, formatId, isAudio, audioFormat, downloadDir.getAbsolutePath(), title, callback, playlistFolder != null ? playlistFolder : "");
                 } catch (Exception e) {
                     mainHandler.post(() -> {
                         String errJs = "window.dispatchEvent(new CustomEvent('droply_progress', { detail: { status: 'error', error: " + JSONObjectQuote(e.getMessage()) + " } }));";

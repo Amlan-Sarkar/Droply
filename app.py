@@ -5,6 +5,11 @@ Application Entry Point and Desktop Window Launcher
 
 import os
 import sys
+
+# Ensure PythonNet uses built-in Windows .NET Framework to prevent coreclr loader failures
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
+
 import time
 import socket
 import argparse
@@ -13,6 +18,21 @@ import webbrowser
 import uvicorn
 
 from server.api import app
+
+
+def get_resource_path(relative_path: str) -> str:
+    """Resolves path for development and PyInstaller bundled assets."""
+    if getattr(sys, "frozen", False):
+        base_dir = getattr(sys, "_MEIPASS", os.path.dirname(sys.executable))
+    else:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+    target = os.path.join(base_dir, relative_path)
+    if os.path.exists(target):
+        return target
+    exe_dir_target = os.path.join(os.path.dirname(sys.executable), relative_path)
+    if os.path.exists(exe_dir_target):
+        return exe_dir_target
+    return os.path.abspath(relative_path)
 
 
 def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
@@ -97,6 +117,10 @@ def main():
     # Attempt native desktop window via pywebview
     try:
         import webview
+        icon_path = get_resource_path("Droply.ico")
+        if not os.path.exists(icon_path):
+            icon_path = None
+
         print("Launching native Windows desktop application window...")
         window = webview.create_window(
             title="Droply",
@@ -106,7 +130,43 @@ def main():
             min_size=(920, 640),
             text_select=True,
         )
-        webview.start()
+
+        def set_win32_window_icon():
+            """Ensures the Droply icon is set on the Win32 window handle and taskbar."""
+            if sys.platform == "win32" and icon_path and os.path.exists(icon_path):
+                time.sleep(1.2)
+                try:
+                    import ctypes
+                    user32 = ctypes.windll.user32
+                    IMAGE_ICON = 1
+                    LR_LOADFROMFILE = 0x00000010
+                    LR_DEFAULTSIZE = 0x00000040
+                    WM_SETICON = 0x0080
+                    ICON_SMALL = 0
+                    ICON_BIG = 1
+
+                    h_icon = user32.LoadImageW(
+                        None,
+                        icon_path,
+                        IMAGE_ICON,
+                        0,
+                        0,
+                        LR_LOADFROMFILE | LR_DEFAULTSIZE
+                    )
+                    if h_icon:
+                        hwnd = user32.FindWindowW(None, "Droply")
+                        if hwnd:
+                            user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, h_icon)
+                            user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, h_icon)
+                except Exception:
+                    pass
+
+        threading.Thread(target=set_win32_window_icon, daemon=True).start()
+
+        try:
+            webview.start(gui="edgechromium", icon=icon_path)
+        except Exception:
+            webview.start(icon=icon_path)
         print("Desktop application window closed.")
     except Exception as e:
         print(f"Native window encountered: {e}. Falling back to default browser...")

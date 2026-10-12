@@ -111,7 +111,6 @@ class OmniFetchApp {
         urlInput.value = text.trim();
         btnClear.style.display = 'flex';
         this.instantDetectPlatform(text.trim());
-        btnAnalyze.click();
       }
     });
 
@@ -260,6 +259,9 @@ class OmniFetchApp {
   }
 
   resetSingleView() {
+    const existingPlaylist = document.getElementById('playlist-preview-container');
+    if (existingPlaylist) existingPlaylist.remove();
+
     document.getElementById('media-card').style.display = 'none';
     document.getElementById('single-download-card').style.display = 'none';
     document.getElementById('single-success-card').style.display = 'none';
@@ -279,6 +281,48 @@ class OmniFetchApp {
     try {
       const data = await api.analyzeUrl(url);
       this.currentMedia = data;
+
+      // Check if media is a Playlist
+      if (data.is_playlist) {
+        document.getElementById('analyze-skeleton').style.display = 'none';
+        document.getElementById('media-card').style.display = 'none';
+
+        const pContainer = document.createElement('div');
+        pContainer.id = 'playlist-preview-container';
+
+        const handleEnqueuePlaylist = async (pData) => {
+          const urls = (pData.playlist_entries || []).map(e => e.url);
+          try {
+            await api.batchEnqueue({
+              urls,
+              items: pData.playlist_entries,
+              playlist_folder: pData.title,
+              is_audio: this.selectedMode === 'audio',
+              format_id: 'best',
+              format_label: 'Best Video',
+              audio_format: 'mp3',
+              output_dir: this.settings.download_dir
+            });
+            Components.showToast(`Enqueued ${urls.length} items from "${pData.title}" into dedicated folder!`, 'success');
+            this.switchTab('batch');
+          } catch (e) {
+            Components.showToast(`Error queuing playlist: ${e.message}`, 'error');
+          }
+        };
+
+        const handleDownloadPlaylist = async (pData) => {
+          await handleEnqueuePlaylist(pData);
+        };
+
+        const playlistCard = Components.renderPlaylistCard(data, handleEnqueuePlaylist, handleDownloadPlaylist);
+        pContainer.appendChild(playlistCard);
+
+        const mediaCard = document.getElementById('media-card');
+        mediaCard.parentElement.insertBefore(pContainer, mediaCard);
+
+        Components.showToast(`Playlist detected: ${data.title} (${data.playlist_count} videos)`, 'success');
+        return;
+      }
 
       // Populate media preview card
       document.getElementById('media-title').textContent = data.title;
@@ -491,6 +535,7 @@ class OmniFetchApp {
         const urls = parsed.items.map(it => it.url);
         const res = await api.batchEnqueue({
           urls,
+          items: parsed.items,
           is_audio: isAudio,
           format_id: formatId,
           format_label: formatLabel,
@@ -519,7 +564,9 @@ class OmniFetchApp {
 
     btnClearFinished.addEventListener('click', async () => {
       await api.clearFinishedTasks();
-      await this.loadTasks();
+      this.tasks = (this.tasks || []).filter(t => t.status === 'queued' || t.status === 'downloading' || t.status === 'processing' || t.status === 'pending');
+      this.renderQueueList();
+      this.updateQueueBadge();
       Components.showToast('Cleared completed items from queue.', 'info');
     });
 
@@ -568,25 +615,33 @@ class OmniFetchApp {
 
     if (!this.tasks || this.tasks.length === 0) {
       container.innerHTML = '';
-      container.appendChild(emptyState);
-      emptyState.style.display = 'block';
-      countEl.textContent = '0 items in queue';
+      if (emptyState) {
+        container.appendChild(emptyState);
+        emptyState.style.display = 'block';
+      }
+      if (countEl) countEl.textContent = '0 items in queue';
       return;
     }
 
-    emptyState.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'none';
     container.innerHTML = '';
-    countEl.textContent = `${this.tasks.length} item${this.tasks.length === 1 ? '' : 's'} in queue`;
+    if (countEl) {
+      countEl.textContent = `${this.tasks.length} item${this.tasks.length === 1 ? '' : 's'} in queue`;
+    }
 
     this.tasks.forEach(t => {
-      const card = Components.renderQueueItem(t);
-      container.appendChild(card);
+      try {
+        const card = Components.renderQueueItem(t);
+        if (card) container.appendChild(card);
+      } catch (err) {
+        console.error("Error rendering queue card:", err);
+      }
     });
   }
 
   updateQueueBadge() {
     const badge = document.getElementById('batch-badge');
-    const activeCount = this.tasks.filter(t => t.status === 'queued' || t.status === 'downloading' || t.status === 'processing').length;
+    const activeCount = (this.tasks || []).filter(t => t.status === 'queued' || t.status === 'downloading' || t.status === 'processing' || t.status === 'pending').length;
     if (activeCount > 0) {
       badge.textContent = activeCount;
       badge.style.display = 'inline-block';
@@ -826,6 +881,9 @@ class OmniFetchApp {
       Components.updateQueueItem(task);
       this.updateQueueBadge();
 
+      // Show in-app toast notification so user immediately sees fast background downloads
+      Components.showToast(`Completed download: "${task.title || 'Media'}"`, 'success');
+
       // Trigger desktop notification if permitted
       if (this.settings.notifications && ("Notification" in window) && Notification.permission === "granted") {
         new Notification("Droply — Download Finished", {
@@ -833,6 +891,12 @@ class OmniFetchApp {
           icon: task.thumbnail || undefined
         });
       }
+    });
+
+    api.on('queue_cleared', () => {
+      this.tasks = (this.tasks || []).filter(t => t.status === 'queued' || t.status === 'downloading' || t.status === 'processing' || t.status === 'pending');
+      this.renderQueueList();
+      this.updateQueueBadge();
     });
 
     api.on('task_failed', (payload) => {

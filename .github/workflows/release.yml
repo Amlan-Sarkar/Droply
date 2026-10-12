@@ -52,7 +52,7 @@ jobs:
       - name: Build Standalone (Windows)
         if: runner.os == 'Windows'
         run: |
-          pyinstaller --noconfirm --name Droply --onedir --icon Droply.ico --add-data "web;web" --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
+          pyinstaller --noconfirm --name Droply --onedir --icon Droply.ico --add-data "web;web" --add-data "Droply.ico;." --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
           Compress-Archive -Path dist/Droply -DestinationPath Droply-Windows-x64.zip -Force
 
       - name: Build Standalone (macOS)

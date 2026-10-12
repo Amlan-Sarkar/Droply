@@ -212,13 +212,24 @@ class DroplyAPI {
 
     try {
       if (typeof window.DroplyAndroid !== 'undefined') {
-        window.DroplyAndroid.startDownload(
-          nextTask.url,
-          nextTask.format_id || 'best',
-          Boolean(nextTask.is_audio),
-          nextTask.audio_format || 'mp3',
-          nextTask.title || ''
-        );
+        if (window.DroplyAndroid.startDownloadWithFolder) {
+          window.DroplyAndroid.startDownloadWithFolder(
+            nextTask.url,
+            nextTask.format_id || 'best',
+            Boolean(nextTask.is_audio),
+            nextTask.audio_format || 'mp3',
+            nextTask.title || '',
+            nextTask.playlist_folder || ''
+          );
+        } else {
+          window.DroplyAndroid.startDownload(
+            nextTask.url,
+            nextTask.format_id || 'best',
+            Boolean(nextTask.is_audio),
+            nextTask.audio_format || 'mp3',
+            nextTask.title || ''
+          );
+        }
       } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.DroplyIOS) {
         window.webkit.messageHandlers.DroplyIOS.postMessage({
           action: 'download',
@@ -226,7 +237,8 @@ class DroplyAPI {
           format_id: nextTask.format_id || 'best',
           is_audio: Boolean(nextTask.is_audio),
           audio_format: nextTask.audio_format || 'mp3',
-          title: nextTask.title || ''
+          title: nextTask.title || '',
+          playlist_folder: nextTask.playlist_folder || ''
         });
       }
     } catch (e) {
@@ -369,6 +381,20 @@ class DroplyAPI {
     });
   }
 
+  detectPlatformQuick(url) {
+    if (!url) return 'Web Media';
+    const lower = url.toLowerCase();
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'YouTube';
+    if (lower.includes('twitter.com') || lower.includes('x.com')) return 'Twitter / X';
+    if (lower.includes('tiktok.com')) return 'TikTok';
+    if (lower.includes('instagram.com')) return 'Instagram';
+    if (lower.includes('reddit.com')) return 'Reddit';
+    if (lower.includes('vimeo.com')) return 'Vimeo';
+    if (lower.includes('soundcloud.com')) return 'SoundCloud';
+    if (lower.includes('facebook.com') || lower.includes('fb.watch')) return 'Facebook';
+    return 'Web Media';
+  }
+
   async batchParse(text) {
     if (this.isNativeMobile()) {
       const urls = text.match(/https?:\/\/[^\s,;"'<>]+/g) || [];
@@ -390,19 +416,27 @@ class DroplyAPI {
       const queue = this.getMobileQueue();
       const newTasks = [];
       const urls = payload.urls || [];
+      const itemsMap = {};
+      if (payload.items) {
+        payload.items.forEach(it => { if (it && it.url) itemsMap[it.url] = it; });
+      }
 
       for (const u of urls) {
+        const itemInfo = itemsMap[u] || {};
+        const title = itemInfo.title || u.split('?')[0].split('/').pop() || 'Queued Media';
         const task = {
           id: 'mob_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
           url: u,
-          title: u.split('?')[0].split('/').pop() || 'Queued Media',
+          title: title,
           status: 'pending',
           percent: 0,
           is_audio: Boolean(payload.is_audio),
           format_id: payload.format_id || 'best',
           format_label: payload.format_label || 'Best Quality',
           audio_format: payload.audio_format || 'mp3',
-          output_dir: payload.output_dir || 'Downloads/Droply'
+          output_dir: payload.output_dir || 'Downloads/Droply',
+          playlist_folder: itemInfo.playlist_folder || payload.playlist_folder || '',
+          thumbnail: itemInfo.thumbnail || ''
         };
         queue.push(task);
         newTasks.push(task);
@@ -471,9 +505,12 @@ class DroplyAPI {
     if (this.isNativeMobile()) {
       const q = this.getMobileQueue().filter(t => t.status === 'pending' || t.status === 'downloading');
       this.saveMobileQueue(q);
+      this.emit('queue_cleared', { cleared_count: 0 });
       return { success: true };
     }
-    return this.request('/api/tasks/clear-finished', { method: 'POST' });
+    const res = await this.request('/api/tasks/clear-finished', { method: 'POST' });
+    this.emit('queue_cleared', { cleared_count: 0 });
+    return res;
   }
 
   async getHistory() {
@@ -501,27 +538,40 @@ class DroplyAPI {
 
   async getSettings() {
     if (this.isNativeMobile()) {
-      return {
-        download_dir: 'Downloads/Droply',
-        video_quality: 'best',
-        audio_codec: 'mp3',
-        concurrent_downloads: 1,
-        theme: localStorage.getItem('droply_theme') || 'dark',
-        notifications: true
-      };
+      try {
+        const saved = JSON.parse(localStorage.getItem('droply_mobile_settings') || '{}');
+        return {
+          download_dir: saved.download_dir || 'Downloads/Droply',
+          default_video_quality: saved.default_video_quality || 'best',
+          default_audio_format: saved.default_audio_format || 'mp3',
+          max_concurrent_downloads: saved.max_concurrent_downloads || 1,
+          theme: saved.theme || localStorage.getItem('droply_theme') || 'dark',
+          notifications: saved.notifications !== false,
+          ...saved
+        };
+      } catch (e) {
+        return {
+          download_dir: 'Downloads/Droply',
+          default_video_quality: 'best',
+          default_audio_format: 'mp3',
+          max_concurrent_downloads: 1,
+          theme: localStorage.getItem('droply_theme') || 'dark',
+          notifications: true
+        };
+      }
     }
     return this.request('/api/settings');
   }
 
   async updateSettings(settings) {
     if (this.isNativeMobile()) {
-      if (settings && settings.theme) {
-        localStorage.setItem('droply_theme', settings.theme);
+      const current = await this.getSettings();
+      const merged = { ...current, ...settings };
+      localStorage.setItem('droply_mobile_settings', JSON.stringify(merged));
+      if (merged.theme) {
+        localStorage.setItem('droply_theme', merged.theme);
       }
-      return {
-        download_dir: 'Downloads/Droply',
-        ...settings
-      };
+      return merged;
     }
     return this.request('/api/settings', {
       method: 'POST',

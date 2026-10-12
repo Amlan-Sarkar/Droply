@@ -112,30 +112,115 @@ class YtDlpProvider(BaseProvider):
         parsed = urlparse(url)
         return parsed.netloc.replace("www.", "").capitalize() if parsed.netloc else "Web Media"
 
-    def _get_ydl_opts(self) -> Dict[str, Any]:
+    def is_playlist_url(self, url: str) -> bool:
+        if not url:
+            return False
+        # YouTube playlist indicators
+        if "list=" in url and ("/playlist" in url or "watch?v=" not in url):
+            return True
+        if "/playlist" in url or "/sets/" in url or "/album/" in url:
+            return True
+        return False
+
+    def _get_ydl_opts(self, is_playlist: bool = False) -> Dict[str, Any]:
         opts: Dict[str, Any] = {
             'quiet': True,
             'no_warnings': True,
-            'noplaylist': True,
-            'extract_flat': False,
+            'extract_flat': 'in_playlist' if is_playlist else False,
+            'skip_download': True,
         }
+        if not is_playlist:
+            opts['noplaylist'] = True
         if self.ffmpeg_path and os.path.exists(self.ffmpeg_path):
             opts['ffmpeg_location'] = self.ffmpeg_path
         return opts
 
     def get_metadata(self, url: str) -> MediaMetadata:
-        opts = self._get_ydl_opts()
+        is_playlist = self.is_playlist_url(url)
+        opts = self._get_ydl_opts(is_playlist=is_playlist)
         with yt_dlp.YoutubeDL(opts) as ydl:
             try:
                 info = ydl.extract_info(url, download=False)
             except Exception as e:
-                err_dict = humanize_error(str(e))
-                raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+                # If single video extraction failed on a playlist URL, try playlist extraction fallback
+                if not is_playlist and ("list=" in url or "playlist" in url):
+                    try:
+                        p_opts = self._get_ydl_opts(is_playlist=True)
+                        with yt_dlp.YoutubeDL(p_opts) as p_ydl:
+                            info = p_ydl.extract_info(url, download=False)
+                    except Exception:
+                        err_dict = humanize_error(str(e))
+                        raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+                else:
+                    err_dict = humanize_error(str(e))
+                    raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
 
         if not info:
             raise ValueError("No media information could be extracted from this URL.")
 
-        # Extract title, uploader, duration, thumbnail
+        # Check if the extracted resource is a Playlist
+        if info.get('_type') == 'playlist' or 'entries' in info:
+            raw_entries = info.get('entries') or []
+            entries = []
+            total_duration = 0
+            for idx, entry in enumerate(raw_entries):
+                if not entry:
+                    continue
+                eid = str(entry.get('id') or '')
+                e_title = entry.get('title') or f"Track {idx + 1}"
+                e_url = entry.get('url') or entry.get('webpage_url') or ""
+                if not e_url.startswith("http"):
+                    e_url = f"https://www.youtube.com/watch?v={eid}" if eid else ""
+                e_dur = int(entry.get('duration') or 0)
+                total_duration += e_dur
+                e_thumb = entry.get('thumbnail') or ""
+                entries.append({
+                    "id": eid,
+                    "title": e_title,
+                    "url": e_url,
+                    "duration": e_dur,
+                    "duration_str": format_seconds(e_dur),
+                    "thumbnail": e_thumb,
+                    "uploader": entry.get('uploader') or info.get('uploader') or ""
+                })
+
+            playlist_thumb = info.get('thumbnail') or (entries[0]['thumbnail'] if entries else "")
+            title = info.get('title') or "Untitled Playlist"
+            uploader = info.get('uploader') or info.get('channel') or info.get('creator') or "Unknown Creator"
+
+            playlist_video_formats = [
+                MediaFormat(format_id="best", ext="mp4", resolution="Best Quality (Auto)", label="Best Video (Up to 4K / 1080p)", has_video=True, has_audio=True),
+                MediaFormat(format_id="1080p", ext="mp4", resolution="1080p FHD", label="1080p Full HD", has_video=True, has_audio=True),
+                MediaFormat(format_id="720p", ext="mp4", resolution="720p HD", label="720p HD", has_video=True, has_audio=True),
+                MediaFormat(format_id="480p", ext="mp4", resolution="480p SD", label="480p Standard", has_video=True, has_audio=True),
+            ]
+            playlist_audio_formats = [
+                MediaFormat(format_id="mp3", ext="mp3", resolution="Audio Only", label="MP3 Universal Audio (320 kbps)", has_video=False, has_audio=True, is_audio_only=True),
+                MediaFormat(format_id="m4a", ext="m4a", resolution="Audio Only", label="M4A AAC High Quality", has_video=False, has_audio=True, is_audio_only=True),
+                MediaFormat(format_id="wav", ext="wav", resolution="Audio Only", label="Lossless WAV Audio", has_video=False, has_audio=True, is_audio_only=True),
+            ]
+
+            return MediaMetadata(
+                id=str(info.get('id', 'playlist')),
+                url=url,
+                title=title,
+                platform=self.detect_platform(url),
+                uploader=uploader,
+                uploader_url=info.get('uploader_url') or "",
+                duration=total_duration,
+                duration_str=format_seconds(total_duration),
+                thumbnail=playlist_thumb,
+                description=f"Playlist with {len(entries)} items.",
+                formats=playlist_video_formats,
+                audio_formats=playlist_audio_formats,
+                webpage_url=info.get('webpage_url', url),
+                original_url=url,
+                is_playlist=True,
+                playlist_count=len(entries),
+                playlist_entries=entries
+            )
+
+        # Single Media Extraction
         title = info.get('title') or "Untitled Media"
         uploader = info.get('uploader') or info.get('channel') or info.get('creator') or "Unknown Creator"
         uploader_url = info.get('uploader_url') or ""
@@ -164,8 +249,12 @@ class YtDlpProvider(BaseProvider):
             formats=parsed_video_formats,
             audio_formats=parsed_audio_formats,
             webpage_url=info.get('webpage_url', url),
-            original_url=url
+            original_url=url,
+            is_playlist=False,
+            playlist_count=0,
+            playlist_entries=[]
         )
+
 
     def _parse_video_formats(self, raw_formats: List[Dict[str, Any]], duration: int) -> List[MediaFormat]:
         """

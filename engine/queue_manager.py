@@ -125,7 +125,18 @@ class QueueManager:
         for listener in list(self._listeners):
             try:
                 listener(data)
-            except Exception as e:
+            except Exception:
+                pass
+
+    def _broadcast_event(self, event_type: str, payload: Dict[str, Any]):
+        data = {
+            "event": event_type,
+            **payload
+        }
+        for listener in list(self._listeners):
+            try:
+                listener(data)
+            except Exception:
                 pass
 
     def add_task(
@@ -212,6 +223,7 @@ class QueueManager:
                 del self.tasks[tid]
                 if tid in self.task_order:
                     self.task_order.remove(tid)
+        self._broadcast_event("queue_cleared", {"cleared_count": len(to_remove)})
 
     def _process_queue_loop(self):
         """Monitors queue and submits queued tasks up to max_concurrent_downloads."""

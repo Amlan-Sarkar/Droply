@@ -121,6 +121,8 @@ class BatchEnqueueRequest(BaseModel):
     format_label: str = "Best Quality"
     audio_format: str = "mp3"
     output_dir: Optional[str] = None
+    playlist_folder: Optional[str] = None
+    items: Optional[List[Dict[str, Any]]] = None
 
 class PathRequest(BaseModel):
     path: Optional[str] = None
@@ -129,7 +131,7 @@ class FileRequest(BaseModel):
     file_path: str
 
 class SettingsUpdateRequest(BaseModel):
-    settings: Dict[str, Any]
+    settings: Optional[Dict[str, Any]] = None
 
 
 # ---------------- REST ENDPOINTS ----------------
@@ -166,6 +168,9 @@ async def analyze_url(req: AnalyzeRequest):
             "duration_str": meta.duration_str,
             "thumbnail": meta.thumbnail,
             "description": meta.description,
+            "is_playlist": getattr(meta, "is_playlist", False),
+            "playlist_count": getattr(meta, "playlist_count", 0),
+            "playlist_entries": getattr(meta, "playlist_entries", []),
             "formats": [
                 {
                     "format_id": f.format_id,
@@ -227,13 +232,42 @@ async def start_download(req: DownloadRequest):
     return task.to_dict()
 
 
+@app.post("/api/playlist/extract")
+async def extract_playlist_api(req: AnalyzeRequest):
+    url = req.url.strip()
+    if not registry.is_valid_url(url):
+        raise HTTPException(status_code=400, detail="Invalid URL provided.")
+
+    try:
+        provider = registry.get_provider_for_url(url)
+        loop = asyncio.get_event_loop()
+        meta = await loop.run_in_executor(None, provider.get_metadata, url)
+        return {
+            "title": meta.title,
+            "platform": meta.platform,
+            "thumbnail": meta.thumbnail,
+            "is_playlist": getattr(meta, "is_playlist", False),
+            "playlist_count": getattr(meta, "playlist_count", 0),
+            "entries": getattr(meta, "playlist_entries", []),
+            "default_download_dir": settings_manager.get("download_dir", get_default_download_dir())
+        }
+    except Exception as e:
+        err_str = str(e)
+        friendly = "Unable to extract playlist."
+        technical = err_str
+        if "|SPLIT|" in err_str:
+            parts = err_str.split("|SPLIT|")
+            friendly = parts[0]
+            technical = parts[1]
+        return JSONResponse(status_code=422, content={"error_friendly": friendly, "error_technical": technical})
+
+
 @app.post("/api/batch/parse")
 async def batch_parse(req: BatchParseRequest):
     """
-    Parses pasted text (one per line, comma, whitespace separated) into clean unique URLs.
+    Parses pasted text into clean unique URLs, expanding playlist links into individual tracks.
     """
     raw = req.text
-    # Extract all http/https URLs using regex
     urls = re.findall(r'https?://[^\s,;"\'<>]+', raw)
     unique_urls = []
     seen = set()
@@ -244,23 +278,70 @@ async def batch_parse(req: BatchParseRequest):
             unique_urls.append(u_clean)
 
     items = []
+    loop = asyncio.get_event_loop()
     for u in unique_urls:
+        provider = registry.get_provider_for_url(u)
+        is_playlist = hasattr(provider, "is_playlist_url") and provider.is_playlist_url(u)
+        if is_playlist:
+            try:
+                meta = await loop.run_in_executor(None, provider.get_metadata, u)
+                if meta and getattr(meta, "is_playlist", False) and meta.playlist_entries:
+                    p_folder = meta.title
+                    for entry in meta.playlist_entries:
+                        items.append({
+                            "url": entry["url"],
+                            "title": entry["title"],
+                            "platform": meta.platform,
+                            "playlist_folder": p_folder,
+                            "thumbnail": entry.get("thumbnail") or meta.thumbnail
+                        })
+                    continue
+            except Exception:
+                pass
+
         items.append({
             "url": u,
-            "platform": registry.detect_platform(u)
+            "title": "",
+            "platform": registry.detect_platform(u),
+            "playlist_folder": None,
+            "thumbnail": ""
         })
 
-    return {"count": len(unique_urls), "items": items}
+    return {"count": len(items), "items": items}
 
 
 @app.post("/api/batch/enqueue")
 async def batch_enqueue(req: BatchEnqueueRequest):
-    out_dir = req.output_dir or settings_manager.get("download_dir", get_default_download_dir())
+    base_dir = req.output_dir or settings_manager.get("download_dir", get_default_download_dir())
+
+    # Build lookup map for metadata items if passed
+    items_map = {}
+    if req.items:
+        for it in req.items:
+            if isinstance(it, dict) and it.get("url"):
+                items_map[it["url"]] = it
+
     created_tasks = []
     for u in req.urls:
         if registry.is_valid_url(u):
+            it_info = items_map.get(u, {})
+            title = it_info.get("title", "")
+            thumb = it_info.get("thumbnail", "")
+
+            # If playlist_folder is specified, download into dedicated playlist subfolder
+            folder_name = it_info.get("playlist_folder") or req.playlist_folder
+            if folder_name:
+                clean_folder = re.sub(r'[\\/*?:"<>|]', "", folder_name).strip()
+                out_dir = os.path.join(base_dir, clean_folder)
+            else:
+                out_dir = base_dir
+
+            os.makedirs(out_dir, exist_ok=True)
+
             task = queue_manager.add_task(
                 url=u,
+                title=title,
+                thumbnail=thumb,
                 format_id=req.format_id,
                 format_label=req.format_label,
                 is_audio=req.is_audio,
@@ -323,9 +404,10 @@ async def get_settings():
     return settings_manager.get_all()
 
 
-@app.post("/api/settings")
-async def update_settings(req: SettingsUpdateRequest):
-    updated = settings_manager.update(req.settings)
+@app.api_route("/api/settings", methods=["POST", "PUT"])
+async def update_settings_endpoint(req: Dict[str, Any]):
+    new_settings = req.get("settings", req) if isinstance(req, dict) else {}
+    updated = settings_manager.update(new_settings)
     return updated
 
 

@@ -41,6 +41,9 @@ class MediaMetadata:
     audio_formats: List[MediaFormat] = field(default_factory=list)
     webpage_url: str = ""
     original_url: str = ""
+    is_playlist: bool = False
+    playlist_count: int = 0
+    playlist_entries: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
