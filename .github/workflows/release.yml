@@ -30,6 +30,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pyinstaller
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress
+
       - name: Build Standalone (Windows)
         run: |
           pyinstaller --noconfirm --name Droply --onedir --icon Droply.ico --add-data "web;web" --add-data "Droply.ico;." --collect-all imageio_ffmpeg --collect-all pywebview --collect-all pythonnet --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
@@ -39,13 +44,31 @@ jobs:
           } else {
             python -c "import shutil, imageio_ffmpeg; shutil.copy(imageio_ffmpeg.get_ffmpeg_exe(), 'dist/Droply/bin/ffmpeg.exe')"
           }
+          Copy-Item Droply.ico -Destination dist/Droply/Droply.ico -Force
           Compress-Archive -Path dist/Droply -DestinationPath Droply-Windows-x64.zip -Force
 
-      - name: Upload Windows Artifact
+      - name: Build Inno Setup Windows Installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = (Get-Command iscc.exe).Source
+          }
+          Write-Host "Compiling Inno Setup using: $iscc"
+          & $iscc installer.iss
+          if (-not (Test-Path "dist/Droply-Setup.exe")) {
+            Write-Error "dist/Droply-Setup.exe was not created!"
+            exit 1
+          }
+          Move-Item dist/Droply-Setup.exe Droply-Setup.exe -Force
+
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Droply-Windows-x64.zip
-          path: Droply-Windows-x64.zip
+          name: Droply-Windows-Packages
+          path: |
+            Droply-Setup.exe
+            Droply-Windows-x64.zip
 
   # ---------------- 2. ANDROID STANDALONE APK BUILD (EXPERIMENTAL) ----------------
   build-android:
@@ -138,9 +161,10 @@ jobs:
 
             | Platform | Package | Direct Link |
             | :--- | :--- | :--- |
-            | 🪟 **Windows 10 / 11** | Standalone ZIP (x64) | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
+            | 🪟 **Windows 10 / 11** | **Setup Wizard (Recommended)** | [Download Droply-Setup.exe](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Setup.exe) |
+            | 🪟 **Windows 10 / 11** | Standalone Portable ZIP | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
 
-            *Tested on Windows 11. No Python required. Extract the zip and run `Droply.exe`.*
+            *Tested on Windows 11. Run `Droply-Setup.exe` for an effortless modern setup with Start Menu and Desktop shortcuts (no administrator rights needed). Or extract the portable zip and run `Droply.exe`.*
 
             ---
 

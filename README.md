@@ -75,15 +75,15 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 ### 🪟 Windows (Stable — Primary Release)
 
-| Package | Architecture | Direct Download |
+| Package | Format | Direct Download |
 | :--- | :--- | :--- |
-| **Droply for Windows** | 64-bit (x64) | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
-#### Launching on Windows:
-1. Download and extract **`Droply-Windows-x64.zip`**.
-2. Double-click **`Droply.exe`**.
-3. Droply launches immediately as a native desktop application.
-   *(If Microsoft Edge WebView2 is not installed, Droply automatically opens the interface in your default web browser).*
+#### Installing and Launching on Windows:
+- **Setup Wizard (Recommended):** Download and run **`Droply-Setup.exe`**. It installs without administrator prompts, places Droply into your Start Menu, Windows Search, and Desktop, and supports clean updates.
+- **Portable Zip:** Download and extract **`Droply-Windows-x64.zip`**, then run **`Droply.exe`** directly without installation.
+*(If Microsoft Edge WebView2 is not installed, Droply automatically opens the interface in your default web browser).*
 
 ---
 
