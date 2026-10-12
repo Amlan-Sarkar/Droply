@@ -77,7 +77,7 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 | Package | Format | Direct Download |
 | :--- | :--- | :--- |
-| **Droply Setup Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
 | **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Installing and Launching on Windows:
