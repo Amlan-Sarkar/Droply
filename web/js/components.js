@@ -201,41 +201,8 @@ const Components = {
     let statusLabel = task.status || 'Queued';
     if (task.status === 'processing') statusLabel = 'Merging';
 
-    let actionButtons = '';
-    if (task.status === 'downloading' || task.status === 'processing') {
-      actionButtons = `
-        <button class="icon-btn-cancel" data-action="cancel" data-id="${task.id}" title="Cancel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      `;
-    } else if (task.status === 'failed' || task.status === 'cancelled') {
-      actionButtons = `
-        <button class="secondary-btn btn-sm" data-action="retry" data-id="${task.id}" title="Retry">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-          <span>Retry</span>
-        </button>
-        <button class="icon-btn" data-action="remove" data-id="${task.id}" title="Remove">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      `;
-    } else if (task.status === 'completed') {
-      actionButtons = `
-        <button class="secondary-btn btn-sm" data-action="open-folder" data-path="${task.file_path || ''}" title="Open Folder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          <span>Folder</span>
-        </button>
-        <button class="icon-btn" data-action="play" data-path="${task.file_path || ''}" title="Play file">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-        </button>
-      `;
-    } else {
-      // Queued
-      actionButtons = `
-        <button class="icon-btn" data-action="remove" data-id="${task.id}" title="Remove">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        </button>
-      `;
-    }
+    const actionButtons = this._getQueueItemActions(task);
+    const metaRowContent = this._getQueueItemMeta(task);
 
     card.innerHTML = `
       <div style="position: relative;">
@@ -251,13 +218,9 @@ const Components = {
           <div class="queue-item-progress-fill" style="width: ${task.percent || 0}%;"></div>
         </div>
         <div class="queue-item-meta-row">
-          <span>${task.percent ? task.percent.toFixed(1) : '0.0'}%</span>
-          <span>${task.speed_str || '-- KB/s'}</span>
-          <span>${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}</span>
-          <span>ETA: ${task.eta_str || '--:--'}</span>
-          <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+          ${metaRowContent}
         </div>
-        ${task.error_friendly ? `<div style="font-size: 11px; color: #f87171;">${task.error_friendly}</div>` : ''}
+        ${task.error_friendly ? `<div class="queue-item-error-msg" style="font-size: 11.5px; color: #f87171; line-height: 1.4;">${task.error_friendly}</div>` : ''}
       </div>
       <div class="queue-item-actions">
         ${actionButtons}
@@ -265,6 +228,65 @@ const Components = {
     `;
 
     return card;
+  },
+
+  _getQueueItemActions(task) {
+    if (task.status === 'downloading' || task.status === 'processing') {
+      return `
+        <button class="icon-btn-cancel" data-action="cancel" data-id="${task.id}" title="Cancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+    } else if (task.status === 'failed' || task.status === 'cancelled') {
+      return `
+        <button class="secondary-btn btn-sm" data-action="retry" data-id="${task.id}" title="Retry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+          <span>Retry</span>
+        </button>
+        <button class="icon-btn" data-action="remove" data-id="${task.id}" title="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+    } else if (task.status === 'completed') {
+      return `
+        <button class="secondary-btn btn-sm" data-action="open-folder" data-path="${task.file_path || ''}" title="Open Folder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Folder</span>
+        </button>
+        <button class="icon-btn" data-action="play" data-path="${task.file_path || ''}" title="Play file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        </button>
+      `;
+    } else {
+      return `
+        <button class="icon-btn" data-action="remove" data-id="${task.id}" title="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+    }
+  },
+
+  _getQueueItemMeta(task) {
+    if (task.status === 'failed' || task.status === 'cancelled') {
+      return `
+        <span style="color: #f87171; font-weight: 600;">Download Failed</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    if (task.status === 'completed') {
+      return `
+        <span style="color: #34d399; font-weight: 600;">Completed (100%)</span>
+        <span>${task.file_size_str || task.total_str || ''}</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    return `
+      <span>${task.percent ? task.percent.toFixed(1) : '0.0'}%</span>
+      <span>${task.speed_str || '-- KB/s'}</span>
+      <span>${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}</span>
+      <span>ETA: ${task.eta_str || '--:--'}</span>
+      <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+    `;
   },
 
   // Update existing Queue Item DOM
@@ -283,13 +305,25 @@ const Components = {
 
     const metaRow = el.querySelector('.queue-item-meta-row');
     if (metaRow) {
-      metaRow.innerHTML = `
-        <span>${task.percent ? task.percent.toFixed(1) : '0.0'}%</span>
-        <span>${task.speed_str || '-- KB/s'}</span>
-        <span>${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}</span>
-        <span>ETA: ${task.eta_str || '--:--'}</span>
-        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
-      `;
+      metaRow.innerHTML = this._getQueueItemMeta(task);
+    }
+
+    const actionsEl = el.querySelector('.queue-item-actions');
+    if (actionsEl) {
+      actionsEl.innerHTML = this._getQueueItemActions(task);
+    }
+
+    let errEl = el.querySelector('.queue-item-error-msg');
+    if (task.error_friendly) {
+      if (!errEl) {
+        errEl = document.createElement('div');
+        errEl.className = 'queue-item-error-msg';
+        errEl.style.cssText = 'font-size: 11.5px; color: #f87171; line-height: 1.4;';
+        el.querySelector('.queue-item-info').appendChild(errEl);
+      }
+      errEl.textContent = task.error_friendly;
+    } else if (errEl) {
+      errEl.remove();
     }
 
     return true;

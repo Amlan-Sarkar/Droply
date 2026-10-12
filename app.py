@@ -6,9 +6,6 @@ Application Entry Point and Desktop Window Launcher
 import os
 import sys
 
-# Ensure PythonNet uses built-in Windows .NET Framework to prevent coreclr loader failures
-if sys.platform == "win32":
-    os.environ.setdefault("PYTHONNET_RUNTIME", "netfx")
 
 import time
 import socket

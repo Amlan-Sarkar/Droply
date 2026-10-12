@@ -298,7 +298,7 @@ class OmniFetchApp {
               items: pData.playlist_entries,
               playlist_folder: pData.title,
               is_audio: this.selectedMode === 'audio',
-              format_id: 'best',
+              format_id: 'bestvideo+bestaudio/best',
               format_label: 'Best Video',
               audio_format: 'mp3',
               output_dir: this.settings.download_dir
@@ -509,10 +509,10 @@ class OmniFetchApp {
       let audioFormat = 'mp3';
 
       if (preset === '1080p') {
-        formatId = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]';
+        formatId = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best';
         formatLabel = '1080p FHD';
       } else if (preset === '720p') {
-        formatId = 'bestvideo[height<=720]+bestaudio/best[height<=720]';
+        formatId = 'bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best';
         formatLabel = '720p HD';
       } else if (preset === 'audio_mp3') {
         isAudio = true;

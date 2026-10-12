@@ -5,7 +5,11 @@
 
 class DroplyAPI {
   constructor() {
-    this.baseUrl = window.location.origin;
+    let origin = window.location.origin;
+    if (!origin || origin === 'null' || origin.startsWith('file:') || origin === 'undefined') {
+      origin = 'http://127.0.0.1:8765';
+    }
+    this.baseUrl = origin;
     this.ws = null;
     this.listeners = {};
     this.activeMobileTask = null;
@@ -253,7 +257,17 @@ class DroplyAPI {
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-    const resp = await fetch(url, { ...options, headers });
+    let resp;
+    try {
+      resp = await fetch(url, { ...options, headers });
+    } catch (netErr) {
+      const err = new Error(`Cannot connect to Droply backend engine at ${this.baseUrl}`);
+      err.data = {
+        error_friendly: 'Cannot connect to Droply backend server.',
+        error_technical: `Network request to ${url} failed (${netErr.message}). Ensure Droply.exe is currently running.`
+      };
+      throw err;
+    }
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
       const err = new Error(data.detail || data.error_friendly || 'API Request failed');

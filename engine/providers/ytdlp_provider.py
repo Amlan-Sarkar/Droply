@@ -7,6 +7,7 @@ merge video/audio streams, and convert audio formats across hundreds of platform
 import os
 import re
 import sys
+import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
 from urllib.parse import urlparse
@@ -43,6 +44,11 @@ def humanize_error(raw_err: str) -> Dict[str, str]:
     """
     err = str(raw_err).lower()
     
+    if "requested format is not available" in err:
+        return {
+            "friendly": "The requested video format or quality is not available from the source.",
+            "technical": str(raw_err)
+        }
     if "drm" in err or "protected" in err:
         return {
             "friendly": "This media is protected by DRM (Digital Rights Management) and cannot be downloaded.",
@@ -87,16 +93,55 @@ def humanize_error(raw_err: str) -> Dict[str, str]:
 
 class YtDlpProvider(BaseProvider):
     def __init__(self):
-        base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent.parent))
+        self.ffmpeg_path = self._locate_ffmpeg()
+
+    def _locate_ffmpeg(self) -> Optional[str]:
         binary_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
-        bundled = base_dir / "bin" / binary_name
-        if bundled.exists():
-            self.ffmpeg_path = str(bundled)
-        else:
+        candidates = []
+
+        # 1. Next to executable (PyInstaller onedir root and subfolders)
+        if getattr(sys, "frozen", False):
+            exe_dir = Path(sys.executable).resolve().parent
+            candidates.extend([
+                exe_dir / "bin" / binary_name,
+                exe_dir / binary_name,
+                exe_dir / "_internal" / "bin" / binary_name,
+                exe_dir / "_internal" / binary_name,
+            ])
+            if hasattr(sys, "_MEIPASS"):
+                candidates.extend([
+                    Path(sys._MEIPASS) / "bin" / binary_name,
+                    Path(sys._MEIPASS) / binary_name,
+                ])
+
+        # 2. Local repository bin folder
+        proj_dir = Path(__file__).resolve().parent.parent.parent
+        candidates.extend([
+            proj_dir / "bin" / binary_name,
+            proj_dir / binary_name,
+        ])
+
+        # 3. imageio_ffmpeg bundled binary
+        try:
+            img_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+            if img_ffmpeg and os.path.exists(img_ffmpeg):
+                candidates.append(Path(img_ffmpeg))
+        except Exception:
+            pass
+
+        # 4. System PATH
+        which_path = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
+        if which_path:
+            candidates.append(Path(which_path))
+
+        for cand in candidates:
             try:
-                self.ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
+                if cand and cand.is_file():
+                    return str(cand)
             except Exception:
-                self.ffmpeg_path = None
+                continue
+
+        return None
 
     def can_handle(self, url: str) -> bool:
         try:
@@ -128,6 +173,14 @@ class YtDlpProvider(BaseProvider):
             'no_warnings': True,
             'extract_flat': 'in_playlist' if is_playlist else False,
             'skip_download': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web', 'mweb']
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+            }
         }
         if not is_playlist:
             opts['noplaylist'] = True
@@ -485,26 +538,75 @@ class YtDlpProvider(BaseProvider):
             'no_warnings': True,
             'noplaylist': True,
             'progress_hooks': [ytdl_hook],
-                        'restrictfilenames': False
+            'restrictfilenames': False,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web', 'mweb']
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+            }
         }
         if sys.platform == 'win32':
             ydl_opts['windowsfilenames'] = True
 
-        if self.ffmpeg_path and os.path.exists(self.ffmpeg_path):
+        has_ffmpeg = bool(self.ffmpeg_path and os.path.exists(self.ffmpeg_path))
+        if has_ffmpeg:
             ydl_opts['ffmpeg_location'] = self.ffmpeg_path
 
         if is_audio:
             target_codec = audio_format.lower() if audio_format else "mp3"
             ydl_opts['format'] = 'bestaudio/best'
-            ydl_opts['postprocessors'] = [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': target_codec,
-                'preferredquality': '320',
-            }]
+            if has_ffmpeg:
+                ydl_opts['postprocessors'] = [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': target_codec,
+                    'preferredquality': '320',
+                }]
         else:
-            # Video mode
-            ydl_opts['format'] = format_id if format_id else 'bestvideo+bestaudio/best'
-            ydl_opts['merge_output_format'] = 'mp4'
+            # Video mode format selection
+            f_norm = (format_id or '').strip().lower()
+            if not f_norm or f_norm in ('best', 'auto', 'default'):
+                if has_ffmpeg:
+                    ydl_opts['format'] = 'bestvideo+bestaudio/bestvideo+bestaudio/best'
+                    ydl_opts['merge_output_format'] = 'mp4'
+                else:
+                    ydl_opts['format'] = 'best[ext=mp4]/best/bestvideo+bestaudio'
+            elif f_norm in ('2160p', '4k'):
+                ydl_opts['format'] = 'bestvideo[height<=2160]+bestaudio/best[height<=2160]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=2160]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            elif f_norm in ('1440p', '2k'):
+                ydl_opts['format'] = 'bestvideo[height<=1440]+bestaudio/best[height<=1440]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=1440]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            elif f_norm == '1080p':
+                ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=1080]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            elif f_norm == '720p':
+                ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=720]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            elif f_norm == '480p':
+                ydl_opts['format'] = 'bestvideo[height<=480]+bestaudio/best[height<=480]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=480]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            elif f_norm == '360p':
+                ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/best[height<=360]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=360]/best'
+                if has_ffmpeg:
+                    ydl_opts['merge_output_format'] = 'mp4'
+            else:
+                # Custom or selector string
+                if has_ffmpeg:
+                    if '+' in format_id and not format_id.endswith('/best'):
+                        ydl_opts['format'] = f"{format_id}/bestvideo+bestaudio/best"
+                    else:
+                        ydl_opts['format'] = f"{format_id}/best"
+                    ydl_opts['merge_output_format'] = 'mp4'
+                else:
+                    ydl_opts['format'] = f"{format_id}/best[ext=mp4]/best/bestvideo+bestaudio"
 
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
