@@ -73,11 +73,11 @@ Droply focuses officially on two platforms: **Windows (Stable)** as the primary 
 
 Pre-compiled standalone packages are available below. **No Python or development tools are required.**
 
-### 🪟 Windows (Stable — Primary Release)
+### 🪟 Windows (Stable - Primary Release)
 
 | Package | Format | Direct Download |
 | :--- | :--- | :--- |
-| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Wizard | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
 | **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Installing and Launching on Windows:
@@ -87,7 +87,7 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 ---
 
-### 🤖 Android (Experimental — Testing Only)
+### 🤖 Android (Experimental - Testing Only)
 
 | Package | Supported ABIs | Direct Download |
 | :--- | :--- | :--- |
