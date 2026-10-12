@@ -93,6 +93,11 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.5'
+
       - name: Grant Execute Permissions to Gradle
         run: chmod +x android/gradlew
 
@@ -105,12 +110,18 @@ jobs:
       - name: Build Android APK with Gradle
         run: |
           cd android
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Fetching gradle-wrapper.jar fallback..."
-            mkdir -p gradle/wrapper
-            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+          if command -v gradle &> /dev/null; then
+            echo "Building with setup-gradle 8.5..."
+            gradle assembleRelease --no-daemon
+          else
+            echo "Building with gradlew wrapper..."
+            if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+              echo "Fetching gradle-wrapper.jar fallback..."
+              mkdir -p gradle/wrapper
+              curl -sSL --retry 5 --retry-delay 3 "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+            fi
+            ./gradlew assembleRelease --no-daemon
           fi
-          ./gradlew assembleRelease --no-daemon
           cd ..
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then
