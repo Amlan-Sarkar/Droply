@@ -458,7 +458,7 @@ async def browse_folder():
     return {"folder": None, "updated": False}
 
 
-APP_VERSION = "v1.2.9"
+APP_VERSION = "v1.2.10"
 
 
 class InstallerDownloadManager:

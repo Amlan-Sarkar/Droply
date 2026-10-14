@@ -811,7 +811,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.2.9';
+      const appVer = status.app_version || 'v1.2.10';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -939,8 +939,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.2.9';
-        const appLatest = info.app_latest || 'v1.2.9';
+        const appInst = info.app_installed || 'v1.2.10';
+        const appLatest = info.app_latest || 'v1.2.10';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -967,8 +967,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.2.9';
-        newVerEl.textContent = 'v1.2.9';
+        curVerEl.textContent = 'v1.2.10';
+        newVerEl.textContent = 'v1.2.10';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can refresh the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1002,7 +1002,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.9'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.10'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';

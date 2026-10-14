@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.2.10)'
+        required: false
+        default: 'v1.2.10'
 
 permissions:
   contents: write
@@ -145,18 +150,30 @@ jobs:
       - name: List Release Assets
         run: ls -la release-assets
 
+      - name: Determine Release Tag
+        id: release_tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ inputs.tag_name }}"
+            if [ -z "$TAG" ]; then TAG="v1.2.10"; fi
+          else
+            TAG="${{ github.ref_name }}"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - name: Upload Assets to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release_tag.outputs.tag }}
           files: release-assets/*
-          name: Droply ${{ github.ref_name }} - Windows & Android Release
+          name: Droply ${{ steps.release_tag.outputs.tag }} - Windows & Android Release
           body: |
             ### 🪟 Windows (Stable)
 
             | Platform | Package | Direct Link |
             | :--- | :--- | :--- |
-            | 🪟 **Windows 10 / 11** | **Setup Wizard (Recommended)** | [Download Droply-Setup.exe](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Setup.exe) |
-            | 🪟 **Windows 10 / 11** | Standalone Portable ZIP | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Windows-x64.zip) |
+            | 🪟 **Windows 10 / 11** | **Setup Wizard (Recommended)** | [Download Droply-Setup.exe](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ steps.release_tag.outputs.tag }}/Droply-Setup.exe) |
+            | 🪟 **Windows 10 / 11** | Standalone Portable ZIP | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ steps.release_tag.outputs.tag }}/Droply-Windows-x64.zip) |
 
             *Tested on Windows 11. Run `Droply-Setup.exe` for an effortless modern setup with Start Menu and Desktop shortcuts (no administrator rights needed). Or extract the portable zip and run `Droply.exe`.*
 
@@ -166,7 +183,7 @@ jobs:
 
             | Platform | Package | Direct Link |
             | :--- | :--- | :--- |
-            | 🤖 **Android (7.0+)** | Standalone APK | [Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ github.ref_name }}/Droply-Android.apk) |
+            | 🤖 **Android (7.0+)** | Standalone APK | [Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/${{ steps.release_tag.outputs.tag }}/Droply-Android.apk) |
 
             > [!WARNING]
             > **Android is currently experimental:** The Android APK is provided for testing and community validation. Core download flows, storage paths, and UI interactions are under active development and may behave unexpectedly while mobile issues are being resolved.
