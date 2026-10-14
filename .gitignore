@@ -34,9 +34,3 @@ android/app/build/
 android/build/
 *.apk
 *.aab
-
-# iOS & Xcode
-ios/build/
-ios/Droply.xcodeproj/xcuserdata/
-ios/Droply.xcodeproj/project.xcworkspace/xcuserdata/
-*.ipa
