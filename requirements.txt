@@ -1,4 +1,4 @@
-# OmniFetch Dependencies
+# Droply Dependencies
 fastapi>=0.115.0
 uvicorn>=0.30.0
 yt-dlp>=2024.8.6
