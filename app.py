@@ -6,6 +6,74 @@ Application Entry Point and Desktop Window Launcher
 import os
 import sys
 
+# Safe stream redirection for PyInstaller --noconsole / --windowed mode on Windows
+class SafeStream:
+    def __init__(self, target_file=None):
+        self.target_file = target_file
+
+    def write(self, data):
+        if self.target_file:
+            try:
+                self.target_file.write(str(data))
+                self.target_file.flush()
+            except Exception:
+                pass
+
+    def flush(self):
+        if self.target_file:
+            try:
+                self.target_file.flush()
+            except Exception:
+                pass
+
+    def isatty(self):
+        return False
+
+
+_log_file = None
+if sys.platform == "win32":
+    try:
+        log_dir = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply")
+        os.makedirs(log_dir, exist_ok=True)
+        _log_file = open(os.path.join(log_dir, "droply.log"), "a", encoding="utf-8", errors="replace")
+    except Exception:
+        _log_file = None
+
+if sys.stdout is None:
+    sys.stdout = SafeStream(_log_file)
+elif getattr(sys, "frozen", False) and _log_file:
+    # In frozen mode, mirror stdout to droply.log for diagnostics
+    class MirrorStream:
+        def __init__(self, orig, log):
+            self.orig = orig
+            self.log = log
+        def write(self, data):
+            try:
+                self.orig.write(data)
+            except Exception:
+                pass
+            try:
+                self.log.write(str(data))
+                self.log.flush()
+            except Exception:
+                pass
+        def flush(self):
+            try:
+                self.orig.flush()
+            except Exception:
+                pass
+            try:
+                self.log.flush()
+            except Exception:
+                pass
+        def isatty(self):
+            return getattr(self.orig, "isatty", lambda: False)()
+    sys.stdout = MirrorStream(sys.stdout, _log_file)
+
+if sys.stderr is None:
+    sys.stderr = SafeStream(_log_file)
+elif getattr(sys, "frozen", False) and _log_file:
+    sys.stderr = MirrorStream(sys.stderr, _log_file)
 
 import time
 import socket
@@ -58,16 +126,20 @@ def find_available_port(start_port: int = 8765) -> int:
 
 
 def run_server(host: str, port: int):
-    """Runs Uvicorn server."""
-    config = uvicorn.Config(
-        app=app,
-        host=host,
-        port=port,
-        log_level="warning",
-        access_log=False
-    )
-    server = uvicorn.Server(config)
-    server.run()
+    """Runs Uvicorn server with safe logging configuration."""
+    try:
+        config = uvicorn.Config(
+            app=app,
+            host=host,
+            port=port,
+            log_level="warning",
+            access_log=False,
+            log_config=None  # Safe: do not override logging with raw console StreamHandlers
+        )
+        server = uvicorn.Server(config)
+        server.run()
+    except Exception as e:
+        sys.stderr.write(f"DroplyServer exception: {e}\n")
 
 
 def main():
@@ -98,8 +170,13 @@ def main():
     server_thread.start()
 
     # Wait for server to come online
-    for _ in range(30):
+    server_ready = False
+    for _ in range(80):
+        if not server_thread.is_alive():
+            print("Fatal error: DroplyServer background thread terminated.")
+            break
         if is_port_in_use(port, args.host):
+            server_ready = True
             break
         time.sleep(0.1)
 

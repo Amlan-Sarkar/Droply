@@ -755,9 +755,25 @@ async def update_ytdlp_endpoint():
 
 
 # Static web app mounting
-base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-web_dir = base_dir / "web"
-if web_dir.exists():
+def _find_web_dir() -> Optional[Path]:
+    candidates = []
+    if hasattr(sys, "_MEIPASS"):
+        candidates.append(Path(sys._MEIPASS) / "web")
+        candidates.append(Path(sys._MEIPASS))
+    if getattr(sys, "frozen", False):
+        exe_parent = Path(sys.executable).resolve().parent
+        candidates.append(exe_parent / "web")
+        candidates.append(exe_parent / "_internal" / "web")
+    candidates.append(Path(__file__).resolve().parent.parent / "web")
+    candidates.append(Path.cwd() / "web")
+
+    for candidate in candidates:
+        if candidate and candidate.exists() and (candidate / "index.html").exists():
+            return candidate
+    return None
+
+web_dir = _find_web_dir()
+if web_dir and web_dir.exists():
     app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
     if (web_dir / "css").exists():
         app.mount("/css", StaticFiles(directory=str(web_dir / "css")), name="css")
