@@ -8,7 +8,7 @@
 
 *Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X (Twitter), Bilibili, and popular media sites with real-time speed & progress tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.2.2-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.2.6-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -73,11 +73,11 @@ Droply focuses officially on two platforms: **Windows (Stable)** as the primary 
 
 Pre-compiled standalone packages are available below. **No Python or development tools are required.**
 
-### 🪟 Windows (Stable — Primary Release)
+### 🪟 Windows (Stable - Primary Release)
 
 | Package | Format | Direct Download |
 | :--- | :--- | :--- |
-| **Droply Setup Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Wizard | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
 | **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Installing and Launching on Windows:
@@ -87,7 +87,7 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 ---
 
-### 🤖 Android (Experimental — Testing Only)
+### 🤖 Android (Experimental - Testing Only)
 
 | Package | Supported ABIs | Direct Download |
 | :--- | :--- | :--- |
