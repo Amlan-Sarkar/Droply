@@ -175,7 +175,7 @@ class YtDlpProvider(BaseProvider):
             'skip_download': True,
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web', 'mweb']
+                    'player_client': ['ios', 'android', 'web', 'mweb']
                 }
             },
             'http_headers': {
@@ -541,7 +541,7 @@ class YtDlpProvider(BaseProvider):
             'restrictfilenames': False,
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web', 'mweb']
+                    'player_client': ['ios', 'android', 'web', 'mweb']
                 }
             },
             'http_headers': {

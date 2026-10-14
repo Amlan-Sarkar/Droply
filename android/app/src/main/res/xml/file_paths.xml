@@ -2,4 +2,6 @@
 <paths>
     <external-path name="external_files" path="." />
     <external-path name="download_files" path="Download/" />
+    <external-files-path name="external_app_files" path="." />
+    <root-path name="root" path="." />
 </paths>

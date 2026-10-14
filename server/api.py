@@ -478,6 +478,85 @@ async def system_status():
     }
 
 
+@app.get("/api/system/check-updates")
+async def check_updates_endpoint():
+    import json
+    current_app_version = "v1.2.4"
+    current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
+    release_url = "https://github.com/Amlan-Sarkar/Droply/releases"
+
+    loop = asyncio.get_event_loop()
+
+    def _fetch_github():
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                "https://api.github.com/repos/Amlan-Sarkar/Droply/releases/latest",
+                headers={"User-Agent": "Droply-App"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                tag = data.get("tag_name")
+                if tag:
+                    return tag, (tag.lstrip('v') == current_app_version.lstrip('v')), data.get("html_url", release_url)
+        except Exception:
+            pass
+        return current_app_version, True, release_url
+
+    def _fetch_pypi():
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                "https://pypi.org/pypi/yt-dlp/json",
+                headers={"User-Agent": "Droply-App"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+                ver = data.get("info", {}).get("version")
+                if ver:
+                    return ver, (ver == current_ytdlp_version)
+        except Exception:
+            pass
+        return current_ytdlp_version, True
+
+    tag, app_up_to_date, release_url = await loop.run_in_executor(None, _fetch_github)
+    ytdlp_latest, ytdlp_up_to_date = await loop.run_in_executor(None, _fetch_pypi)
+
+    return {
+        "app_installed": current_app_version,
+        "app_latest": tag,
+        "app_up_to_date": app_up_to_date,
+        "release_url": release_url,
+        "ytdlp_installed": current_ytdlp_version,
+        "ytdlp_latest": ytdlp_latest,
+        "ytdlp_up_to_date": ytdlp_up_to_date
+    }
+
+
+@app.post("/api/system/update-ytdlp")
+async def update_ytdlp_endpoint():
+    loop = asyncio.get_event_loop()
+
+    def _run_update():
+        import subprocess
+        try:
+            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"]
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            if proc.returncode == 0:
+                import importlib
+                importlib.reload(yt_dlp)
+                new_ver = getattr(yt_dlp, "__version__", "updated")
+                return {"status": "success", "message": f"Updated yt-dlp core to {new_ver}!", "version": new_ver}
+            else:
+                return {"status": "error", "message": proc.stderr or proc.stdout or "Update failed"}
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+    result = await loop.run_in_executor(None, _run_update)
+    return result
+
+
+
 # Static web app mounting
 base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 web_dir = base_dir / "web"

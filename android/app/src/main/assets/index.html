@@ -39,20 +39,11 @@
       <nav class="nav-tabs" id="nav-tabs">
         <button class="nav-tab active" data-tab="single" id="tab-btn-single">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>Single Downloader</span>
-        </button>
-        <button class="nav-tab" data-tab="batch" id="tab-btn-batch">
-          <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="12" y1="18" x2="12" y2="12"></line>
-            <line x1="9" y1="15" x2="15" y2="15"></line>
-          </svg>
-          <span>Batch Queue</span>
-          <span class="badge-counter" id="batch-badge" style="display: none;">0</span>
+          <span>Downloader</span>
         </button>
         <button class="nav-tab" data-tab="history" id="tab-btn-history">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -71,12 +62,14 @@
         </button>
       </nav>
 
-      <!-- SYSTEM STATUS INDICATORS -->
+      <!-- SYSTEM STATUS & CONTROLS -->
       <div class="header-status">
-        <div class="status-pill status-ready" id="server-status-pill" title="Local Engine Server Online">
-          <span class="status-dot"></span>
-          <span class="status-label">Server Online</span>
-        </div>
+        <button class="icon-btn" id="header-check-updates" title="Check for Updates">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"></path>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
         <button class="icon-btn" id="header-open-folder" title="Open Download Folder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
@@ -92,74 +85,49 @@
       <section class="tab-pane active" id="pane-single">
         <div class="pane-content-single">
           
-          <!-- PROMINENT URL INPUT AREA -->
-          <div class="input-hero-card">
-            <div class="input-header-row">
-              <div class="input-title-wrap">
-                <h2>Download Any Media Locally</h2>
-                <p>Paste a video, audio, playlist, or stream link to analyze and download in high definition.</p>
-              </div>
-              <!-- Instant Detected Platform Badge -->
+          <!-- CLEAN OMNIDOWNLOADER-STYLE INPUT CARD -->
+          <div class="input-omni-card">
+            <div class="input-card-title-row">
+              <label class="input-section-label" for="single-url-input">Paste Media URL</label>
               <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
                 <span class="detect-icon" id="detect-icon">🌐</span>
-                <span class="detect-text">Detected source: <strong id="detect-name">None</strong></span>
+                <span class="detect-text" id="detect-name">None</span>
               </div>
             </div>
 
-            <div class="url-input-container">
-              <div class="url-icon-wrapper">
-                <svg class="url-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                </svg>
-              </div>
-              <input 
-                type="text" 
+            <div class="omni-textarea-wrapper">
+              <textarea 
                 id="single-url-input" 
-                class="url-input" 
-                placeholder="Paste a video, playlist, or media link (e.g. YouTube, Playlists, X/Twitter, TikTok...)" 
+                class="omni-textarea" 
+                rows="2"
+                placeholder="Paste video, playlist, or batch links (one per line)" 
                 autocomplete="off"
                 spellcheck="false"
-              />
-              <div class="url-actions">
-                <button class="url-action-btn" id="btn-paste" title="Paste from clipboard">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                  </svg>
-                  <span>Paste</span>
-                </button>
-                <button class="url-action-btn" id="btn-clear" title="Clear input" style="display: none;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-                <button class="primary-btn btn-analyze" id="btn-analyze">
-                  <span class="btn-text">Analyze</span>
-                  <svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                    <polyline points="12 5 19 12 12 19"></polyline>
-                  </svg>
-                </button>
-              </div>
+              ></textarea>
+              <button class="url-action-btn btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
             </div>
 
-            <!-- Quick Platform Badges Bar -->
-            <div class="quick-sources-bar">
-              <span class="quick-title">Supported Sources:</span>
-              <span class="source-chip"><span class="chip-dot yt"></span>YouTube</span>
-              <span class="source-chip"><span class="chip-dot fb"></span>Facebook</span>
-              <span class="source-chip"><span class="chip-dot ig"></span>Instagram</span>
-              <span class="source-chip"><span class="chip-dot tt"></span>TikTok</span>
-              <span class="source-chip"><span class="chip-dot tw"></span>X / Twitter</span>
-              <span class="source-chip"><span class="chip-dot rd"></span>Reddit</span>
-              <span class="source-chip"><span class="chip-dot vm"></span>Vimeo</span>
-              <span class="source-chip"><span class="chip-dot bili"></span>Bilibili</span>
-              <span class="source-chip"><span class="chip-dot sc"></span>SoundCloud</span>
-              <span class="source-chip" style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.45); color: #c4b5fd; font-weight:600;"><span class="chip-dot pl"></span>Playlists & Albums</span>
-              <span class="source-chip"><span class="chip-dot dir"></span>Direct MP4/MP3</span>
-              <span class="source-chip" style="background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255, 255, 255, 0.2); color: #94a3b8; font-weight:600;" title="Full yt-dlp engine supporting over 1,800 video, audio, and social stream services">+ 1,800+ More Sites</span>
+            <div class="omni-input-actions">
+              <button class="secondary-btn btn-paste-omni" id="btn-paste" title="Paste from clipboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+                <span>Paste</span>
+              </button>
+
+              <button class="primary-btn btn-fetch-omni" id="btn-analyze">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span class="btn-text">Fetch Details</span>
+              </button>
             </div>
           </div>
 
@@ -293,20 +261,13 @@
 
                 <!-- ACTION ROW -->
                 <div class="media-actions-row">
-                  <button class="primary-btn btn-start-download" id="btn-start-download">
+                  <button class="primary-btn btn-start-download" id="btn-start-download" style="flex: 1;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
                     <span>Download Media</span>
-                  </button>
-                  <button class="secondary-btn btn-add-to-batch" id="btn-add-single-to-batch">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="12" y1="5" x2="12" y2="19"></line>
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    <span>Queue for Later</span>
                   </button>
                 </div>
 
@@ -384,88 +345,19 @@
             </div>
           </div>
 
-        </div>
-      </section>
+          <!-- PLAYLIST CONTAINER -->
+          <div id="playlist-container"></div>
 
+          <!-- BATCH URLS CONTAINER -->
+          <div id="batch-container"></div>
 
-      <!-- ================= TAB 2: BATCH QUEUE ================= -->
-      <section class="tab-pane" id="pane-batch">
-        <div class="pane-content-batch">
-          
-          <!-- BATCH INPUT SECTION -->
-          <div class="batch-input-card">
-            <div class="batch-header-row">
-              <div>
-                <h2>Batch Download Queue</h2>
-                <p>Paste multiple video, audio, or playlist links below. Playlists automatically unpack into their own folders.</p>
-              </div>
-              <div class="batch-preset-select">
-                <label>Quality Preset:</label>
-                <select id="batch-quality-preset" class="custom-select">
-                  <option value="best_video">Best Video (Up to 4K / 1080p)</option>
-                  <option value="1080p">1080p Full HD</option>
-                  <option value="720p">720p HD</option>
-                  <option value="audio_mp3">Audio Only (MP3 320 kbps)</option>
-                  <option value="audio_m4a">Audio Only (M4A / AAC)</option>
-                </select>
-              </div>
+          <!-- ACTIVE & RECENT DOWNLOADS (OMNIDOWNLOADER STYLE) -->
+          <div class="downloader-queue-section" id="downloader-queue-section">
+            <div class="recent-downloads-header" id="recent-downloads-header" style="display: none;">
+              <h3 class="recent-title">Recent Downloads (<span id="recent-downloads-count">0</span>)</h3>
+              <button class="subtle-link-btn" id="btn-clear-recent-downloads">Clear All</button>
             </div>
-
-            <textarea 
-              id="batch-url-textarea" 
-              class="batch-textarea" 
-              placeholder="https://www.youtube.com/playlist?list=...&#10;https://www.youtube.com/watch?v=...&#10;https://x.com/status/...&#10;https://vimeo.com/..."></textarea>
-
-            <div class="batch-actions-bar">
-              <div class="batch-counts-info" id="batch-parsed-info">0 URLs ready</div>
-              <div class="batch-btn-group">
-                <button class="secondary-btn" id="btn-paste-batch-input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 15px; height: 15px; vertical-align: middle; margin-right: 4px;">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                  <span>Paste Clipboard</span>
-                </button>
-                <button class="secondary-btn" id="btn-clear-batch-input">Clear Text</button>
-                <button class="primary-btn" id="btn-enqueue-batch">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
-                  <span>Add URLs to Queue</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- QUEUE CONTROLS & TABLE -->
-          <div class="queue-manager-card">
-            <div class="queue-header-row">
-              <div class="queue-status-title">
-                <h3>Active Queue</h3>
-                <span class="queue-counter" id="queue-active-count">0 items in queue</span>
-              </div>
-              <div class="queue-global-actions">
-                <button class="secondary-btn btn-sm" id="btn-queue-retry-failed">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"></path><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-                  <span>Retry Failed</span>
-                </button>
-                <button class="secondary-btn btn-sm" id="btn-queue-clear-finished">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                  <span>Clear Completed</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- QUEUE ITEMS LIST -->
-            <div class="queue-list" id="queue-items-container">
-              <!-- Empty queue state -->
-              <div class="empty-state" id="queue-empty-state">
-                <div class="empty-icon">📥</div>
-                <h4>Queue is currently empty</h4>
-                <p>Paste multiple links above or queue individual downloads from the Single Downloader tab.</p>
-              </div>
-            </div>
+            <div class="downloader-queue-list" id="downloader-queue-list"></div>
           </div>
 
         </div>
@@ -654,7 +546,13 @@
 
           <!-- SYSTEM ENGINE DIAGNOSTICS -->
           <div class="diagnostics-card">
-            <h3>Engine & Runtime Diagnostics</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="margin: 0;">Engine & Runtime Diagnostics</h3>
+              <button class="secondary-btn btn-sm" id="btn-settings-check-updates">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; margin-right: 4px;"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                <span>Check for Updates</span>
+              </button>
+            </div>
             <div class="diag-grid">
               <div class="diag-item">
                 <span class="diag-label">Core Provider:</span>
@@ -683,6 +581,45 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
+    <!-- CHECK FOR UPDATES MODAL (OMNIDOWNLOADER STYLE) -->
+    <div class="modal-overlay" id="update-modal" style="display: none;">
+      <div class="modal-card update-modal-card">
+        <div class="update-modal-header">
+          <div class="update-modal-icon" id="update-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
+          </div>
+          <h3 class="update-modal-title" id="update-modal-title">Droply is Up to Date</h3>
+        </div>
+
+        <div class="update-modal-body">
+          <div class="update-version-row">
+            <span class="update-ver-label">Installed: <strong id="update-ver-installed">v1.2.4</strong></span>
+            <span class="update-ver-dot">•</span>
+            <span class="update-ver-label">Latest: <strong id="update-ver-latest">v1.2.4</strong></span>
+          </div>
+          <p class="update-modal-desc" id="update-modal-desc">
+            You are running the newest release of Droply. You can also update the embedded yt-dlp core engine for latest platform fixes.
+          </p>
+          <div id="update-status-msg" style="display: none; font-size: 13px; color: #38bdf8; margin-top: 12px; font-weight: 500;"></div>
+        </div>
+
+        <div class="update-modal-actions">
+          <button class="secondary-btn" id="btn-close-update-modal">Close</button>
+          <button class="primary-btn btn-update-core" id="btn-update-ytdlp">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="btn-update-ytdlp-text">Update yt-dlp Core</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- SCRIPTS -->
@@ -692,5 +629,3 @@
   <script src="js/app.js"></script>
 </body>
 </html>
-
-

@@ -13,6 +13,7 @@ import yt_dlp
 
 # Global cancellation flag for active Android download
 _is_cancelled = False
+_ffmpeg_binary_path = None
 
 
 def cancel_active_download():
@@ -20,8 +21,40 @@ def cancel_active_download():
     _is_cancelled = True
 
 
+def set_ffmpeg_path(path: str):
+    global _ffmpeg_binary_path
+    if path and os.path.exists(path):
+        _ffmpeg_binary_path = path
+
+
+def get_ffmpeg_path() -> Optional[str]:
+    global _ffmpeg_binary_path
+    if _ffmpeg_binary_path and os.path.exists(_ffmpeg_binary_path):
+        return _ffmpeg_binary_path
+
+    # Check common Android and system locations
+    candidates = [
+        "/data/data/com.droply.app/files/ffmpeg",
+        "/data/data/com.droply.app/lib/libffmpeg.so",
+        "/data/user/0/com.droply.app/files/ffmpeg",
+        "/data/user/0/com.droply.app/lib/libffmpeg.so",
+        shutil.which('ffmpeg'),
+        shutil.which('ffmpeg.exe'),
+    ]
+    for c in candidates:
+        if c and os.path.exists(c):
+            try:
+                if not os.access(c, os.X_OK):
+                    os.chmod(c, 0o755)
+            except Exception:
+                pass
+            _ffmpeg_binary_path = c
+            return c
+    return None
+
+
 def has_ffmpeg() -> bool:
-    return shutil.which('ffmpeg') is not None
+    return get_ffmpeg_path() is not None
 
 
 def sanitize_filename(name: str) -> str:
@@ -79,7 +112,7 @@ def analyze_url(url: str) -> str:
         ydl_opts['noplaylist'] = True
         ydl_opts['extractor_args'] = {
             'youtube': {
-                'player_client': ['android', 'web', 'mweb'],
+                'player_client': ['ios', 'android', 'web', 'mweb'],
             }
         }
 
@@ -221,7 +254,7 @@ def analyze_url(url: str) -> str:
                     existing = formats_dict.get(height)
                     if not existing or (f.get("acodec") != "none" and existing.get("has_audio") is False):
                         formats_dict[height] = {
-                            "format_id": f.get("format_id"),
+                            "format_id": f"{height}p",
                             "height": height,
                             "ext": f.get("ext", "mp4"),
                             "resolution": res_key,
@@ -322,12 +355,21 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
     os.makedirs(output_dir, exist_ok=True)
     out_tmpl = os.path.join(output_dir, '%(title)s.%(ext)s')
 
+    downloaded_filepath = None
+
     def hook(d):
+        nonlocal downloaded_filepath
         global _is_cancelled
         if _is_cancelled:
             raise Exception("Download cancelled by user.")
 
-        if callback_obj and d.get('status') == 'downloading':
+        st = d.get('status')
+        if st == 'finished':
+            fn = d.get('filename')
+            if fn:
+                downloaded_filepath = fn
+
+        if callback_obj and st == 'downloading':
             total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
             downloaded = d.get('downloaded_bytes') or 0
             speed = d.get('speed') or 0
@@ -350,6 +392,9 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
             except Exception:
                 pass
 
+    ff_path = get_ffmpeg_path()
+    ffmpeg_available = bool(ff_path)
+
     ydl_opts = {
         'outtmpl': out_tmpl,
         'progress_hooks': [hook],
@@ -358,15 +403,16 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         'no_warnings': True,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'web', 'mweb'],
+                'player_client': ['ios', 'android', 'web', 'mweb'],
             }
         },
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         }
     }
 
-    ffmpeg_available = has_ffmpeg()
+    if ff_path:
+        ydl_opts['ffmpeg_location'] = ff_path
 
     if is_audio:
         ydl_opts['format'] = 'bestaudio/best'
@@ -377,33 +423,68 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                 'preferredquality': '320',
             }]
     else:
-        # Video download
-        if not format_id or format_id == "best":
-            # Adaptive best format: prioritize single merged stream if ffmpeg not available
+        # Video download format selection
+        f_norm = (format_id or '').strip().lower()
+        if not f_norm or f_norm in ('best', 'auto', 'default'):
+            # Adaptive maximum quality (4K, 1440p, 1080p, etc.)
             if ffmpeg_available:
                 ydl_opts['format'] = 'bestvideo+bestaudio/best'
+                ydl_opts['merge_output_format'] = 'mp4'
             else:
-                ydl_opts['format'] = 'best[ext=mp4]/bestvideo[ext=mp4]+bestaudio/best'
+                ydl_opts['format'] = 'bestvideo*+bestaudio/best[ext=mp4]/best'
+        elif f_norm.endswith('p') and f_norm[:-1].isdigit():
+            target_h = int(f_norm[:-1])
+            if ffmpeg_available:
+                ydl_opts['format'] = f"bestvideo[height<={target_h}]+bestaudio/best[height<={target_h}]/best"
+                ydl_opts['merge_output_format'] = 'mp4'
+            else:
+                ydl_opts['format'] = f"bestvideo*[height<={target_h}]+bestaudio/best[height<={target_h}][ext=mp4]/best[height<={target_h}]/best"
+        elif '+' in format_id or 'bestvideo' in format_id or 'bestaudio' in format_id:
+            ydl_opts['format'] = format_id
+            if ffmpeg_available:
+                ydl_opts['merge_output_format'] = 'mp4'
         else:
             if ffmpeg_available:
-                ydl_opts['format'] = f"{format_id}+bestaudio/best"
+                ydl_opts['format'] = f"{format_id}+bestaudio/bestvideo+bestaudio/best"
+                ydl_opts['merge_output_format'] = 'mp4'
             else:
-                # Without ffmpeg, attempt best single stream for requested quality or best available
-                ydl_opts['format'] = f"{format_id}[acodec!=none]/best[height<={format_id}]/best"
+                ydl_opts['format'] = f"{format_id}+bestaudio/best[ext=mp4]/best"
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             res = ydl.download([url])
+            
+            final_path = downloaded_filepath
+            if is_audio and final_path:
+                base, _ = os.path.splitext(final_path)
+                for ext in [audio_format or 'mp3', 'mp3', 'm4a', 'opus', 'wav']:
+                    if os.path.exists(f"{base}.{ext}"):
+                        final_path = f"{base}.{ext}"
+                        break
+            
+            if not final_path or not os.path.exists(final_path):
+                # Search output_dir for newest file
+                try:
+                    candidates = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
+                    if candidates:
+                        candidates.sort(key=os.path.getmtime, reverse=True)
+                        final_path = candidates[0]
+                except Exception:
+                    pass
+
+            if not final_path:
+                final_path = output_dir
+
             if callback_obj:
                 callback_obj.onComplete(json.dumps({
                     "status": "completed",
                     "code": res,
-                    "title": title or "Downloaded Media",
-                    "file_path": output_dir,
+                    "title": title or (os.path.basename(final_path) if final_path != output_dir else "Downloaded Media"),
+                    "file_path": final_path,
                     "percent": 100.0,
                     "progress_percent": 100.0
                 }))
-            return json.dumps({"status": "completed", "code": res})
+            return json.dumps({"status": "completed", "code": res, "file_path": final_path})
     except Exception as e:
         err_msg = str(e)
         if "cancelled" in err_msg.lower():
@@ -415,3 +496,78 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                 "error_friendly": err_msg
             }))
         return json.dumps({"status": "error", "error": err_msg})
+
+
+def check_updates() -> str:
+    """
+    Checks for updates for Droply and yt-dlp core.
+    """
+    current_app_version = "v1.2.4"
+    current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
+
+    latest_app_version = current_app_version
+    app_up_to_date = True
+    release_url = "https://github.com/Amlan-Sarkar/Droply/releases"
+
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            "https://api.github.com/repos/Amlan-Sarkar/Droply/releases/latest",
+            headers={"User-Agent": "Droply-App"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            tag = data.get("tag_name")
+            if tag:
+                latest_app_version = tag
+                app_up_to_date = (tag.lstrip('v') == current_app_version.lstrip('v'))
+                release_url = data.get("html_url", release_url)
+    except Exception:
+        pass
+
+    latest_ytdlp_version = current_ytdlp_version
+    ytdlp_up_to_date = True
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            "https://pypi.org/pypi/yt-dlp/json",
+            headers={"User-Agent": "Droply-App"}
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            ver = data.get("info", {}).get("version")
+            if ver:
+                latest_ytdlp_version = ver
+                ytdlp_up_to_date = (ver == current_ytdlp_version)
+    except Exception:
+        pass
+
+    return json.dumps({
+        "app_installed": current_app_version,
+        "app_latest": latest_app_version,
+        "app_up_to_date": app_up_to_date,
+        "release_url": release_url,
+        "ytdlp_installed": current_ytdlp_version,
+        "ytdlp_latest": latest_ytdlp_version,
+        "ytdlp_up_to_date": ytdlp_up_to_date
+    })
+
+
+def update_ytdlp_core() -> str:
+    """
+    Attempts to update yt-dlp package to latest release.
+    """
+    try:
+        import subprocess
+        cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if proc.returncode == 0:
+            import importlib
+            importlib.reload(yt_dlp)
+            new_ver = getattr(yt_dlp, "__version__", "updated")
+            return json.dumps({"status": "success", "message": f"Successfully updated yt-dlp core to {new_ver}!", "version": new_ver})
+        else:
+            return json.dumps({"status": "error", "message": proc.stderr or proc.stdout or "Update command failed."})
+    except Exception as e:
+        return json.dumps({"status": "error", "message": str(e)})
+

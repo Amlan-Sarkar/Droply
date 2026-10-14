@@ -17,8 +17,10 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 
+import androidx.core.content.FileProvider;
 import androidx.webkit.WebViewAssetLoader;
 
 import androidx.annotation.NonNull;
@@ -62,6 +64,43 @@ public class MainActivity extends AppCompatActivity {
         if (!Python.isStarted()) {
             Python.start(new AndroidPlatform(this));
         }
+        setupFfmpeg();
+    }
+
+    private void setupFfmpeg() {
+        executor.execute(() -> {
+            try {
+                File nativeLib = new File(getApplicationInfo().nativeLibraryDir, "libffmpeg.so");
+                String ffmpegPath = null;
+                if (nativeLib.exists()) {
+                    ffmpegPath = nativeLib.getAbsolutePath();
+                } else {
+                    File internalFfmpeg = new File(getFilesDir(), "ffmpeg");
+                    if (internalFfmpeg.exists()) {
+                        internalFfmpeg.setExecutable(true, false);
+                        ffmpegPath = internalFfmpeg.getAbsolutePath();
+                    } else {
+                        try (java.io.InputStream in = getAssets().open("bin/ffmpeg");
+                             java.io.FileOutputStream out = new java.io.FileOutputStream(internalFfmpeg)) {
+                            byte[] buf = new byte[8192];
+                            int len;
+                            while ((len = in.read(buf)) > 0) {
+                                out.write(buf, 0, len);
+                            }
+                            internalFfmpeg.setExecutable(true, false);
+                            ffmpegPath = internalFfmpeg.getAbsolutePath();
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                if (ffmpegPath != null && Python.isStarted()) {
+                    PyObject pyEngine = Python.getInstance().getModule("droply_engine");
+                    if (pyEngine != null) {
+                        pyEngine.callAttr("set_ffmpeg_path", ffmpegPath);
+                    }
+                }
+            } catch (Exception ignored) {}
+        });
     }
 
     private void requestAppPermissions() {
@@ -273,6 +312,114 @@ public class MainActivity extends AppCompatActivity {
                     PyObject module = py.getModule("droply_engine");
                     module.callAttr("cancel_active_download");
                 } catch (Exception ignored) {}
+            });
+        }
+
+        @JavascriptInterface
+        public void openFile(String filePath) {
+            mainHandler.post(() -> {
+                try {
+                    if (filePath == null || filePath.trim().isEmpty()) {
+                        openDownloadFolder();
+                        return;
+                    }
+                    File file = new File(filePath);
+                    if (!file.exists()) {
+                        File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
+                        File candidate = new File(downloadDir, file.getName());
+                        if (candidate.exists()) {
+                            file = candidate;
+                        }
+                    }
+                    if (file.isDirectory() || !file.exists()) {
+                        openDownloadFolder();
+                        return;
+                    }
+
+                    Uri fileUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    String extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(file).toString());
+                    if (extension == null || extension.isEmpty()) {
+                        String name = file.getName();
+                        int dot = name.lastIndexOf('.');
+                        if (dot >= 0) {
+                            extension = name.substring(dot + 1);
+                        }
+                    }
+
+                    String mimeType = null;
+                    if (extension != null) {
+                        mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
+                    }
+                    if (mimeType == null) {
+                        String extLower = extension != null ? extension.toLowerCase() : "";
+                        if (extLower.matches("mp4|mkv|webm|avi|mov|3gp|flv|m4v")) {
+                            mimeType = "video/*";
+                        } else if (extLower.matches("mp3|m4a|wav|aac|flac|ogg|opus|wma")) {
+                            mimeType = "audio/*";
+                        } else {
+                            mimeType = "*/*";
+                        }
+                    }
+
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(fileUri, mimeType);
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                    Intent chooser = Intent.createChooser(intent, "Open with");
+                    chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(chooser);
+                } catch (Exception e) {
+                    try {
+                        openDownloadFolder();
+                    } catch (Exception ignored) {
+                        Toast.makeText(MainActivity.this, "Could not open media: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void checkUpdates() {
+            executor.execute(() -> {
+                try {
+                    Python py = Python.getInstance();
+                    PyObject module = py.getModule("droply_engine");
+                    PyObject result = module.callAttr("check_updates");
+                    String json = result.toString();
+                    mainHandler.post(() -> {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_update_checked', { detail: " + json + " }));";
+                        webView.evaluateJavascript(js, null);
+                    });
+                } catch (Exception e) {
+                    mainHandler.post(() -> {
+                        String errJson = "{\"error\": " + JSONObjectQuote(e.getMessage()) + "}";
+                        String js = "window.dispatchEvent(new CustomEvent('droply_update_checked', { detail: " + errJson + " }));";
+                        webView.evaluateJavascript(js, null);
+                    });
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void updateYtdlpCore() {
+            executor.execute(() -> {
+                try {
+                    Python py = Python.getInstance();
+                    PyObject module = py.getModule("droply_engine");
+                    PyObject result = module.callAttr("update_ytdlp_core");
+                    String json = result.toString();
+                    mainHandler.post(() -> {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_ytdlp_updated', { detail: " + json + " }));";
+                        webView.evaluateJavascript(js, null);
+                    });
+                } catch (Exception e) {
+                    mainHandler.post(() -> {
+                        String errJson = "{\"error\": " + JSONObjectQuote(e.getMessage()) + "}";
+                        String js = "window.dispatchEvent(new CustomEvent('droply_ytdlp_updated', { detail: " + errJson + " }));";
+                        webView.evaluateJavascript(js, null);
+                    });
+                }
             });
         }
 

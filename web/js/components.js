@@ -188,18 +188,73 @@ const Components = {
     container.parentElement.insertBefore(dropWrap, container);
   },
 
-  // Render Single Queue Item Card in Batch View
+  formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '0 MB';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    let b = parseFloat(bytes);
+    while (b >= 1024 && i < units.length - 1) {
+      b /= 1024;
+      i++;
+    }
+    return `${b.toFixed(1)} ${units[i]}`;
+  },
+
+  formatSeconds(s) {
+    if (!s || s <= 0) return '00:00';
+    const sec = parseInt(s, 10);
+    const m = Math.floor(sec / 60);
+    const remS = sec % 60;
+    const h = Math.floor(m / 60);
+    const remM = m % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return h > 0 ? `${pad(h)}:${pad(remM)}:${pad(remS)}` : `${pad(remM)}:${pad(remS)}`;
+  },
+
+  // Render Queue / Recent Download Card (OmniDownloader Style)
   renderQueueItem(task) {
     const card = document.createElement('div');
-    card.className = 'queue-item-card';
     card.id = `q-task-${task.id}`;
 
+    if (task.status === 'completed') {
+      card.className = 'omni-recent-card';
+      const isAudio = Boolean(task.is_audio);
+      const tagType = isAudio ? 'AUDIO' : 'VIDEO';
+      const tagText = isAudio ? 'Music • Tap to play' : 'Movies • Tap to watch';
+
+      card.innerHTML = `
+        <button class="omni-play-badge" data-action="open-file" data-path="${task.file_path || ''}" title="Tap to play">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+        </button>
+        <div class="omni-recent-info" data-action="open-file" data-path="${task.file_path || ''}">
+          <div class="omni-recent-title" title="${task.title || 'Downloaded Media'}">${task.title || 'Downloaded Media'}</div>
+          <div class="omni-recent-sub">
+            <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${tagType}</span>
+            <span class="omni-tag-text">${tagText}</span>
+          </div>
+        </div>
+        <div class="omni-recent-actions">
+          <button class="btn-omni-open" data-action="open-file" data-path="${task.file_path || ''}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <span>Open</span>
+          </button>
+          <button class="icon-btn-trash" data-action="remove" data-id="${task.id}" title="Remove">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          </button>
+        </div>
+      `;
+      return card;
+    }
+
+    // Active downloading or pending / failed card
+    card.className = 'queue-item-card';
     const thumbSrc = task.thumbnail || '';
     const platformIcon = this.getPlatformIcon(task.platform);
 
     let statusClass = task.status || 'queued';
     let statusLabel = task.status || 'Queued';
     if (task.status === 'processing') statusLabel = 'Merging';
+    if (task.status === 'downloading') statusLabel = 'Downloading';
 
     const actionButtons = this._getQueueItemActions(task);
     const metaRowContent = this._getQueueItemMeta(task);
@@ -211,7 +266,7 @@ const Components = {
       <div class="queue-item-info">
         <div class="queue-item-title-row">
           <span class="queue-item-title" title="${task.title}">${task.title}</span>
-          <span class="queue-item-platform">${task.platform}</span>
+          <span class="queue-item-platform">${task.platform || 'Media'}</span>
           <span class="status-tag ${statusClass}">${statusLabel}</span>
         </div>
         <div class="queue-item-progress-track">
@@ -249,12 +304,12 @@ const Components = {
       `;
     } else if (task.status === 'completed') {
       return `
-        <button class="secondary-btn btn-sm" data-action="open-folder" data-path="${task.file_path || ''}" title="Open Folder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          <span>Folder</span>
+        <button class="btn-omni-open" data-action="open-file" data-path="${task.file_path || ''}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          <span>Open</span>
         </button>
-        <button class="icon-btn" data-action="play" data-path="${task.file_path || ''}" title="Play file">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <button class="icon-btn-trash" data-action="remove" data-id="${task.id}" title="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
       `;
     } else {
@@ -294,6 +349,13 @@ const Components = {
     const el = document.getElementById(`q-task-${task.id}`);
     if (!el) return false;
 
+    // If transitioned to completed, replace with Omni completed card!
+    if (task.status === 'completed' && !el.classList.contains('omni-recent-card')) {
+      const newCard = this.renderQueueItem(task);
+      el.replaceWith(newCard);
+      return true;
+    }
+
     const fill = el.querySelector('.queue-item-progress-fill');
     if (fill) fill.style.width = `${task.percent || 0}%`;
 
@@ -319,7 +381,8 @@ const Components = {
         errEl = document.createElement('div');
         errEl.className = 'queue-item-error-msg';
         errEl.style.cssText = 'font-size: 11.5px; color: #f87171; line-height: 1.4;';
-        el.querySelector('.queue-item-info').appendChild(errEl);
+        const info = el.querySelector('.queue-item-info');
+        if (info) info.appendChild(errEl);
       }
       errEl.textContent = task.error_friendly;
     } else if (errEl) {
@@ -337,6 +400,7 @@ const Components = {
 
     const icon = this.getPlatformIcon(item.platform);
     const thumbSrc = item.thumbnail || '';
+    const isAudio = Boolean(item.is_audio || (item.format_label && item.format_label.toLowerCase().includes('audio')));
 
     card.innerHTML = `
       <div style="position: relative;">
@@ -346,20 +410,17 @@ const Components = {
         <div class="history-filename" title="${item.filename || item.title}">${item.filename || item.title}</div>
         <div class="history-meta-sub">
           <span class="queue-item-platform">${item.platform}</span>
+          <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}" style="font-size: 10px; padding: 2px 6px;">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
           <span>${item.file_size_str || '0 B'}</span>
           <span>${item.format_label || ''}</span>
           <span>${item.created_at_str || ''}</span>
-          <span class="status-tag ${item.status}">${item.status}</span>
         </div>
       </div>
       <div class="history-actions">
         ${item.file_path ? `
-          <button class="secondary-btn btn-sm" data-action="reveal" data-path="${item.file_path}" title="Reveal in Windows Explorer">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <span>Reveal</span>
-          </button>
-          <button class="icon-btn" data-action="play" data-path="${item.file_path}" title="Play file">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <button class="btn-omni-open" data-action="open-file" data-path="${item.file_path}" title="Open with compatible app">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            <span>Open</span>
           </button>
         ` : ''}
         <button class="icon-btn" data-action="delete-hist" data-id="${item.id}" title="Remove record">
@@ -371,71 +432,400 @@ const Components = {
     return card;
   },
 
-  // Render Playlist Preview Card
-  renderPlaylistCard(data, onEnqueueAll, onDownloadAll) {
+  // Render Omni-style Playlist Card with Quality Selection & Full Video List
+  renderPlaylistCard(data, onDownloadSelected) {
     const card = document.createElement('div');
-    card.className = 'playlist-preview-card';
-    card.style.cssText = 'background: rgba(18, 24, 38, 0.85); border: 1px solid rgba(139, 92, 246, 0.35); border-radius: 16px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); backdrop-filter: blur(12px);';
+    card.className = 'omni-playlist-card';
 
     const entries = data.playlist_entries || [];
     const count = data.playlist_count || entries.length;
     const thumb = data.thumbnail || (entries[0] && entries[0].thumbnail) || '';
-    const saveDir = (data.default_download_dir || 'Downloads/Droply') + '/' + (data.title || 'Playlist');
 
-    let previewRows = '';
-    entries.slice(0, 5).forEach((item, idx) => {
-      previewRows += `
-        <div style="display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.06);">
-          <span style="color:#818cf8; font-weight:700; width:22px; font-size:13px;">${idx + 1}</span>
-          <span style="flex:1; color:#f1f5f9; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.title}</span>
-          <span style="color:#94a3b8; font-size:12px;">${item.duration_str || ''}</span>
-        </div>
-      `;
-    });
-    if (entries.length > 5) {
-      previewRows += `
-        <div style="padding:8px 0; text-align:center; color:#a5b4fc; font-size:13px; font-weight:600;">
-          + ${entries.length - 5} more items in playlist
-        </div>
-      `;
-    }
+    // Selection set of video indices
+    const selectedIndices = new Set(entries.map((_, i) => i));
+
+    // Quality state for entire playlist
+    let selectedQuality = 'best'; // '1080p', '720p', '480p', 'best', 'audio_mp3', 'audio_m4a'
+    let isAudio = false;
+    let audioFormat = 'mp3';
+
+    // Size estimation helper based on duration and quality bitrate
+    const getEntrySize = (durSec) => {
+      const dur = durSec && durSec > 0 ? durSec : 210; // default 3.5 min
+      let bytesPerSec = 0;
+      if (selectedQuality === 'audio_mp3') {
+        bytesPerSec = (320 * 1024) / 8; // 320 kbps
+      } else if (selectedQuality === 'audio_m4a') {
+        bytesPerSec = (192 * 1024) / 8; // 192 kbps
+      } else if (selectedQuality === '1080p') {
+        bytesPerSec = (3500 * 1024) / 8; // ~3.5 Mbps FHD
+      } else if (selectedQuality === '720p') {
+        bytesPerSec = (1900 * 1024) / 8; // ~1.9 Mbps HD
+      } else if (selectedQuality === '480p') {
+        bytesPerSec = (900 * 1024) / 8;  // ~900 kbps SD
+      } else {
+        // best
+        bytesPerSec = (2800 * 1024) / 8; // ~2.8 Mbps
+      }
+      return dur * bytesPerSec;
+    };
+
+    const calcTotalEstimatedSize = () => {
+      let total = 0;
+      entries.forEach((e, i) => {
+        if (selectedIndices.has(i)) {
+          total += getEntrySize(e.duration);
+        }
+      });
+      return Components.formatBytes(total);
+    };
+
+    // Render items HTML
+    const renderVideoRows = () => {
+      return entries.map((item, idx) => {
+        const isChecked = selectedIndices.has(idx);
+        const itemSizeStr = Components.formatBytes(getEntrySize(item.duration));
+        return `
+          <div class="playlist-video-row ${isChecked ? 'selected' : ''}" data-idx="${idx}">
+            <input type="checkbox" class="playlist-chk custom-checkbox" data-idx="${idx}" ${isChecked ? 'checked' : ''} />
+            <span class="playlist-item-idx">#${idx + 1}</span>
+            <div class="playlist-item-info">
+              <span class="playlist-item-title" title="${item.title}">${item.title}</span>
+              <div class="playlist-item-meta">
+                <span>${item.duration_str || '00:00'}</span>
+                <span class="dot">•</span>
+                <span class="playlist-item-size">${itemSizeStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    };
 
     card.innerHTML = `
-      <div style="display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap;">
-        ${thumb ? `<img src="${thumb}" alt="thumb" style="width:130px; height:80px; object-fit:cover; border-radius:10px; border:1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 14px rgba(0,0,0,0.5);" />` : ''}
-        <div style="flex:1; min-width:240px;">
-          <div style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, #6366f1, #8b5cf6); color:#fff; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">
-            <svg style="width:12px; height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Playlist &bull; ${count} Items
+      <!-- TOP PLAYLIST HEADER -->
+      <div class="omni-playlist-header">
+        ${thumb ? `<img src="${thumb}" alt="thumb" class="omni-playlist-thumb" />` : `<div class="omni-playlist-thumb placeholder">📑</div>`}
+        <div class="omni-playlist-info">
+          <div class="omni-playlist-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <span>Playlist • ${count} Videos</span>
           </div>
-          <h3 style="margin:0 0 4px 0; color:#fff; font-size:18px; font-weight:700;">${data.title}</h3>
-          <div style="color:#94a3b8; font-size:13px; margin-bottom:12px;">Curated by <span style="color:#e2e8f0; font-weight:600;">${data.uploader || 'Creator'}</span></div>
-          <div style="background:rgba(99, 102, 241, 0.12); border:1px solid rgba(99, 102, 241, 0.25); border-radius:10px; padding:10px 14px; font-size:12.5px; color:#c7d2fe; display:flex; align-items:center; gap:8px;">
-            <svg style="width:18px; height:18px; flex-shrink:0; color:#818cf8;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            <span>Creates dedicated folder: <strong style="color:#fff;">${saveDir}</strong></span>
-          </div>
+          <h3 class="omni-playlist-title">${data.title || 'Playlist'}</h3>
+          <div class="omni-playlist-author">Curated by <span>${data.uploader || 'Creator'}</span> • Total duration: ${data.duration_str || 'Various'}</div>
         </div>
       </div>
 
-      <div style="margin-top:16px; background:rgba(0,0,0,0.25); border-radius:10px; padding:10px 14px;">
-        ${previewRows}
+      <!-- PLAYLIST QUALITY SELECTOR (Applied to all videos at once!) -->
+      <div class="omni-playlist-quality-wrap">
+        <label class="omni-sublabel">Select Download Quality:</label>
+        <div class="omni-quality-chips-grid">
+          <button class="omni-q-chip" data-quality="480p">
+            <span class="q-label">Standard 480p</span>
+            <span class="q-est">~SD</span>
+          </button>
+          <button class="omni-q-chip" data-quality="720p">
+            <span class="q-label">HD 720p</span>
+            <span class="q-est">~Standard</span>
+          </button>
+          <button class="omni-q-chip" data-quality="1080p">
+            <span class="q-label">Full HD 1080p</span>
+            <span class="q-est">~FHD</span>
+          </button>
+          <button class="omni-q-chip active" data-quality="best">
+            <span class="q-label">Best Auto</span>
+            <span class="q-est">~Adaptive</span>
+          </button>
+          <button class="omni-q-chip" data-quality="audio_mp3">
+            <span class="q-label">Audio Only (MP3)</span>
+            <span class="q-est">~320k</span>
+          </button>
+          <button class="omni-q-chip" data-quality="audio_m4a">
+            <span class="q-label">Audio Only (M4A)</span>
+            <span class="q-est">~HQ AAC</span>
+          </button>
+        </div>
+
+        <!-- ESTIMATED SIZE BANNER -->
+        <div class="omni-size-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>Estimated Download Size: <strong id="playlist-est-size">${calcTotalEstimatedSize()}</strong></span>
+        </div>
       </div>
 
-      <div style="display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;">
-        <button id="btn-playlist-enqueue-all" class="secondary-btn" style="flex:1; min-width:180px; justify-content:center; padding:12px 18px; font-weight:600;">
-          <svg style="width:16px; height:16px; margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Add All ${count} to Queue
-        </button>
-        <button id="btn-playlist-download-now" class="primary-btn" style="flex:1; min-width:180px; justify-content:center; padding:12px 18px; font-weight:700;">
-          <svg style="width:16px; height:16px; margin-right:6px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Download Playlist Folder
+      <!-- SELECTION CONTROLS HEADER -->
+      <div class="omni-selection-bar">
+        <div class="omni-selection-count">
+          <span id="playlist-selected-count">${selectedIndices.size}</span> of ${count} videos selected
+        </div>
+        <div class="omni-selection-btns">
+          <button class="text-action-btn" id="btn-select-all">Select All</button>
+          <span class="divider">|</span>
+          <button class="text-action-btn" id="btn-deselect-all">Deselect All</button>
+        </div>
+      </div>
+
+      <!-- SCROLLABLE LIST OF ALL PLAYLIST VIDEOS -->
+      <div class="omni-playlist-scrollable" id="playlist-videos-container">
+        ${renderVideoRows()}
+      </div>
+
+      <!-- PRIMARY DOWNLOAD ACTION -->
+      <div class="omni-playlist-footer">
+        <button class="primary-btn btn-download-playlist-now" id="btn-download-playlist-now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span id="btn-download-playlist-text">Download Playlist (${selectedIndices.size} Videos • ${calcTotalEstimatedSize()})</span>
         </button>
       </div>
     `;
 
-    card.querySelector('#btn-playlist-enqueue-all').addEventListener('click', () => onEnqueueAll(data));
-    card.querySelector('#btn-playlist-download-now').addEventListener('click', () => onDownloadAll(data));
+    // Refresh UI helper
+    const updateSizeAndButton = () => {
+      const est = calcTotalEstimatedSize();
+      const estSizeEl = card.querySelector('#playlist-est-size');
+      if (estSizeEl) estSizeEl.textContent = est;
+
+      const selCountEl = card.querySelector('#playlist-selected-count');
+      if (selCountEl) selCountEl.textContent = selectedIndices.size;
+
+      const btnText = card.querySelector('#btn-download-playlist-text');
+      if (btnText) {
+        btnText.textContent = `Download Playlist (${selectedIndices.size} Videos • ${est})`;
+      }
+
+      const dlBtn = card.querySelector('#btn-download-playlist-now');
+      if (dlBtn) dlBtn.disabled = selectedIndices.size === 0;
+
+      // Update individual row sizes
+      card.querySelectorAll('.playlist-video-row').forEach(row => {
+        const idx = parseInt(row.getAttribute('data-idx'), 10);
+        const item = entries[idx];
+        const sizeEl = row.querySelector('.playlist-item-size');
+        if (sizeEl && item) {
+          sizeEl.textContent = Components.formatBytes(getEntrySize(item.duration));
+        }
+      });
+    };
+
+    // Quality chip click handlers
+    card.querySelectorAll('.omni-q-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        card.querySelectorAll('.omni-q-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        selectedQuality = chip.getAttribute('data-quality');
+        if (selectedQuality.startsWith('audio_')) {
+          isAudio = true;
+          audioFormat = selectedQuality.replace('audio_', '');
+        } else {
+          isAudio = false;
+          audioFormat = 'mp3';
+        }
+        updateSizeAndButton();
+      });
+    });
+
+    // Checkbox and row click handlers
+    const listContainer = card.querySelector('#playlist-videos-container');
+    listContainer.addEventListener('click', (e) => {
+      const row = e.target.closest('.playlist-video-row');
+      if (!row) return;
+
+      const idx = parseInt(row.getAttribute('data-idx'), 10);
+      const chk = row.querySelector('.playlist-chk');
+
+      if (e.target !== chk) {
+        chk.checked = !chk.checked;
+      }
+
+      if (chk.checked) {
+        selectedIndices.add(idx);
+        row.classList.add('selected');
+      } else {
+        selectedIndices.delete(idx);
+        row.classList.remove('selected');
+      }
+      updateSizeAndButton();
+    });
+
+    // Select All
+    card.querySelector('#btn-select-all').addEventListener('click', () => {
+      entries.forEach((_, i) => selectedIndices.add(i));
+      card.querySelectorAll('.playlist-chk').forEach(c => c.checked = true);
+      card.querySelectorAll('.playlist-video-row').forEach(r => r.classList.add('selected'));
+      updateSizeAndButton();
+    });
+
+    // Deselect All
+    card.querySelector('#btn-deselect-all').addEventListener('click', () => {
+      selectedIndices.clear();
+      card.querySelectorAll('.playlist-chk').forEach(c => c.checked = false);
+      card.querySelectorAll('.playlist-video-row').forEach(r => r.classList.remove('selected'));
+      updateSizeAndButton();
+    });
+
+    // Download Button Click
+    card.querySelector('#btn-download-playlist-now').addEventListener('click', () => {
+      if (selectedIndices.size === 0) {
+        Components.showToast('Please select at least one video to download.', 'error');
+        return;
+      }
+      const selectedEntries = entries.filter((_, i) => selectedIndices.has(i));
+      let formatId = 'best';
+      if (selectedQuality === '1080p') formatId = 'bestvideo[height<=1080]+bestaudio/best';
+      else if (selectedQuality === '720p') formatId = 'bestvideo[height<=720]+bestaudio/best';
+      else if (selectedQuality === '480p') formatId = 'bestvideo[height<=480]+bestaudio/best';
+      else if (isAudio) formatId = 'bestaudio/best';
+
+      onDownloadSelected(data, selectedEntries, {
+        qualityKey: selectedQuality,
+        format_id: formatId,
+        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : selectedQuality.toUpperCase(),
+        is_audio: isAudio,
+        audio_format: audioFormat
+      });
+    });
+
+    return card;
+  },
+
+  // Render Batch URLs Card (for multiple pasted links)
+  renderBatchCard(batchData, onDownloadSelected) {
+    const card = document.createElement('div');
+    card.className = 'omni-playlist-card omni-batch-card';
+
+    const items = batchData.items || [];
+    const selectedIndices = new Set(items.map((_, i) => i));
+    let selectedQuality = 'best';
+    let isAudio = false;
+    let audioFormat = 'mp3';
+
+    card.innerHTML = `
+      <div class="omni-playlist-header">
+        <div class="omni-playlist-thumb placeholder">🔗</div>
+        <div class="omni-playlist-info">
+          <div class="omni-playlist-badge">
+            <span>Multiple Media Links • ${items.length} URLs</span>
+          </div>
+          <h3 class="omni-playlist-title">Batch Download Links</h3>
+          <div class="omni-playlist-author">All recognized video and audio URLs will download directly.</div>
+        </div>
+      </div>
+
+      <div class="omni-playlist-quality-wrap">
+        <label class="omni-sublabel">Select Download Quality Preset:</label>
+        <div class="omni-quality-chips-grid">
+          <button class="omni-q-chip" data-quality="720p">
+            <span class="q-label">HD 720p</span>
+          </button>
+          <button class="omni-q-chip" data-quality="1080p">
+            <span class="q-label">Full HD 1080p</span>
+          </button>
+          <button class="omni-q-chip active" data-quality="best">
+            <span class="q-label">Best Auto</span>
+          </button>
+          <button class="omni-q-chip" data-quality="audio_mp3">
+            <span class="q-label">Audio Only (MP3)</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="omni-selection-bar">
+        <div class="omni-selection-count">
+          <span id="batch-selected-count">${selectedIndices.size}</span> of ${items.length} items selected
+        </div>
+        <div class="omni-selection-btns">
+          <button class="text-action-btn" id="btn-batch-select-all">Select All</button>
+          <span class="divider">|</span>
+          <button class="text-action-btn" id="btn-batch-deselect-all">Deselect All</button>
+        </div>
+      </div>
+
+      <div class="omni-playlist-scrollable" id="batch-items-container">
+        ${items.map((it, idx) => `
+          <div class="playlist-video-row selected" data-idx="${idx}">
+            <input type="checkbox" class="playlist-chk custom-checkbox" data-idx="${idx}" checked />
+            <span class="playlist-item-idx">#${idx + 1}</span>
+            <div class="playlist-item-info">
+              <span class="playlist-item-title">${it.title || it.url}</span>
+              <div class="playlist-item-meta">
+                <span>${it.platform || 'Media'}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="omni-playlist-footer">
+        <button class="primary-btn btn-download-playlist-now" id="btn-download-batch-now">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span id="btn-download-batch-text">Download All (${selectedIndices.size} Items)</span>
+        </button>
+      </div>
+    `;
+
+    const updateBatchBtn = () => {
+      const selEl = card.querySelector('#batch-selected-count');
+      if (selEl) selEl.textContent = selectedIndices.size;
+      const textEl = card.querySelector('#btn-download-batch-text');
+      if (textEl) textEl.textContent = `Download All (${selectedIndices.size} Items)`;
+      const dlBtn = card.querySelector('#btn-download-batch-now');
+      if (dlBtn) dlBtn.disabled = selectedIndices.size === 0;
+    };
+
+    card.querySelectorAll('.omni-q-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        card.querySelectorAll('.omni-q-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedQuality = chip.getAttribute('data-quality');
+        isAudio = selectedQuality.startsWith('audio_');
+        audioFormat = isAudio ? selectedQuality.replace('audio_', '') : 'mp3';
+      });
+    });
+
+    const listCont = card.querySelector('#batch-items-container');
+    listCont.addEventListener('click', (e) => {
+      const row = e.target.closest('.playlist-video-row');
+      if (!row) return;
+      const idx = parseInt(row.getAttribute('data-idx'), 10);
+      const chk = row.querySelector('.playlist-chk');
+      if (e.target !== chk) chk.checked = !chk.checked;
+      if (chk.checked) {
+        selectedIndices.add(idx);
+        row.classList.add('selected');
+      } else {
+        selectedIndices.delete(idx);
+        row.classList.remove('selected');
+      }
+      updateBatchBtn();
+    });
+
+    card.querySelector('#btn-batch-select-all').addEventListener('click', () => {
+      items.forEach((_, i) => selectedIndices.add(i));
+      card.querySelectorAll('.playlist-chk').forEach(c => c.checked = true);
+      card.querySelectorAll('.playlist-video-row').forEach(r => r.classList.add('selected'));
+      updateBatchBtn();
+    });
+
+    card.querySelector('#btn-batch-deselect-all').addEventListener('click', () => {
+      selectedIndices.clear();
+      card.querySelectorAll('.playlist-chk').forEach(c => c.checked = false);
+      card.querySelectorAll('.playlist-video-row').forEach(r => r.classList.remove('selected'));
+      updateBatchBtn();
+    });
+
+    card.querySelector('#btn-download-batch-now').addEventListener('click', () => {
+      if (selectedIndices.size === 0) return;
+      const sel = items.filter((_, i) => selectedIndices.has(i));
+      onDownloadSelected(sel, {
+        format_id: selectedQuality === '1080p' ? 'bestvideo[height<=1080]+bestaudio/best' : (selectedQuality === '720p' ? 'bestvideo[height<=720]+bestaudio/best' : 'best'),
+        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : selectedQuality.toUpperCase(),
+        is_audio: isAudio,
+        audio_format: audioFormat
+      });
+    });
 
     return card;
   }
 };
+
