@@ -1,5 +1,5 @@
 @echo off
-title Droply - Universal Local Media Downloader
+title Droply - Local Media Downloader
 cd /d "%~dp0"
 echo ========================================================
 echo   Launching Droply Local Media Engine...
