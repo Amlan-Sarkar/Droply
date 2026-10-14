@@ -46,13 +46,12 @@ const Components = {
     }, duration);
   },
 
-  // Render Format Chips for Video
+  // Render Format Chips for Video (OmniDownloader Style)
   renderVideoFormats(formats, selectedFormatId, onSelect) {
     const container = document.getElementById('video-formats-grid');
     if (!container) return;
     container.innerHTML = '';
 
-    // Remove existing dropdown if any
     const existingDropdown = container.parentElement.querySelector('.video-format-dropdown-wrap');
     if (existingDropdown) existingDropdown.remove();
 
@@ -61,66 +60,39 @@ const Components = {
       return;
     }
 
-    // Auto-select the top format (highest quality) if none selected
+    const defaultFmt = formats[0];
+    const initialSelectedId = selectedFormatId || defaultFmt.format_id;
     if (!selectedFormatId && formats.length > 0) {
-      onSelect(formats[0]);
+      onSelect(defaultFmt);
+      const sizeEl = document.getElementById('omni-estimated-size');
+      if (sizeEl) sizeEl.textContent = defaultFmt.filesize_str || 'Standard';
     }
 
-    // Create dropdown selector for mobile & compact view
-    const dropWrap = document.createElement('div');
-    dropWrap.className = 'video-format-dropdown-wrap';
-    dropWrap.style.marginBottom = '10px';
-
-    const select = document.createElement('select');
-    select.className = 'custom-select format-select-menu';
-    select.style.width = '100%';
-
-    formats.forEach((fmt, index) => {
-      const isSelected = selectedFormatId ? (fmt.format_id === selectedFormatId) : (index === 0);
-
-      const opt = document.createElement('option');
-      opt.value = fmt.format_id;
-      opt.textContent = `${fmt.label || fmt.resolution} • ${fmt.filesize_str || 'Standard'}`;
-      opt.selected = isSelected;
-      select.appendChild(opt);
-
-      const chip = document.createElement('div');
-      chip.className = `format-chip ${isSelected ? 'selected' : ''}`;
+    formats.forEach((fmt) => {
+      const isSelected = (fmt.format_id === initialSelectedId);
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `omni-quality-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
       chip.innerHTML = `
-        <div class="format-chip-label">${fmt.label || fmt.resolution}</div>
-        <div class="format-chip-meta">
-          <span>${fmt.resolution}</span>
-          <span class="format-chip-size">${fmt.filesize_str || 'Standard'}</span>
-        </div>
+        <span class="chip-label">${fmt.label || fmt.resolution}</span>
+        <span class="chip-size">${fmt.filesize_str || 'Standard'}</span>
       `;
 
       chip.addEventListener('click', () => {
-        container.querySelectorAll('.format-chip').forEach(c => c.classList.remove('selected'));
+        container.querySelectorAll('.omni-quality-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
-        select.value = fmt.format_id;
+        const sizeEl = document.getElementById('omni-estimated-size');
+        if (sizeEl) sizeEl.textContent = fmt.filesize_str || 'Standard';
         onSelect(fmt);
       });
 
       container.appendChild(chip);
     });
-
-    select.addEventListener('change', (e) => {
-      const chosen = formats.find(f => f.format_id === e.target.value);
-      if (chosen) {
-        container.querySelectorAll('.format-chip').forEach(c => {
-          c.classList.toggle('selected', c.getAttribute('data-fid') === chosen.format_id);
-        });
-        onSelect(chosen);
-      }
-    });
-
-    dropWrap.appendChild(select);
-    container.parentElement.insertBefore(dropWrap, container);
   },
 
-  // Render Audio Codec Chips
+  // Render Audio Codec Chips (OmniDownloader Style)
   renderAudioFormats(formats, selectedFormatId, onSelect) {
     const container = document.getElementById('audio-formats-grid');
     if (!container) return;
@@ -131,53 +103,32 @@ const Components = {
 
     if (!formats || formats.length === 0) return;
 
-    if (!selectedFormatId && formats.length > 0) {
-      onSelect(formats[0]);
-    }
+    const defaultFmt = formats[0];
+    const initialSelectedId = selectedFormatId || defaultFmt.format_id;
 
-    const dropWrap = document.createElement('div');
-    dropWrap.className = 'audio-format-dropdown-wrap';
-    dropWrap.style.marginBottom = '10px';
-
-    const select = document.createElement('select');
-    select.className = 'custom-select format-select-menu';
-    select.style.width = '100%';
-
-    formats.forEach((fmt, index) => {
-      const isSelected = selectedFormatId ? (fmt.format_id === selectedFormatId) : (index === 0);
-
-      const opt = document.createElement('option');
-      opt.value = fmt.format_id;
-      opt.textContent = `${fmt.label} (${fmt.ext.toUpperCase()})`;
-      opt.selected = isSelected;
-      select.appendChild(opt);
-
-      const chip = document.createElement('div');
-      chip.className = `format-chip ${isSelected ? 'selected' : ''}`;
+    formats.forEach((fmt) => {
+      const isSelected = (fmt.format_id === initialSelectedId);
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = `omni-quality-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
       chip.innerHTML = `
-        <div class="format-chip-label">${fmt.label}</div>
-        <div class="format-chip-meta">
-          <span>${fmt.ext.toUpperCase()} Audio</span>
-          <span class="format-chip-size">${fmt.filesize_str}</span>
-        </div>
+        <span class="chip-label">${fmt.label}</span>
+        <span class="chip-size">${fmt.filesize_str || (fmt.ext ? fmt.ext.toUpperCase() : 'Audio')}</span>
       `;
 
       chip.addEventListener('click', () => {
-        container.querySelectorAll('.format-chip').forEach(c => c.classList.remove('selected'));
+        container.querySelectorAll('.omni-quality-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
-        select.value = fmt.format_id;
+        const sizeEl = document.getElementById('omni-estimated-size');
+        if (sizeEl) sizeEl.textContent = fmt.filesize_str || '~3.5 MB';
         onSelect(fmt);
       });
 
       container.appendChild(chip);
     });
-
-    select.addEventListener('change', (e) => {
-      const chosen = formats.find(f => f.format_id === e.target.value);
-      if (chosen) {
-        container.querySelectorAll('.format-chip').forEach(c => {
+  },
           c.classList.toggle('selected', c.getAttribute('data-fid') === chosen.format_id);
         });
         onSelect(chosen);
@@ -392,28 +343,31 @@ const Components = {
     return true;
   },
 
-  // Render History Item Card
+  // Render History Item Card (Clean & Responsive)
   renderHistoryItem(item) {
     const card = document.createElement('div');
     card.className = 'history-card';
     card.id = `hist-item-${item.id}`;
 
-    const icon = this.getPlatformIcon(item.platform);
+    const platform = (item.platform && item.platform !== 'undefined') ? item.platform : 'YouTube';
+    const icon = this.getPlatformIcon(platform);
     const thumbSrc = item.thumbnail || '';
     const isAudio = Boolean(item.is_audio || (item.format_label && item.format_label.toLowerCase().includes('audio')));
+    const formatLabel = (item.format_label && item.format_label !== 'undefined') ? item.format_label : (isAudio ? 'Audio' : 'Video');
+    const sizeStr = item.file_size_str || (item.file_size ? this.formatBytes(item.file_size) : (item.downloaded_bytes ? this.formatBytes(item.downloaded_bytes) : ''));
 
     card.innerHTML = `
-      <div style="position: relative;">
-        ${thumbSrc ? `<img class="history-thumb" src="${thumbSrc}" alt="thumb" />` : `<div class="history-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${icon}</div>`}
+      <div class="history-thumb-box">
+        ${thumbSrc ? `<img class="history-thumb" src="${thumbSrc}" alt="thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'history-thumb-fallback\\'>${icon}</div>';" />` : `<div class="history-thumb-fallback">${icon}</div>`}
       </div>
       <div class="history-info">
         <div class="history-filename" title="${item.filename || item.title}">${item.filename || item.title}</div>
         <div class="history-meta-sub">
-          <span class="queue-item-platform">${item.platform}</span>
-          <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}" style="font-size: 10px; padding: 2px 6px;">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
-          <span>${item.file_size_str || '0 B'}</span>
-          <span>${item.format_label || ''}</span>
-          <span>${item.created_at_str || ''}</span>
+          <span class="history-platform-badge">${platform}</span>
+          <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
+          ${sizeStr ? `<span>${sizeStr}</span>` : ''}
+          ${formatLabel ? `<span class="history-format-pill">${formatLabel}</span>` : ''}
+          ${item.created_at_str ? `<span>${item.created_at_str}</span>` : ''}
         </div>
       </div>
       <div class="history-actions">
@@ -423,7 +377,7 @@ const Components = {
             <span>Open</span>
           </button>
         ` : ''}
-        <button class="icon-btn" data-action="delete-hist" data-id="${item.id}" title="Remove record">
+        <button class="icon-btn-trash" data-action="delete-hist" data-id="${item.id}" title="Remove record">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>
@@ -828,3 +782,4 @@ const Components = {
     return card;
   }
 };
+

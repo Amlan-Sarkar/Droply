@@ -24,19 +24,19 @@
     
     <!-- TOP NAVIGATION HEADER -->
     <header class="app-header">
-      <div class="header-brand">
+      <div class="header-brand" id="header-brand-btn" title="Back to Downloader">
         <div class="brand-logo">
           <img src="assets/icon.png" alt="Droply" class="brand-icon-img">
           <div class="brand-glow"></div>
         </div>
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span></span>
-          <span class="brand-tagline">Local Media Engine</span>
+          <span class="brand-tagline">Universal Media Downloader</span>
         </div>
       </div>
 
-      <!-- NAVIGATION TABS -->
-      <nav class="nav-tabs" id="nav-tabs">
+      <!-- NAVIGATION TABS (Desktop Only) -->
+      <nav class="nav-tabs desktop-only-nav" id="nav-tabs">
         <button class="nav-tab active" data-tab="single" id="tab-btn-single">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -62,17 +62,25 @@
         </button>
       </nav>
 
-      <!-- SYSTEM STATUS & CONTROLS -->
+      <!-- SYSTEM STATUS & HEADER ACTION ICONS -->
       <div class="header-status">
-        <button class="icon-btn" id="header-check-updates" title="Check for Updates">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="header-action-btn" id="header-check-updates" title="Check for Updates">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M23 4v6h-6"></path>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
         </button>
-        <button class="icon-btn" id="header-open-folder" title="Open Download Folder">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        <button class="header-action-btn" id="header-nav-history" title="Library & History">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+        <button class="header-action-btn" id="header-nav-settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
       </div>
@@ -104,8 +112,8 @@
                 autocomplete="off"
                 spellcheck="false"
               ></textarea>
-              <button class="url-action-btn btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <button class="btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -224,25 +232,33 @@
                   </div>
                 </div>
 
-                <!-- FORMAT SELECTION SECTION -->
+                <!-- FORMAT SELECTION SECTION (OMNIDOWNLOADER STYLE) -->
                 <div class="format-selection-wrap" id="video-formats-section">
                   <div class="format-header">
-                    <label class="section-label">Select Available Quality</label>
-                    <span class="format-info-pill" id="quality-info-pill">Audio + Video Intelligently Muxed</span>
+                    <label class="section-label">Select Download Quality</label>
                   </div>
-                  <div class="formats-chip-grid" id="video-formats-grid">
+                  <div class="formats-chip-grid omni-quality-chips-grid" id="video-formats-grid">
                     <!-- Populated dynamically with actual qualities returned by source -->
                   </div>
                 </div>
 
                 <div class="format-selection-wrap" id="audio-formats-section" style="display: none;">
                   <div class="format-header">
-                    <label class="section-label">Select Audio Codec</label>
-                    <span class="format-info-pill">Converted via Local FFmpeg</span>
+                    <label class="section-label">Select Audio Format</label>
                   </div>
-                  <div class="formats-chip-grid" id="audio-formats-grid">
+                  <div class="formats-chip-grid omni-quality-chips-grid" id="audio-formats-grid">
                     <!-- Populated dynamically with audio formats -->
                   </div>
+                </div>
+
+                <!-- ESTIMATED DOWNLOAD SIZE BANNER (OMNIDOWNLOADER STYLE) -->
+                <div class="omni-size-banner" id="omni-size-banner">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                  <span>Estimated Download Size: <strong id="omni-estimated-size">Calculating...</strong></span>
                 </div>
 
                 <!-- SAVE DIRECTORY PICKER -->
@@ -261,13 +277,13 @@
 
                 <!-- ACTION ROW -->
                 <div class="media-actions-row">
-                  <button class="primary-btn btn-start-download" id="btn-start-download" style="flex: 1;">
+                  <button class="primary-btn btn-start-download btn-download-to-phone" id="btn-start-download" style="flex: 1;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    <span>Download Media</span>
+                    <span id="btn-start-download-text">Download to Phone</span>
                   </button>
                 </div>
 
@@ -328,17 +344,17 @@
               <h3>Download Successfully Completed!</h3>
               <p class="success-filename" id="success-filename">media_title.mp4</p>
               <div class="success-actions">
-                <button class="primary-btn btn-open-folder" id="btn-success-open-folder">
+                <button class="primary-btn btn-play-file" id="btn-success-play">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  <span>Play / Open File</span>
+                </button>
+                <button class="secondary-btn btn-open-folder" id="btn-success-open-folder">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                   </svg>
                   <span>Open Containing Folder</span>
-                </button>
-                <button class="secondary-btn btn-play-file" id="btn-success-play">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                  </svg>
-                  <span>Play / Open File</span>
                 </button>
                 <button class="subtle-btn" id="btn-download-another">Download Another</button>
               </div>
@@ -548,10 +564,6 @@
           <div class="diagnostics-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 style="margin: 0;">Engine & Runtime Diagnostics</h3>
-              <button class="secondary-btn btn-sm" id="btn-settings-check-updates">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; margin-right: 4px;"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-                <span>Check for Updates</span>
-              </button>
             </div>
             <div class="diag-grid">
               <div class="diag-item">

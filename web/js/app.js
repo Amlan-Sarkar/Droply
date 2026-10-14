@@ -40,6 +40,37 @@ class DroplyApp {
         this.switchTab(target);
       });
     });
+
+    // Top-left brand logo/title returns to Downloader
+    const brandBtn = document.getElementById('header-brand-btn');
+    if (brandBtn) {
+      brandBtn.addEventListener('click', () => {
+        this.switchTab('single');
+      });
+    }
+
+    // Top-right header action icons
+    const navHistory = document.getElementById('header-nav-history');
+    if (navHistory) {
+      navHistory.addEventListener('click', () => {
+        if (this.currentTab === 'history') {
+          this.switchTab('single');
+        } else {
+          this.switchTab('history');
+        }
+      });
+    }
+
+    const navSettings = document.getElementById('header-nav-settings');
+    if (navSettings) {
+      navSettings.addEventListener('click', () => {
+        if (this.currentTab === 'settings') {
+          this.switchTab('single');
+        } else {
+          this.switchTab('settings');
+        }
+      });
+    }
   }
 
   switchTab(tabName) {
@@ -50,6 +81,13 @@ class DroplyApp {
     document.querySelectorAll('.tab-pane').forEach(p => {
       p.classList.toggle('active', p.id === `pane-${tabName}`);
     });
+
+    // Update header icons active state
+    const navHistory = document.getElementById('header-nav-history');
+    if (navHistory) navHistory.classList.toggle('active', tabName === 'history');
+
+    const navSettings = document.getElementById('header-nav-settings');
+    if (navSettings) navSettings.classList.toggle('active', tabName === 'settings');
 
     if (tabName === 'history') {
       this.loadHistory();
@@ -146,6 +184,8 @@ class DroplyApp {
       document.getElementById('audio-formats-section').style.display = 'none';
       if (this.currentMedia && this.currentMedia.formats && this.currentMedia.formats.length > 0) {
         this.selectedFormat = this.currentMedia.formats[0];
+        const sizeEl = document.getElementById('omni-estimated-size');
+        if (sizeEl) sizeEl.textContent = this.selectedFormat.filesize_str || 'Standard';
       }
     });
 
@@ -157,6 +197,8 @@ class DroplyApp {
       document.getElementById('audio-formats-section').style.display = 'block';
       if (this.currentMedia && this.currentMedia.audio_formats && this.currentMedia.audio_formats.length > 0) {
         this.selectedFormat = this.currentMedia.audio_formats[0];
+        const sizeEl = document.getElementById('omni-estimated-size');
+        if (sizeEl) sizeEl.textContent = this.selectedFormat.filesize_str || '~3.5 MB';
       }
     });
 
@@ -185,6 +227,13 @@ class DroplyApp {
         await api.cancelTask(this.activeSingleTaskId);
         this.activeSingleTaskId = null;
       }
+      // Reset single download progress UI completely
+      const fill = document.getElementById('single-progress-fill');
+      if (fill) fill.style.width = '0%';
+      document.getElementById('single-metric-percent').textContent = '0.0%';
+      document.getElementById('single-metric-size').textContent = '0 MB / 0 MB';
+      document.getElementById('single-metric-speed').textContent = '-- KB/s';
+      document.getElementById('single-metric-eta').textContent = '--:--';
       document.getElementById('single-download-card').style.display = 'none';
       if (this.currentMedia) {
         document.getElementById('media-card').style.display = 'block';
@@ -636,8 +685,9 @@ class DroplyApp {
       let totalBytes = 0;
       let completedCount = 0;
       items.forEach(it => {
-        if (it.status === 'completed') completedCount++;
-        totalBytes += (it.file_size || it.filesize || it.downloaded_bytes || 0);
+        if (it.status === 'completed' || !it.status) completedCount++;
+        const sz = it.file_size || it.filesize || it.downloaded_bytes || it.total_bytes || 0;
+        totalBytes += Number(sz) || 0;
       });
 
       document.getElementById('hist-stat-total').textContent = items.length;
@@ -773,8 +823,8 @@ class DroplyApp {
 
       try {
         const info = await api.checkUpdates();
-        const appInst = info.app_installed || 'v1.2.4';
-        const appLatest = info.app_latest || 'v1.2.4';
+        const appInst = info.app_installed || 'v1.2.8';
+        const appLatest = info.app_latest || 'v1.2.8';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         instVer.textContent = appInst;
@@ -788,6 +838,8 @@ class DroplyApp {
           descEl.textContent = `A new release (${appLatest}) is available. You can download the latest installer from GitHub or update the embedded core engine below.`;
         }
       } catch (e) {
+        instVer.textContent = 'v1.2.8';
+        latestVer.textContent = 'v1.2.8';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'You can update the embedded yt-dlp core engine for latest platform fixes.';
       }

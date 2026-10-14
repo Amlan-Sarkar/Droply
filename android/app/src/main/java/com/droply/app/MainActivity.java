@@ -312,6 +312,10 @@ public class MainActivity extends AppCompatActivity {
                     PyObject module = py.getModule("droply_engine");
                     module.callAttr("cancel_active_download");
                 } catch (Exception ignored) {}
+                mainHandler.post(() -> {
+                    String js = "window.dispatchEvent(new CustomEvent('droply_cancelled', { detail: {} }));";
+                    webView.evaluateJavascript(js, null);
+                });
             });
         }
 
@@ -383,9 +387,14 @@ public class MainActivity extends AppCompatActivity {
         public void checkUpdates() {
             executor.execute(() -> {
                 try {
+                    String versionName = "v1.2.8";
+                    try {
+                        versionName = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+                    } catch (Exception ignored) {}
+
                     Python py = Python.getInstance();
                     PyObject module = py.getModule("droply_engine");
-                    PyObject result = module.callAttr("check_updates");
+                    PyObject result = module.callAttr("check_updates", versionName);
                     String json = result.toString();
                     mainHandler.post(() -> {
                         String js = "window.dispatchEvent(new CustomEvent('droply_update_checked', { detail: " + json + " }));";
@@ -425,14 +434,23 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void openDownloadFolder() {
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                Uri uri = Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath() + "/Droply");
-                intent.setDataAndType(uri, "*/*");
-                startActivity(Intent.createChooser(intent, "Open Droply Downloads"));
-            } catch (Exception e) {
-                Toast.makeText(MainActivity.this, "Downloads folder: Download/Droply", Toast.LENGTH_SHORT).show();
-            }
+            mainHandler.post(() -> {
+                try {
+                    Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception e1) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                        Uri uri = Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath() + "/Droply");
+                        intent.setDataAndType(uri, "*/*");
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(Intent.createChooser(intent, "Open Droply Downloads"));
+                    } catch (Exception e2) {
+                        Toast.makeText(MainActivity.this, "Downloads folder: Download/Droply", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
         }
     }
 

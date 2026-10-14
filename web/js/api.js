@@ -158,17 +158,25 @@ class DroplyAPI {
 
       window.addEventListener('droply_completed', (e) => {
         const d = e.detail || {};
-        const taskId = d.id || (this.activeMobileTask ? this.activeMobileTask.id : 'native_active');
+        const taskId = d.id || (this.activeMobileTask ? this.activeMobileTask.id : 'native_' + Date.now());
         const title = d.title || (this.activeMobileTask ? this.activeMobileTask.title : 'Downloaded Media');
+        const activeTask = this.activeMobileTask || {};
         const completedTask = {
           id: taskId,
           title: title,
+          platform: d.platform || activeTask.platform || 'YouTube',
+          thumbnail: d.thumbnail || activeTask.thumbnail || '',
           status: 'completed',
           file_path: d.file_path || 'Downloads/Droply',
           download_dir: 'Downloads/Droply',
+          file_size: d.file_size || activeTask.total_bytes || activeTask.downloaded_bytes || 0,
+          file_size_str: d.file_size_str || activeTask.total_str || activeTask.downloaded_str || '',
+          format_label: d.format_label || activeTask.format_label || '',
+          is_audio: Boolean(d.is_audio || activeTask.is_audio),
           percent: 100,
           progress_percent: 100,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          created_at_str: 'Just now'
         };
 
         this.addMobileHistoryItem(completedTask);
@@ -179,6 +187,14 @@ class DroplyAPI {
 
         this.emit("task_completed", { task: completedTask });
         this.processNextMobileQueueItem();
+      });
+
+      window.addEventListener('droply_cancelled', () => {
+        if (this.activeMobileTask) {
+          this.updateMobileQueueTask(this.activeMobileTask.id, { status: 'cancelled' });
+          this.activeMobileTask = null;
+        }
+        this.emit('task_cancelled', {});
       });
 
       window.addEventListener('droply_error', (e) => {

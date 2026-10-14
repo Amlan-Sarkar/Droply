@@ -8,7 +8,10 @@ import sys
 import json
 import re
 import shutil
-from typing import Dict, Any, Callable, Optional
+import io
+import zipfile
+import importlib
+from typing import Dict, Any, Callable, Optional, List, Union
 import yt_dlp
 
 # Global cancellation flag for active Android download
@@ -62,20 +65,23 @@ def sanitize_filename(name: str) -> str:
     return cleaned[:180] if len(cleaned) > 180 else cleaned
 
 
-def format_bytes(b: Optional[int]) -> str:
+def format_bytes(b: Optional[Union[int, float]]) -> str:
     if not b or b <= 0:
         return "Unknown"
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if b < 1024:
-            return f"{b:.1f} {unit}"
-        b /= 1024
-    return f"{b:.1f} GB"
+    num = float(b)
+    if num >= 1024 ** 3:
+        return f"{num / (1024 ** 3):.2f} GB"
+    elif num >= 1024 ** 2:
+        return f"{num / (1024 ** 2):.1f} MB"
+    elif num >= 1024:
+        return f"{num / 1024:.1f} KB"
+    return f"{int(num)} B"
 
 
-def format_seconds(s: Optional[int]) -> str:
+def format_seconds(s: Optional[Union[int, float]]) -> str:
     if not s or s <= 0:
         return "00:00"
-    m, sec = divmod(int(s), 60)
+    m, sec = divmod(int(round(s)), 60)
     h, m = divmod(m, 60)
     return f"{h:02d}:{m:02d}:{sec:02d}" if h > 0 else f"{m:02d}:{sec:02d}"
 
@@ -88,6 +94,31 @@ def is_playlist_url(url: str) -> bool:
     if any(tok in url.lower() for tok in ["/playlist", "/sets/", "/album/"]):
         return True
     return False
+
+
+def get_format_resolution(f: Dict[str, Any]) -> int:
+    """Returns effective resolution dimension (shorter side for orientation neutrality)."""
+    h = f.get('height')
+    w = f.get('width')
+    if h and w and h > 0 and w > 0:
+        return min(int(h), int(w))
+    return int(h) if (h and h > 0) else (int(w) if (w and w > 0) else 0)
+
+
+def estimate_format_bytes(fmt: Dict[str, Any], duration: Optional[Union[int, float]]) -> Optional[int]:
+    """Estimates byte size of a stream format from filesize, filesize_approx, or bitrate * duration."""
+    size = fmt.get('filesize') or fmt.get('filesize_approx')
+    if size and size > 0:
+        return int(size)
+    dur = duration or fmt.get('duration')
+    if dur and dur > 0:
+        tbr = fmt.get('tbr')
+        vbr = fmt.get('vbr') or 0
+        abr = fmt.get('abr') or 0
+        bitrate_kbps = tbr if (tbr and tbr > 0) else (vbr + abr)
+        if bitrate_kbps and bitrate_kbps > 0:
+            return int((bitrate_kbps * 1000 / 8) * float(dur))
+    return None
 
 
 def analyze_url(url: str) -> str:
@@ -110,11 +141,6 @@ def analyze_url(url: str) -> str:
         ydl_opts['extract_flat'] = 'in_playlist'
     else:
         ydl_opts['noplaylist'] = True
-        ydl_opts['extractor_args'] = {
-            'youtube': {
-                'player_client': ['ios', 'android', 'web', 'mweb'],
-            }
-        }
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -125,7 +151,6 @@ def analyze_url(url: str) -> str:
                 if not is_playlist and ("list=" in url or "playlist" in url):
                     ydl_opts['extract_flat'] = 'in_playlist'
                     ydl_opts.pop('noplaylist', None)
-                    ydl_opts.pop('extractor_args', None)
                     with yt_dlp.YoutubeDL(ydl_opts) as p_ydl:
                         info = p_ydl.extract_info(url, download=False)
                 else:
@@ -200,7 +225,7 @@ def analyze_url(url: str) -> str:
                         "format_id": "bestaudio",
                         "ext": "m4a",
                         "resolution": "Audio Only",
-                        "label": "M4A High Quality (Default)",
+                        "label": "M4A High Quality",
                         "filesize_approx": 0,
                         "filesize_str": "High Quality",
                         "has_video": False,
@@ -237,82 +262,155 @@ def analyze_url(url: str) -> str:
                 }
                 return json.dumps(result)
 
-            # Single Video Extraction
-            formats_dict = {}
+            # Single Video Extraction (OmniDownloader-style Resolution Tiers)
             raw_formats = info.get("formats", [])
             duration = info.get("duration") or 0
 
-            for f in raw_formats:
-                height = f.get("height")
-                has_video = f.get("vcodec") != "none" and bool(f.get("vcodec"))
-                if has_video and height and height >= 144:
-                    res_key = f"{height}p"
-                    filesize = f.get("filesize") or f.get("filesize_approx")
-                    if not filesize and duration > 0 and f.get("tbr"):
-                        filesize = int((f.get("tbr") * 1024 / 8) * duration)
+            audio_formats = [f for f in raw_formats if f.get('vcodec') == 'none' and f.get('acodec') != 'none']
+            best_audio_size = 0
+            if audio_formats:
+                audio_formats.sort(key=lambda f: f.get('abr') or f.get('tbr') or 0, reverse=True)
+                best_audio_size = estimate_format_bytes(audio_formats[0], duration) or 0
+            elif duration and duration > 0:
+                best_audio_size = int((128 * 1000 / 8) * float(duration))
 
-                    existing = formats_dict.get(height)
-                    if not existing or (f.get("acodec") != "none" and existing.get("has_audio") is False):
-                        formats_dict[height] = {
-                            "format_id": f"{height}p",
-                            "height": height,
-                            "ext": f.get("ext", "mp4"),
-                            "resolution": res_key,
-                            "label": f"{res_key} HD" if height >= 720 else f"{res_key}",
-                            "filesize_approx": filesize or 0,
-                            "filesize_str": format_bytes(filesize) if filesize else "Standard",
-                            "has_video": True,
-                            "has_audio": f.get("acodec") != "none" and bool(f.get("acodec"))
-                        }
+            video_formats = [f for f in raw_formats if f.get('vcodec') != 'none']
 
-            sorted_heights = sorted(formats_dict.keys(), reverse=True)
+            def get_best_video_size(target_dim: Optional[int]) -> Optional[int]:
+                if not video_formats:
+                    return None
+                if target_dim is None:
+                    matching = list(video_formats)
+                else:
+                    matching = [f for f in video_formats if get_format_resolution(f) <= target_dim]
+                    if not matching:
+                        matching = [f for f in video_formats if get_format_resolution(f) <= target_dim * 1.05]
+                    if not matching:
+                        return None
+
+                def format_score(f: Dict[str, Any]) -> tuple:
+                    res = get_format_resolution(f)
+                    vc = (f.get('vcodec') or '').lower()
+                    codec_rank = 3 if 'av01' in vc else (2 if 'vp9' in vc or 'vp09' in vc else (1 if 'avc' in vc or 'h264' in vc else 0))
+                    size = f.get('filesize') or f.get('filesize_approx') or 0
+                    bitrate = f.get('tbr') or f.get('vbr') or 0
+                    return (res, codec_rank, size > 0, bitrate)
+
+                matching.sort(key=format_score, reverse=True)
+                chosen = matching[0]
+                v_size = estimate_format_bytes(chosen, duration)
+                if not v_size and duration and duration > 0:
+                    target_res = target_dim or get_format_resolution(chosen) or 720
+                    typical_kbps = {2160: 6000, 1440: 3800, 1080: 2500, 720: 1400, 480: 750, 360: 450}.get(target_res, 1200)
+                    v_size = int((typical_kbps * 1000 / 8) * float(duration))
+
+                if not v_size:
+                    return None
+                if chosen.get('acodec') == 'none' and best_audio_size:
+                    return v_size + best_audio_size
+                return v_size
+
+            # Discover available resolutions
+            resolutions = [get_format_resolution(f) for f in video_formats if get_format_resolution(f) > 0]
+            max_res = max(resolutions) if resolutions else 0
+
+            available_qualities: List[str] = []
+            if any(r >= 2000 for r in resolutions):
+                available_qualities.append("2160p")
+            if any(1300 <= r < 2000 for r in resolutions):
+                available_qualities.append("1440p")
+            if any(900 <= r < 1300 for r in resolutions):
+                available_qualities.append("1080p")
+            if any(650 <= r < 900 for r in resolutions):
+                available_qualities.append("720p")
+            if any(400 <= r < 650 for r in resolutions):
+                available_qualities.append("480p")
+            if any(300 <= r < 400 for r in resolutions):
+                available_qualities.append("360p")
+            if any(200 <= r < 300 for r in resolutions):
+                available_qualities.append("240p")
+            if any(0 < r < 200 for r in resolutions):
+                available_qualities.append("144p")
+
+            # Fallback if no bins matched
+            if not available_qualities:
+                if max_res >= 2000:
+                    available_qualities.append("2160p")
+                elif max_res >= 1300:
+                    available_qualities.append("1440p")
+                elif max_res >= 900:
+                    available_qualities.append("1080p")
+                elif max_res >= 650:
+                    available_qualities.append("720p")
+                elif max_res >= 400:
+                    available_qualities.append("480p")
+                elif max_res > 0:
+                    available_qualities.append("360p")
+                else:
+                    available_qualities.append("best")
+
+            tier_labels = {
+                "2160p": "4K / 2160p",
+                "1440p": "2K / 1440p",
+                "1080p": "FHD / 1080p",
+                "720p": "720p",
+                "480p": "480p",
+                "360p": "360p",
+                "240p": "240p",
+                "144p": "144p",
+                "best": "Best Quality"
+            }
+            tier_targets = {
+                "2160p": 2160,
+                "1440p": 1440,
+                "1080p": 1080,
+                "720p": 720,
+                "480p": 480,
+                "360p": 360,
+                "240p": 240,
+                "144p": 144,
+            }
+
             formats_list = []
+            for q_key in available_qualities:
+                t_dim = tier_targets.get(q_key)
+                q_size = get_best_video_size(t_dim) if t_dim else get_best_video_size(None)
+                size_str = f"~{format_bytes(q_size)}" if q_size else "Adaptive"
 
-            formats_list.append({
-                "format_id": "best",
-                "height": 9999,
-                "ext": "mp4",
-                "resolution": "Best Auto",
-                "label": "Best Available (Auto)",
-                "filesize_approx": 0,
-                "filesize_str": "Adaptive Full Quality",
-                "has_video": True,
-                "has_audio": True
-            })
+                formats_list.append({
+                    "format_id": q_key,
+                    "height": t_dim or 9999,
+                    "ext": "mp4",
+                    "resolution": q_key if q_key != "best" else "Best",
+                    "label": tier_labels.get(q_key, q_key.upper()),
+                    "filesize_approx": q_size or 0,
+                    "filesize_str": size_str,
+                    "has_video": True,
+                    "has_audio": True
+                })
 
-            for h in sorted_heights:
-                formats_list.append(formats_dict[h])
+            mp3_size = best_audio_size or (int((192 * 1000 / 8) * float(duration)) if duration else 0)
+            m4a_size = int(mp3_size * 0.75) if mp3_size else 0
 
             audio_formats_list = [
                 {
-                    "format_id": "bestaudio",
-                    "ext": "m4a",
-                    "resolution": "Audio Only",
-                    "label": "M4A High Quality (Default)",
-                    "filesize_approx": int((128 * 1024 / 8) * duration) if duration > 0 else 0,
-                    "filesize_str": format_bytes(int((128 * 1024 / 8) * duration)) if duration > 0 else "High Quality",
-                    "has_video": False,
-                    "has_audio": True,
-                    "is_audio_only": True
-                },
-                {
-                    "format_id": "mp3",
+                    "format_id": "audio_mp3",
                     "ext": "mp3",
                     "resolution": "Audio Only",
-                    "label": "MP3 Universal Audio",
-                    "filesize_approx": int((192 * 1024 / 8) * duration) if duration > 0 else 0,
-                    "filesize_str": format_bytes(int((192 * 1024 / 8) * duration)) if duration > 0 else "HQ 320k",
+                    "label": "Audio Only (MP3)",
+                    "filesize_approx": mp3_size,
+                    "filesize_str": f"~{format_bytes(mp3_size)}" if mp3_size else "HQ 320k",
                     "has_video": False,
                     "has_audio": True,
                     "is_audio_only": True
                 },
                 {
-                    "format_id": "wav",
-                    "ext": "wav",
+                    "format_id": "audio_m4a",
+                    "ext": "m4a",
                     "resolution": "Audio Only",
-                    "label": "Lossless WAV Audio",
-                    "filesize_approx": 0,
-                    "filesize_str": "Uncompressed",
+                    "label": "Audio Only (M4A AAC)",
+                    "filesize_approx": m4a_size,
+                    "filesize_str": f"~{format_bytes(m4a_size)}" if m4a_size else "High Quality",
                     "has_video": False,
                     "has_audio": True,
                     "is_audio_only": True
@@ -353,14 +451,20 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         output_dir = os.path.join(output_dir, clean_p)
 
     os.makedirs(output_dir, exist_ok=True)
-    out_tmpl = os.path.join(output_dir, '%(title)s.%(ext)s')
-
     downloaded_filepath = None
 
     def hook(d):
         nonlocal downloaded_filepath
         global _is_cancelled
         if _is_cancelled:
+            # Clean up partial files immediately on cancel
+            fn = d.get('filename')
+            if fn and os.path.exists(fn):
+                try: os.remove(fn)
+                except Exception: pass
+            if fn and os.path.exists(f"{fn}.part"):
+                try: os.remove(f"{fn}.part")
+                except Exception: pass
             raise Exception("Download cancelled by user.")
 
         st = d.get('status')
@@ -395,17 +499,16 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
     ff_path = get_ffmpeg_path()
     ffmpeg_available = bool(ff_path)
 
+    # Determine if requested as audio
+    f_norm = (format_id or '').strip().lower()
+    if is_audio or f_norm.startswith('audio') or f_norm in ('mp3', 'm4a', 'wav'):
+        is_audio = True
+
     ydl_opts = {
-        'outtmpl': out_tmpl,
         'progress_hooks': [hook],
         'nocheckcertificate': True,
         'quiet': True,
         'no_warnings': True,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['ios', 'android', 'web', 'mweb'],
-            }
-        },
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         }
@@ -415,18 +518,19 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         ydl_opts['ffmpeg_location'] = ff_path
 
     if is_audio:
-        ydl_opts['format'] = 'bestaudio/best'
+        # STRICT PURE AUDIO: NEVER fall back to /best which downloads a 360p video!
+        audio_codec = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
+        ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/bestaudio*'
+        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s.{audio_codec}')
         if ffmpeg_available:
             ydl_opts['postprocessors'] = [{
                 'key': 'FFmpegExtractAudio',
-                'preferredcodec': audio_format or 'mp3',
+                'preferredcodec': audio_codec,
                 'preferredquality': '320',
             }]
     else:
-        # Video download format selection
-        f_norm = (format_id or '').strip().lower()
+        ydl_opts['outtmpl'] = os.path.join(output_dir, '%(title)s.%(ext)s')
         if not f_norm or f_norm in ('best', 'auto', 'default'):
-            # Adaptive maximum quality (4K, 1440p, 1080p, etc.)
             if ffmpeg_available:
                 ydl_opts['format'] = 'bestvideo+bestaudio/best'
                 ydl_opts['merge_output_format'] = 'mp4'
@@ -457,13 +561,13 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
             final_path = downloaded_filepath
             if is_audio and final_path:
                 base, _ = os.path.splitext(final_path)
-                for ext in [audio_format or 'mp3', 'mp3', 'm4a', 'opus', 'wav']:
+                target_ext = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
+                for ext in [target_ext, 'm4a', 'mp3', 'opus', 'wav']:
                     if os.path.exists(f"{base}.{ext}"):
                         final_path = f"{base}.{ext}"
                         break
             
             if not final_path or not os.path.exists(final_path):
-                # Search output_dir for newest file
                 try:
                     candidates = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
                     if candidates:
@@ -475,16 +579,26 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
             if not final_path:
                 final_path = output_dir
 
+            file_size_bytes = 0
+            if final_path and os.path.isfile(final_path):
+                try:
+                    file_size_bytes = os.path.getsize(final_path)
+                except Exception:
+                    pass
+
             if callback_obj:
                 callback_obj.onComplete(json.dumps({
                     "status": "completed",
                     "code": res,
                     "title": title or (os.path.basename(final_path) if final_path != output_dir else "Downloaded Media"),
                     "file_path": final_path,
+                    "file_size": file_size_bytes,
+                    "file_size_str": format_bytes(file_size_bytes),
+                    "is_audio": is_audio,
                     "percent": 100.0,
                     "progress_percent": 100.0
                 }))
-            return json.dumps({"status": "completed", "code": res, "file_path": final_path})
+            return json.dumps({"status": "completed", "code": res, "file_path": final_path, "file_size": file_size_bytes})
     except Exception as e:
         err_msg = str(e)
         if "cancelled" in err_msg.lower():
@@ -498,29 +612,32 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         return json.dumps({"status": "error", "error": err_msg})
 
 
-def check_updates() -> str:
+def check_updates(installed_app_version: str = "v1.2.8") -> str:
     """
     Checks for updates for Droply and yt-dlp core.
     """
-    current_app_version = "v1.2.4"
+    current_app_version = installed_app_version or "v1.2.8"
+    if not current_app_version.startswith("v"):
+        current_app_version = f"v{current_app_version}"
+
     current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
 
     latest_app_version = current_app_version
     app_up_to_date = True
-    release_url = "https://github.com/Amlan-Sarkar/Droply/releases"
+    release_url = "https://github.com/Amlon-Sarkar/Droply/releases"
 
     try:
         import urllib.request
         req = urllib.request.Request(
-            "https://api.github.com/repos/Amlan-Sarkar/Droply/releases/latest",
+            "https://api.github.com/repos/Amlon-Sarkar/Droply/releases/latest",
             headers={"User-Agent": "Droply-App"}
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             tag = data.get("tag_name")
             if tag:
                 latest_app_version = tag
-                app_up_to_date = (tag.lstrip('v') == current_app_version.lstrip('v'))
+                app_up_to_date = (tag.lstrip('v').strip() == current_app_version.lstrip('v').strip())
                 release_url = data.get("html_url", release_url)
     except Exception:
         pass
@@ -533,12 +650,12 @@ def check_updates() -> str:
             "https://pypi.org/pypi/yt-dlp/json",
             headers={"User-Agent": "Droply-App"}
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             ver = data.get("info", {}).get("version")
             if ver:
                 latest_ytdlp_version = ver
-                ytdlp_up_to_date = (ver == current_ytdlp_version)
+                ytdlp_up_to_date = (ver.strip() == current_ytdlp_version.strip())
     except Exception:
         pass
 
@@ -555,19 +672,73 @@ def check_updates() -> str:
 
 def update_ytdlp_core() -> str:
     """
-    Attempts to update yt-dlp package to latest release.
+    Updates yt-dlp core package to latest release in 100% pure Python without subprocess/pip.
+    Downloads official PyPI wheel and extracts yt_dlp directly into runtime path.
     """
     try:
-        import subprocess
-        cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-        if proc.returncode == 0:
-            import importlib
-            importlib.reload(yt_dlp)
-            new_ver = getattr(yt_dlp, "__version__", "updated")
-            return json.dumps({"status": "success", "message": f"Successfully updated yt-dlp core to {new_ver}!", "version": new_ver})
-        else:
-            return json.dumps({"status": "error", "message": proc.stderr or proc.stdout or "Update command failed."})
+        import urllib.request
+        import zipfile
+        import io
+        import importlib
+
+        req = urllib.request.Request(
+            "https://pypi.org/pypi/yt-dlp/json",
+            headers={"User-Agent": "Droply-Updater"}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+
+        latest_version = data.get("info", {}).get("version")
+        urls = data.get("urls", [])
+
+        # Find pure Python wheel
+        whl_url = None
+        for u in urls:
+            fn = u.get("filename", "")
+            if fn.endswith("-none-any.whl"):
+                whl_url = u.get("url")
+                break
+        if not whl_url and urls:
+            whl_url = urls[0].get("url")
+
+        if not whl_url:
+            return json.dumps({"status": "error", "message": "Could not locate wheel package on PyPI."})
+
+        # Download wheel into memory
+        with urllib.request.urlopen(whl_url, timeout=60) as resp:
+            whl_bytes = resp.read()
+
+        # Find writable target directory
+        target_dir = None
+        for p in sys.path:
+            if ("files" in p or "app" in p or "site-packages" in p) and os.path.isdir(p) and os.access(p, os.W_OK):
+                target_dir = p
+                break
+
+        if not target_dir:
+            base_dir = os.environ.get("HOME") or "/data/data/com.droply.app/files"
+            target_dir = os.path.join(base_dir, "site-packages")
+            os.makedirs(target_dir, exist_ok=True)
+            if target_dir not in sys.path:
+                sys.path.insert(0, target_dir)
+
+        # Unpack yt_dlp package
+        with zipfile.ZipFile(io.BytesIO(whl_bytes)) as zf:
+            for member in zf.namelist():
+                if member.startswith("yt_dlp/"):
+                    zf.extract(member, target_dir)
+
+        if target_dir not in sys.path:
+            sys.path.insert(0, target_dir)
+
+        importlib.invalidate_caches()
+        importlib.reload(yt_dlp)
+        new_ver = getattr(yt_dlp, "__version__", latest_version or "updated")
+
+        return json.dumps({
+            "status": "success",
+            "message": f"Successfully updated yt-dlp core to {new_ver}!",
+            "version": new_ver
+        })
     except Exception as e:
         return json.dumps({"status": "error", "message": str(e)})
-
