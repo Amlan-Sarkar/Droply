@@ -722,9 +722,11 @@ class DroplyApp {
     const badgeConcurrent = document.getElementById('concurrent-val-badge');
     const btnSave = document.getElementById('btn-save-settings');
 
-    sliderConcurrent.addEventListener('input', () => {
+    const updateConcurrentBadge = () => {
       badgeConcurrent.textContent = sliderConcurrent.value;
-    });
+    };
+    sliderConcurrent.addEventListener('input', updateConcurrentBadge);
+    sliderConcurrent.addEventListener('change', updateConcurrentBadge);
 
     btnBrowse.addEventListener('click', async () => {
       try {
@@ -823,8 +825,8 @@ class DroplyApp {
 
       try {
         const info = await api.checkUpdates();
-        const appInst = info.app_installed || 'v1.2.8';
-        const appLatest = info.app_latest || 'v1.2.8';
+        const appInst = info.app_installed || 'v1.2.9';
+        const appLatest = info.app_latest || 'v1.2.9';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         instVer.textContent = appInst;
@@ -838,8 +840,8 @@ class DroplyApp {
           descEl.textContent = `A new release (${appLatest}) is available. You can download the latest installer from GitHub or update the embedded core engine below.`;
         }
       } catch (e) {
-        instVer.textContent = 'v1.2.8';
-        latestVer.textContent = 'v1.2.8';
+        instVer.textContent = 'v1.2.9';
+        latestVer.textContent = 'v1.2.9';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'You can update the embedded yt-dlp core engine for latest platform fixes.';
       }

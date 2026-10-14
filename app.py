@@ -14,6 +14,17 @@ import threading
 import webbrowser
 import uvicorn
 
+# On Windows, instantly hide any attached console window so no terminal appears
+if sys.platform == "win32":
+    try:
+        import ctypes
+        if "--console" not in sys.argv and "--debug" not in sys.argv:
+            hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+            if hwnd:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)
+    except Exception:
+        pass
+
 from server.api import app
 
 

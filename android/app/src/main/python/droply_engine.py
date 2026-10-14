@@ -96,6 +96,67 @@ def is_playlist_url(url: str) -> bool:
     return False
 
 
+def extract_twitter_syndication(url: str) -> Optional[Dict[str, Any]]:
+    """Fallback Twitter/X video extractor using syndication endpoint if standard yt-dlp fails."""
+    import urllib.request
+    clean_url = re.sub(r'\?.*$', '', url.strip())
+    match = re.search(r'/status/(\d+)', clean_url)
+    if not match:
+        return None
+    tweet_id = match.group(1)
+
+    api_url = f"https://api.vxtwitter.com/i/status/{tweet_id}"
+    req = urllib.request.Request(api_url, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) DroplyMediaEngine'
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            media_list = data.get('media_extended', [])
+            video_media = [m for m in media_list if m.get('type') in ('video', 'gif')]
+            if not video_media and data.get('mediaURLs'):
+                video_media = [{'url': u, 'type': 'video'} for u in data.get('mediaURLs') if any(u.endswith(ext) for ext in ('.mp4', '.m3u8'))]
+
+            if not video_media:
+                return None
+
+            v = video_media[0]
+            v_url = v.get('url')
+            if not v_url:
+                return None
+
+            raw_title = data.get('text', 'Twitter Video')
+            title = raw_title.split('\n')[0][:80].strip() if raw_title else 'Twitter Video'
+            uploader = data.get('user_name') or 'Twitter / X'
+            duration_sec = int((v.get('duration_millis') or 0) / 1000)
+
+            formats = [{
+                'format_id': '1080p',
+                'url': v_url,
+                'ext': 'mp4',
+                'height': 720,
+                'width': 1280,
+                'vcodec': 'h264',
+                'acodec': 'aac',
+                'tbr': 1500,
+                'filesize': v.get('size') or 0
+            }]
+
+            return {
+                'id': tweet_id,
+                'title': title,
+                'uploader': uploader,
+                'duration': duration_sec,
+                'duration_str': format_seconds(duration_sec),
+                'thumbnail': v.get('thumbnail_url') or (data.get('mediaURLs') or [''])[0],
+                'extractor_key': 'Twitter',
+                'formats': formats,
+                'webpage_url': url
+            }
+    except Exception:
+        return None
+
+
 def get_format_resolution(f: Dict[str, Any]) -> int:
     """Returns effective resolution dimension (shorter side for orientation neutrality)."""
     h = f.get('height')
@@ -147,12 +208,17 @@ def analyze_url(url: str) -> str:
             try:
                 info = ydl.extract_info(url, download=False)
             except Exception as e:
-                # Fallback to playlist extraction if single video failed on a playlist URL
+                # Fallback 1: playlist extraction if single video failed on a playlist URL
                 if not is_playlist and ("list=" in url or "playlist" in url):
                     ydl_opts['extract_flat'] = 'in_playlist'
                     ydl_opts.pop('noplaylist', None)
                     with yt_dlp.YoutubeDL(ydl_opts) as p_ydl:
                         info = p_ydl.extract_info(url, download=False)
+                # Fallback 2: Twitter / X syndication fallback
+                elif "twitter.com" in url or "x.com" in url:
+                    info = extract_twitter_syndication(url)
+                    if not info:
+                        raise e
                 else:
                     raise e
 
@@ -555,8 +621,23 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                 ydl_opts['format'] = f"{format_id}+bestaudio/best[ext=mp4]/best"
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            res = ydl.download([url])
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                res = ydl.download([url])
+        except Exception as dl_err:
+            if ("twitter.com" in url or "x.com" in url):
+                synd = extract_twitter_syndication(url)
+                if synd and synd.get('formats'):
+                    direct_v_url = synd['formats'][0].get('url')
+                    if direct_v_url:
+                        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                            res = ydl.download([direct_v_url])
+                    else:
+                        raise dl_err
+                else:
+                    raise dl_err
+            else:
+                raise dl_err
             
             final_path = downloaded_filepath
             if is_audio and final_path:
@@ -612,11 +693,11 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         return json.dumps({"status": "error", "error": err_msg})
 
 
-def check_updates(installed_app_version: str = "v1.2.8") -> str:
+def check_updates(installed_app_version: str = "v1.2.9") -> str:
     """
     Checks for updates for Droply and yt-dlp core.
     """
-    current_app_version = installed_app_version or "v1.2.8"
+    current_app_version = installed_app_version or "v1.2.9"
     if not current_app_version.startswith("v"):
         current_app_version = f"v{current_app_version}"
 

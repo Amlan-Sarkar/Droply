@@ -458,6 +458,111 @@ async def browse_folder():
     return {"folder": None, "updated": False}
 
 
+APP_VERSION = "v1.2.9"
+
+
+class InstallerDownloadManager:
+    def __init__(self):
+        self.status = "idle"  # "idle", "downloading", "completed", "error", "cancelled"
+        self.downloaded_bytes = 0
+        self.total_bytes = 0
+        self.speed_bps = 0
+        self.percent = 0.0
+        self.error_message = ""
+        self.installer_path = ""
+        self._cancel_flag = False
+        import threading
+        self._lock = threading.Lock()
+
+    def start_download(self, url: str, expected_size: int = 0):
+        import os
+        import tempfile
+        import threading
+        with self._lock:
+            if self.status == "downloading":
+                return
+            self.status = "downloading"
+            self.downloaded_bytes = 0
+            self.total_bytes = expected_size or 0
+            self.speed_bps = 0
+            self.percent = 0.0
+            self.error_message = ""
+            self._cancel_flag = False
+            self.installer_path = os.path.join(tempfile.gettempdir(), "Droply-Setup.exe")
+
+        threading.Thread(target=self._download_worker, args=(url,), daemon=True).start()
+
+    def cancel_download(self):
+        with self._lock:
+            self._cancel_flag = True
+            self.status = "cancelled"
+
+    def _download_worker(self, url: str):
+        import os
+        import time
+        import urllib.request
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Droply-App"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                total_len = resp.headers.get("Content-Length")
+                if total_len:
+                    try:
+                        self.total_bytes = int(total_len)
+                    except Exception:
+                        pass
+
+                chunk_size = 64 * 1024
+                last_time = time.time()
+                bytes_since_last = 0
+
+                with open(self.installer_path, "wb") as f:
+                    while True:
+                        if self._cancel_flag:
+                            break
+                        chunk = resp.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        self.downloaded_bytes += len(chunk)
+                        bytes_since_last += len(chunk)
+
+                        now = time.time()
+                        dt = now - last_time
+                        if dt >= 0.5:
+                            self.speed_bps = int(bytes_since_last / dt)
+                            bytes_since_last = 0
+                            last_time = now
+
+                        if self.total_bytes > 0:
+                            self.percent = round((self.downloaded_bytes / self.total_bytes) * 100, 1)
+
+            if self._cancel_flag:
+                try:
+                    if os.path.exists(self.installer_path):
+                        os.remove(self.installer_path)
+                except Exception:
+                    pass
+                with self._lock:
+                    self.status = "idle"
+            else:
+                with self._lock:
+                    self.status = "completed"
+                    self.percent = 100.0
+                    self.speed_bps = 0
+        except Exception as e:
+            with self._lock:
+                self.status = "error"
+                self.error_message = str(e)
+
+
+installer_manager = InstallerDownloadManager()
+
+
+class DownloadInstallerRequest(BaseModel):
+    url: str
+    size: Optional[int] = 0
+
+
 @app.get("/api/system/status")
 async def system_status():
     base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
@@ -470,6 +575,7 @@ async def system_status():
             pass
 
     return {
+        "app_version": APP_VERSION,
         "ffmpeg_ready": bool(ffmpeg_exe and os.path.exists(ffmpeg_exe)),
         "ffmpeg_path": ffmpeg_exe,
         "ytdlp_version": getattr(yt_dlp, "__version__", getattr(yt_dlp.version, "__version__", "installed")),
@@ -481,7 +587,6 @@ async def system_status():
 @app.get("/api/system/check-updates")
 async def check_updates_endpoint():
     import json
-    current_app_version = "v1.2.4"
     current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
     release_url = "https://github.com/Amlan-Sarkar/Droply/releases"
 
@@ -494,14 +599,49 @@ async def check_updates_endpoint():
                 "https://api.github.com/repos/Amlan-Sarkar/Droply/releases/latest",
                 headers={"User-Agent": "Droply-App"}
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=8) as resp:
                 data = json.loads(resp.read().decode('utf-8'))
-                tag = data.get("tag_name")
-                if tag:
-                    return tag, (tag.lstrip('v') == current_app_version.lstrip('v')), data.get("html_url", release_url)
+                tag = data.get("tag_name", APP_VERSION)
+                body = data.get("body", "")
+                pub_date = data.get("published_at", "")
+                html_url = data.get("html_url", release_url)
+
+                installer_url = ""
+                installer_size = 0
+                installer_name = ""
+
+                assets = data.get("assets", [])
+                for a in assets:
+                    name = a.get("name", "")
+                    if name.endswith(".exe") or "Setup" in name:
+                        installer_url = a.get("browser_download_url", "")
+                        installer_size = a.get("size", 0)
+                        installer_name = name
+                        break
+
+                is_up_to_date = (tag.lstrip('v') == APP_VERSION.lstrip('v'))
+                return {
+                    "tag": tag,
+                    "up_to_date": is_up_to_date,
+                    "release_url": html_url,
+                    "release_notes": body,
+                    "published_at": pub_date,
+                    "installer_url": installer_url,
+                    "installer_size": installer_size,
+                    "installer_name": installer_name
+                }
         except Exception:
             pass
-        return current_app_version, True, release_url
+        return {
+            "tag": APP_VERSION,
+            "up_to_date": True,
+            "release_url": release_url,
+            "release_notes": "",
+            "published_at": "",
+            "installer_url": "",
+            "installer_size": 0,
+            "installer_name": ""
+        }
 
     def _fetch_pypi():
         try:
@@ -519,18 +659,75 @@ async def check_updates_endpoint():
             pass
         return current_ytdlp_version, True
 
-    tag, app_up_to_date, release_url = await loop.run_in_executor(None, _fetch_github)
+    gh_info = await loop.run_in_executor(None, _fetch_github)
     ytdlp_latest, ytdlp_up_to_date = await loop.run_in_executor(None, _fetch_pypi)
 
     return {
-        "app_installed": current_app_version,
-        "app_latest": tag,
-        "app_up_to_date": app_up_to_date,
-        "release_url": release_url,
+        "app_installed": APP_VERSION,
+        "app_latest": gh_info["tag"],
+        "app_up_to_date": gh_info["up_to_date"],
+        "release_url": gh_info["release_url"],
+        "release_notes": gh_info["release_notes"],
+        "published_at": gh_info["published_at"],
+        "installer_url": gh_info["installer_url"],
+        "installer_size": gh_info["installer_size"],
+        "installer_name": gh_info["installer_name"],
         "ytdlp_installed": current_ytdlp_version,
         "ytdlp_latest": ytdlp_latest,
         "ytdlp_up_to_date": ytdlp_up_to_date
     }
+
+
+@app.post("/api/system/download-installer")
+async def download_installer_endpoint(req: DownloadInstallerRequest):
+    if not req.url:
+        raise HTTPException(status_code=400, detail="Missing installer URL")
+    installer_manager.start_download(req.url, req.size or 0)
+    return {"status": "started"}
+
+
+@app.get("/api/system/download-installer-status")
+async def download_installer_status_endpoint():
+    return {
+        "status": installer_manager.status,
+        "downloaded_bytes": installer_manager.downloaded_bytes,
+        "total_bytes": installer_manager.total_bytes,
+        "speed_bps": installer_manager.speed_bps,
+        "percent": installer_manager.percent,
+        "error": installer_manager.error_message,
+        "installer_path": installer_manager.installer_path if installer_manager.status == "completed" else ""
+    }
+
+
+@app.post("/api/system/cancel-installer-download")
+async def cancel_installer_download_endpoint():
+    installer_manager.cancel_download()
+    return {"status": "cancelled"}
+
+
+@app.post("/api/system/install-and-restart")
+async def install_and_restart_endpoint():
+    path = installer_manager.installer_path
+    if not path or not os.path.exists(path):
+        raise HTTPException(status_code=400, detail="Installer file not found. Download it first.")
+
+    import subprocess
+    import threading
+    import time
+
+    try:
+        # Launch the Inno Setup installer silently or normally
+        # Using subprocess.Popen allows installer to run independently while Droply exits
+        subprocess.Popen([path], shell=False)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to launch installer: {e}")
+
+    def _exit_app():
+        time.sleep(1.0)
+        os._exit(0)
+
+    threading.Thread(target=_exit_app, daemon=True).start()
+    return {"status": "success", "message": "Installer launched. Restarting Droply..."}
 
 
 @app.post("/api/system/update-ytdlp")

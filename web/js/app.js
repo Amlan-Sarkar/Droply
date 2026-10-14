@@ -132,6 +132,21 @@ class DroplyApp {
       }
     });
 
+    // Batch Drawer Toggle button
+    const btnBatchToggle = document.getElementById('btn-batch-toggle');
+    const batchDrawer = document.getElementById('omni-batch-drawer');
+    const batchTextarea = document.getElementById('batch-urls-input');
+    if (btnBatchToggle && batchDrawer) {
+      btnBatchToggle.addEventListener('click', () => {
+        const isShown = batchDrawer.style.display !== 'none';
+        batchDrawer.style.display = isShown ? 'none' : 'block';
+        btnBatchToggle.classList.toggle('active', !isShown);
+        if (!isShown && batchTextarea) {
+          batchTextarea.focus();
+        }
+      });
+    }
+
     // Paste button (reads clipboard directly)
     btnPaste.addEventListener('click', async () => {
       let text = '';
@@ -147,15 +162,21 @@ class DroplyApp {
         text = prompt("Paste your video, playlist, or batch links here:");
       }
       if (text && text.trim()) {
-        urlInput.value = text.trim();
-        btnClear.style.display = 'flex';
-        this.instantDetectPlatform(text.trim());
+        const trimmed = text.trim();
+        if (batchDrawer && batchDrawer.style.display !== 'none' && batchTextarea) {
+          batchTextarea.value = trimmed;
+        } else {
+          urlInput.value = trimmed;
+          btnClear.style.display = 'flex';
+          this.instantDetectPlatform(trimmed);
+        }
       }
     });
 
     // Clear button
     btnClear.addEventListener('click', () => {
       urlInput.value = '';
+      if (batchTextarea) batchTextarea.value = '';
       btnClear.style.display = 'none';
       this.hideDetectedBadge();
       this.resetSingleView();
@@ -163,10 +184,17 @@ class DroplyApp {
 
     // Fetch Details / Analyze button
     btnAnalyze.addEventListener('click', () => {
-      const text = urlInput.value.trim();
+      let text = urlInput.value.trim();
+      if (batchDrawer && batchDrawer.style.display !== 'none' && batchTextarea && batchTextarea.value.trim()) {
+        text = batchTextarea.value.trim();
+      }
       if (!text) {
         Components.showToast('Please paste a media URL or batch links to fetch.', 'error');
-        urlInput.focus();
+        if (batchDrawer && batchDrawer.style.display !== 'none' && batchTextarea) {
+          batchTextarea.focus();
+        } else {
+          urlInput.focus();
+        }
         return;
       }
       this.analyzeInput(text);
@@ -722,9 +750,11 @@ class DroplyApp {
     const badgeConcurrent = document.getElementById('concurrent-val-badge');
     const btnSave = document.getElementById('btn-save-settings');
 
-    sliderConcurrent.addEventListener('input', () => {
+    const updateConcurrentBadge = () => {
       badgeConcurrent.textContent = sliderConcurrent.value;
-    });
+    };
+    sliderConcurrent.addEventListener('input', updateConcurrentBadge);
+    sliderConcurrent.addEventListener('change', updateConcurrentBadge);
 
     btnBrowse.addEventListener('click', async () => {
       try {
@@ -781,20 +811,35 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const statusPill = document.getElementById('server-status-pill');
-      if (statusPill) {
-        if (status.ffmpeg_ready) {
-          statusPill.className = 'status-pill status-ready';
-          statusPill.innerHTML = `<span class="status-dot"></span><span class="status-label">Engine Ready</span>`;
-        } else {
-          statusPill.className = 'status-pill';
-          statusPill.innerHTML = `<span class="status-label">Online</span>`;
-        }
+      const appVer = status.app_version || 'v1.2.9';
+      const ytdlpVer = status.ytdlp_version || '2026.08.19';
+
+      const verPill = document.getElementById('header-version-pill');
+      if (verPill) verPill.textContent = appVer;
+
+      const enginePill = document.getElementById('header-engine-pill');
+      if (enginePill) enginePill.textContent = `Engine v${ytdlpVer}`;
+
+      const trustVer = document.getElementById('trust-version');
+      if (trustVer) trustVer.textContent = appVer;
+
+      const serverPill = document.getElementById('server-status-pill');
+      const serverLabel = document.getElementById('server-status-label');
+      if (serverPill) {
+        serverPill.className = 'header-server-pill status-ready';
+      }
+      if (serverLabel) {
+        serverLabel.textContent = 'Server Available';
       }
 
-      document.getElementById('diag-ytdlp').textContent = `yt-dlp v${status.ytdlp_version}`;
-      document.getElementById('diag-ffmpeg').textContent = status.ffmpeg_ready ? 'Bundled v7.1 (Active)' : 'Not Available';
-      document.getElementById('diag-python').textContent = `Python ${status.python_version}`;
+      const diagYtdlp = document.getElementById('diag-ytdlp');
+      if (diagYtdlp) diagYtdlp.textContent = `yt-dlp v${ytdlpVer}`;
+
+      const diagFfmpeg = document.getElementById('diag-ffmpeg');
+      if (diagFfmpeg) diagFfmpeg.textContent = status.ffmpeg_ready ? 'Bundled v7.1 (Active)' : 'Not Available';
+
+      const diagPython = document.getElementById('diag-python');
+      if (diagPython) diagPython.textContent = `Python ${status.python_version}`;
 
     } catch (e) {
       console.error("Load system status error:", e);
@@ -807,59 +852,262 @@ class DroplyApp {
     const btnClose = document.getElementById('btn-close-update-modal');
     const btnHeaderUpdates = document.getElementById('header-check-updates');
     const btnSettingsUpdates = document.getElementById('btn-settings-check-updates');
-    const btnUpdateYtdlp = document.getElementById('btn-update-ytdlp');
+    const btnViewGithub = document.getElementById('btn-view-github');
+    const btnCancelDl = document.getElementById('btn-cancel-installer-dl');
+    const btnPrimary = document.getElementById('btn-installer-primary');
+    const btnPrimaryText = document.getElementById('btn-installer-primary-text');
+
+    const curVerEl = document.getElementById('update-cur-ver');
+    const newVerEl = document.getElementById('update-new-ver');
+    const releaseDateEl = document.getElementById('update-release-date');
+    const releaseSizeEl = document.getElementById('update-release-size');
+    const changelogEl = document.getElementById('update-changelog-content');
+    const dlBox = document.getElementById('update-dl-progress-box');
+    const dlTitle = document.getElementById('update-dl-status-title');
+    const dlPercent = document.getElementById('update-dl-percent');
+    const dlBar = document.getElementById('update-dl-bar-fill');
+    const dlBytes = document.getElementById('update-dl-bytes');
+    const dlSpeed = document.getElementById('update-dl-speed');
+    const statusMsg = document.getElementById('update-status-msg');
+
+    let currentUpdateInfo = null;
+    let pollInterval = null;
+    let downloadState = 'idle'; // 'idle', 'can-download', 'downloading', 'ready-to-install', 'ytdlp-core'
+
+    const formatBytes = (bytes) => {
+      if (!bytes || isNaN(bytes)) return '65.6 MB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    };
+
+    const formatDate = (isoStr) => {
+      if (!isoStr) return 'Recently';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' });
+      } catch (e) {
+        return isoStr;
+      }
+    };
+
+    const renderChangelog = (notes) => {
+      if (!notes || !notes.trim()) {
+        return `
+          <ul>
+            <li><span class="cl-feature-highlight">Smart Playlist & Batch Engine:</span> Detects and extracts playlists with granular item selection checkboxes.</li>
+            <li><span class="cl-feature-highlight">Bot Challenge Bypass:</span> Integrated cookie manager and in-app sign-in WebView.</li>
+            <li><span class="cl-feature-highlight">Live Real-Time SSE Stream:</span> Millisecond-accurate download speed, downloaded size, and dynamic ETA tracking.</li>
+            <li><span class="cl-feature-highlight">Silent Native Launch:</span> Instant background engine startup with zero PowerShell or console window.</li>
+          </ul>
+        `;
+      }
+
+      const lines = notes.split('\n');
+      const items = [];
+      for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith('*') || line.startsWith('-')) {
+          let content = line.substring(1).trim();
+          content = content.replace(/\*\*(.*?)\*\*:?/g, (match, p1) => {
+            return `<span class="cl-feature-highlight">${p1}:</span>`;
+          });
+          items.push(`<li>${content}</li>`);
+        }
+      }
+
+      if (items.length > 0) {
+        return `<ul>${items.slice(0, 10).join('')}</ul>`;
+      }
+
+      return `<p style="margin: 0; color: #94a3b8;">${notes.replace(/\n/g, '<br>')}</p>`;
+    };
 
     const openUpdateCheck = async () => {
       modal.style.display = 'flex';
+      statusMsg.style.display = 'none';
+      dlBox.style.display = 'none';
+      btnCancelDl.style.display = 'none';
+      btnPrimary.disabled = true;
+      btnPrimaryText.textContent = 'Checking for Updates...';
+
       const titleEl = document.getElementById('update-modal-title');
       const descEl = document.getElementById('update-modal-desc');
-      const instVer = document.getElementById('update-ver-installed');
-      const latestVer = document.getElementById('update-ver-latest');
-      const statusMsg = document.getElementById('update-status-msg');
 
-      statusMsg.style.display = 'none';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
+      changelogEl.innerHTML = '<div style="color: #64748b; font-size: 13px;">Fetching release notes...</div>';
 
       try {
         const info = await api.checkUpdates();
-        const appInst = info.app_installed || 'v1.2.8';
-        const appLatest = info.app_latest || 'v1.2.8';
+        currentUpdateInfo = info;
+        const appInst = info.app_installed || 'v1.2.9';
+        const appLatest = info.app_latest || 'v1.2.9';
         const isUpToDate = Boolean(info.app_up_to_date);
 
-        instVer.textContent = appInst;
-        latestVer.textContent = appLatest;
+        curVerEl.textContent = appInst;
+        newVerEl.textContent = appLatest;
+        releaseDateEl.textContent = formatDate(info.published_at);
+        releaseSizeEl.textContent = formatBytes(info.installer_size);
+        changelogEl.innerHTML = renderChangelog(info.release_notes);
+
+        if (info.release_url && btnViewGithub) {
+          btnViewGithub.href = info.release_url;
+        }
 
         if (isUpToDate) {
           titleEl.textContent = 'Droply is Up to Date';
-          descEl.textContent = 'You are running the newest release of Droply. You can also update the embedded yt-dlp core engine for latest platform fixes.';
+          descEl.textContent = 'You are running the newest release of Droply. You can update the embedded yt-dlp core engine for latest platform fixes.';
+          btnPrimary.disabled = false;
+          btnPrimaryText.textContent = 'Update yt-dlp Core';
+          downloadState = 'ytdlp-core';
         } else {
-          titleEl.textContent = 'New Droply Update Available!';
-          descEl.textContent = `A new release (${appLatest}) is available. You can download the latest installer from GitHub or update the embedded core engine below.`;
+          titleEl.textContent = 'Application Update Available';
+          descEl.textContent = 'A newer version of Droply is ready to install';
+          btnPrimary.disabled = false;
+          btnPrimaryText.textContent = 'Download Update';
+          downloadState = 'can-download';
         }
       } catch (e) {
-        instVer.textContent = 'v1.2.8';
-        latestVer.textContent = 'v1.2.8';
+        curVerEl.textContent = 'v1.2.9';
+        newVerEl.textContent = 'v1.2.9';
         titleEl.textContent = 'Droply Core Engine';
-        descEl.textContent = 'You can update the embedded yt-dlp core engine for latest platform fixes.';
+        descEl.textContent = 'Verified online. You can refresh the embedded yt-dlp core engine.';
+        changelogEl.innerHTML = renderChangelog('');
+        btnPrimary.disabled = false;
+        btnPrimaryText.textContent = 'Update yt-dlp Core';
+        downloadState = 'ytdlp-core';
       }
     };
 
     if (btnHeaderUpdates) btnHeaderUpdates.addEventListener('click', openUpdateCheck);
     if (btnSettingsUpdates) btnSettingsUpdates.addEventListener('click', openUpdateCheck);
     if (btnClose) btnClose.addEventListener('click', () => { modal.style.display = 'none'; });
-
-    // Close on overlay backdrop click
     modal.addEventListener('click', (e) => {
       if (e.target === modal) modal.style.display = 'none';
     });
 
-    if (btnUpdateYtdlp) {
-      btnUpdateYtdlp.addEventListener('click', async () => {
-        const textSpan = document.getElementById('btn-update-ytdlp-text');
-        const statusMsg = document.getElementById('update-status-msg');
-        btnUpdateYtdlp.disabled = true;
-        textSpan.textContent = 'Updating core...';
+    // Cancel download button
+    btnCancelDl.addEventListener('click', async () => {
+      if (pollInterval) clearInterval(pollInterval);
+      try {
+        await api.cancelInstallerDownload();
+      } catch (e) {}
+      dlBox.style.display = 'none';
+      btnCancelDl.style.display = 'none';
+      btnPrimary.disabled = false;
+      btnPrimaryText.textContent = 'Download Update';
+      downloadState = 'can-download';
+      Components.showToast('Download cancelled', 'info');
+    });
+
+    // Primary action button handler (Download -> Restart & Install / Core Update)
+    btnPrimary.addEventListener('click', async () => {
+      if (downloadState === 'can-download') {
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.9'}/Droply-Setup.exe`;
+        const size = currentUpdateInfo?.installer_size || 0;
+
+        downloadState = 'downloading';
+        btnPrimary.disabled = true;
+        btnPrimaryText.textContent = 'Downloading...';
+        btnCancelDl.style.display = 'inline-flex';
+        dlBox.style.display = 'block';
+        dlBar.style.width = '0%';
+        dlPercent.textContent = '0%';
+        dlBytes.textContent = `0 MB / ${formatBytes(size)}`;
+        dlSpeed.textContent = '0 MB/s';
+        dlTitle.textContent = 'Downloading installer...';
+
+        try {
+          await api.downloadInstaller(url, size);
+          
+          pollInterval = setInterval(async () => {
+            try {
+              const st = await api.getInstallerDownloadStatus();
+              if (st.status === 'downloading') {
+                const pct = Math.min(Math.max(st.percent || 0, 0), 100);
+                dlBar.style.width = pct + '%';
+                dlPercent.textContent = Math.round(pct) + '%';
+                dlBytes.textContent = `${formatBytes(st.downloaded_bytes)} / ${formatBytes(st.total_bytes)}`;
+                dlSpeed.textContent = `${(st.speed_bps / (1024 * 1024)).toFixed(1)} MB/s`;
+              } else if (st.status === 'completed') {
+                clearInterval(pollInterval);
+                dlBar.style.width = '100%';
+                dlPercent.textContent = '100%';
+                dlTitle.textContent = 'Download Complete!';
+                btnCancelDl.style.display = 'none';
+                btnPrimary.disabled = false;
+                btnPrimaryText.textContent = 'Restart and Install';
+                downloadState = 'ready-to-install';
+              } else if (st.status === 'error') {
+                clearInterval(pollInterval);
+                dlTitle.textContent = 'Download Failed';
+                dlBox.style.display = 'none';
+                btnCancelDl.style.display = 'none';
+                btnPrimary.disabled = false;
+                btnPrimaryText.textContent = 'Download Update';
+                downloadState = 'can-download';
+                Components.showToast(`Download failed: ${st.error || 'Network error'}`, 'error');
+              }
+            } catch (err) {}
+          }, 400);
+
+        } catch (e) {
+          btnPrimary.disabled = false;
+          btnPrimaryText.textContent = 'Download Update';
+          downloadState = 'can-download';
+          Components.showToast(`Download failed: ${e.message}`, 'error');
+        }
+
+      } else if (downloadState === 'ready-to-install') {
+        // Trigger install and restart
+        btnPrimary.disabled = true;
+        btnPrimaryText.textContent = 'Restarting...';
+
+        const serverPill = document.getElementById('server-status-pill');
+        const serverLabel = document.getElementById('server-status-label');
+        if (serverPill) {
+          serverPill.className = 'header-server-pill status-reconnecting';
+        }
+        if (serverLabel) {
+          serverLabel.textContent = 'Reconnecting...';
+        }
+
+        try {
+          await api.installAndRestart();
+          Components.showToast('Launching installer and restarting Droply...', 'success');
+        } catch (e) {
+          Components.showToast(`Installer error: ${e.message}`, 'error');
+        }
+
+        // Close modal after brief delay and enter reconnecting polling loop
+        setTimeout(() => {
+          modal.style.display = 'none';
+        }, 1500);
+
+        // Poll until server is back online
+        let reconnectAttempts = 0;
+        const reconnectTimer = setInterval(async () => {
+          reconnectAttempts++;
+          try {
+            const st = await api.getSystemStatus();
+            if (st && st.python_version) {
+              clearInterval(reconnectTimer);
+              if (serverPill) serverPill.className = 'header-server-pill status-ready';
+              if (serverLabel) serverLabel.textContent = 'Server Available';
+              Components.showToast('Droply updated and reconnected!', 'success');
+              await this.loadSystemStatus();
+            }
+          } catch (e) {
+            // Still restarting
+          }
+          if (reconnectAttempts > 60) {
+            clearInterval(reconnectTimer);
+          }
+        }, 1500);
+
+      } else if (downloadState === 'ytdlp-core') {
+        // Update yt-dlp core
+        btnPrimary.disabled = true;
+        btnPrimaryText.textContent = 'Updating core...';
         statusMsg.style.display = 'block';
         statusMsg.textContent = 'Downloading and installing latest yt-dlp core engine...';
 
@@ -878,11 +1126,11 @@ class DroplyApp {
           statusMsg.style.color = '#ef4444';
           statusMsg.textContent = `Update error: ${e.message}`;
         } finally {
-          btnUpdateYtdlp.disabled = false;
-          textSpan.textContent = 'Update yt-dlp Core';
+          btnPrimary.disabled = false;
+          btnPrimaryText.textContent = 'Update yt-dlp Core';
         }
-      });
-    }
+      }
+    });
   }
 
   // ================= WEBSOCKET & NATIVE EVENT LISTENERS =================

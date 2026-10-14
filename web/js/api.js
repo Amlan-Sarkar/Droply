@@ -611,7 +611,7 @@ class DroplyAPI {
           download_dir: saved.download_dir || 'Downloads/Droply',
           default_video_quality: saved.default_video_quality || 'best',
           default_audio_format: saved.default_audio_format || 'mp3',
-          max_concurrent_downloads: saved.max_concurrent_downloads || 1,
+          max_concurrent_downloads: saved.max_concurrent_downloads ? parseInt(saved.max_concurrent_downloads, 10) : 3,
           theme: saved.theme || localStorage.getItem('droply_theme') || 'dark',
           notifications: saved.notifications !== false,
           ...saved
@@ -621,7 +621,7 @@ class DroplyAPI {
           download_dir: 'Downloads/Droply',
           default_video_quality: 'best',
           default_audio_format: 'mp3',
-          max_concurrent_downloads: 1,
+          max_concurrent_downloads: 3,
           theme: localStorage.getItem('droply_theme') || 'dark',
           notifications: true
         };
@@ -706,17 +706,17 @@ class DroplyAPI {
         return new Promise((resolve) => {
           const handler = (e) => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve(e.detail || { app_installed: 'v1.2.4', app_latest: 'v1.2.4', app_up_to_date: true });
+            resolve(e.detail || { app_installed: 'v1.2.9', app_latest: 'v1.2.9', app_up_to_date: true });
           };
           window.addEventListener('droply_update_checked', handler);
           window.DroplyAndroid.checkUpdates();
           setTimeout(() => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve({ app_installed: 'v1.2.4', app_latest: 'v1.2.4', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
+            resolve({ app_installed: 'v1.2.9', app_latest: 'v1.2.9', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
           }, 6000);
         });
       }
-      return { app_installed: 'v1.2.4', app_latest: 'v1.2.4', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
+      return { app_installed: 'v1.2.9', app_latest: 'v1.2.9', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
     }
     return this.request('/api/system/check-updates');
   }
@@ -753,6 +753,29 @@ class DroplyAPI {
       };
     }
     return this.request('/api/system/status');
+  }
+
+  async downloadInstaller(url, size = 0) {
+    return this.request('/api/system/download-installer', {
+      method: 'POST',
+      body: JSON.stringify({ url, size })
+    });
+  }
+
+  async getInstallerDownloadStatus() {
+    return this.request('/api/system/download-installer-status');
+  }
+
+  async cancelInstallerDownload() {
+    return this.request('/api/system/cancel-installer-download', {
+      method: 'POST'
+    });
+  }
+
+  async installAndRestart() {
+    return this.request('/api/system/install-and-restart', {
+      method: 'POST'
+    });
   }
 }
 

@@ -304,15 +304,17 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Header Action Buttons (OmniDownloader Style) */
+/* Header Action Buttons */
 .header-action-btn {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  min-height: 38px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
   color: #94a3b8;
   display: flex;
   align-items: center;
@@ -330,12 +332,19 @@ body {
   display: block;
 }
 
-.header-action-btn:hover,
-.header-action-btn.active {
-  background: rgba(0, 229, 163, 0.15);
-  border-color: rgba(0, 229, 163, 0.45);
+.header-action-btn:hover {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   color: #00e5a3;
-  box-shadow: 0 0 12px rgba(0, 229, 163, 0.25);
+  transform: translateY(-1px);
+}
+
+.header-action-btn.active {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #00e5a3;
 }
 
 .header-action-btn:active {
@@ -1162,7 +1171,8 @@ body {
   height: 12px;
   background: rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-full);
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -1172,6 +1182,28 @@ body {
   border-radius: var(--radius-full);
   box-shadow: 0 0 14px var(--accent-glow);
   transition: width 0.25s linear;
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '🐾';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.95;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 163, 0.8));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.progress-bar-fill[style*="width: 0%"]::after,
+.progress-bar-fill[style*="width:0%"]::after,
+.progress-bar-fill[style*="width: 100%"]::after,
+.progress-bar-fill[style*="width:100%"]::after {
+  display: none !important;
 }
 
 /* Metric Row */
@@ -1472,7 +1504,8 @@ body {
   height: 6px;
   background: rgba(255, 255, 255, 0.08);
   border-radius: var(--radius-full);
-  overflow: hidden;
+  position: relative;
+  overflow: visible;
 }
 
 .queue-item-progress-fill {
@@ -1480,6 +1513,28 @@ body {
   background: var(--accent-gradient);
   border-radius: var(--radius-full);
   transition: width 0.2s linear;
+  position: relative;
+}
+
+.queue-item-progress-fill::after {
+  content: '🐾';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  line-height: 1;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px rgba(0, 229, 163, 0.8));
+  pointer-events: none;
+  z-index: 2;
+}
+
+.queue-item-progress-fill[style*="width: 0%"]::after,
+.queue-item-progress-fill[style*="width:0%"]::after,
+.queue-item-progress-fill[style*="width: 100%"]::after,
+.queue-item-progress-fill[style*="width:100%"]::after {
+  display: none !important;
 }
 
 .queue-item-meta-row {
@@ -2311,7 +2366,7 @@ input:checked + .toggle-slider:before {
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
-  padding: 14px 16px;
+  padding: 14px 48px 14px 16px !important;
   resize: vertical;
   min-height: 64px;
 }
@@ -2355,14 +2410,14 @@ input:checked + .toggle-slider:before {
 
 .btn-clear-omni:hover,
 .btn-clear-omni:active {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.5);
-  color: #ef4444;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
 }
 
 .btn-clear-omni:hover svg,
 .btn-clear-omni:active svg {
-  stroke: #ef4444;
+  stroke: #ffffff !important;
 }
 
 .omni-input-actions {
@@ -3112,6 +3167,110 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 6px 24px rgba(0, 229, 163, 0.45) !important;
   transform: translateY(-2px) !important;
 }
+
+/* ===================================================================
+   Subtle Cat-Inspired Aesthetic Elements (Minimal & Geometric)
+   =================================================================== */
+
+/* Geometric Cat Ears Divider */
+.cat-cue-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 22px 0;
+  width: 100%;
+  position: relative;
+}
+
+.cat-cue-divider::before,
+.cat-cue-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+.cat-cue-mark {
+  margin: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5a3;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.cat-cue-mark:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* Brand Paw Accent */
+.brand-paw {
+  font-size: 13px;
+  margin-left: 5px;
+  color: #00e5a3;
+  opacity: 0.85;
+  display: inline-block;
+  vertical-align: middle;
+  transform-origin: center;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#header-brand-btn:hover .brand-paw {
+  transform: rotate(15deg) scale(1.15);
+}
+
+/* Cat Empty State */
+.cat-empty-state {
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-empty-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px auto;
+  color: #64748b;
+  opacity: 0.85;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-empty-icon:hover {
+  color: #00e5a3;
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.cat-empty-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.cat-empty-state h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0 0 6px 0;
+}
+
+.cat-empty-state p {
+  font-size: 13.5px;
+  color: #94a3b8;
+  max-width: 320px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
 
 
 

@@ -1,8 +1,10 @@
 @echo off
-title Droply - Local Media Downloader Engine
 cd /d "%~dp0"
-echo ========================================================
-echo   Launching Droply Local Media Engine...
-echo ========================================================
-python app.py
-pause
+if exist "dist\Droply\Droply.exe" (
+    start "" "dist\Droply\Droply.exe"
+) else if exist "Droply.exe" (
+    start "" "Droply.exe"
+) else (
+    start "" pythonw app.py
+)
+exit

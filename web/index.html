@@ -22,7 +22,7 @@
 <body data-theme="dark">
   <div class="app-layout">
     
-    <!-- TOP NAVIGATION HEADER -->
+    <!-- TOP NAVIGATION HEADER (OMNIDOWNLOADER STYLE FOR DESKTOP) -->
     <header class="app-header">
       <div class="header-brand" id="header-brand-btn" title="Back to Downloader">
         <div class="brand-logo">
@@ -30,12 +30,13 @@
           <div class="brand-glow"></div>
         </div>
         <div class="brand-text">
-          <span class="brand-name">Drop<span class="gradient-text">ly</span></span>
-          <span class="brand-tagline">Universal Media Downloader</span>
+          <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw" title="Droply Feline Polish">🐾</span></span>
         </div>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.2.9</span>
+        <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine v...</span>
       </div>
 
-      <!-- NAVIGATION TABS (Desktop Only) -->
+      <!-- NAVIGATION TABS (Desktop) -->
       <nav class="nav-tabs desktop-only-nav" id="nav-tabs">
         <button class="nav-tab active" data-tab="single" id="tab-btn-single">
           <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -62,22 +63,38 @@
         </button>
       </nav>
 
-      <!-- SYSTEM STATUS & HEADER ACTION ICONS -->
+      <!-- SYSTEM STATUS & HEADER ACTION BUTTONS -->
       <div class="header-status">
-        <button class="header-action-btn" id="header-check-updates" title="Check for Updates">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <a href="https://github.com/Amlan-Sarkar/Droply" target="_blank" class="header-desktop-btn github-desktop-btn" title="View Repository on GitHub">
+          <svg class="header-btn-svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+
+        <button class="header-desktop-btn update-desktop-btn" id="header-check-updates" title="Check for Updates">
+          <svg class="header-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M23 4v6h-6"></path>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
+          <span>Check for Updates</span>
         </button>
-        <button class="header-action-btn" id="header-nav-history" title="Library & History">
+
+        <!-- SERVER STATUS PILL (READY / RECONNECTING) -->
+        <div class="header-server-pill status-ready" id="server-status-pill">
+          <span class="server-dot"></span>
+          <span class="server-label" id="server-status-label">Server Available</span>
+        </div>
+
+        <!-- MOBILE-ONLY HEADER ICONS -->
+        <button class="header-action-btn mobile-only-header" id="header-nav-history" title="Library & History">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
+            <path d="M3 3v5h5"></path>
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+            <path d="M12 7v5l4 2"></path>
           </svg>
         </button>
-        <button class="header-action-btn" id="header-nav-settings" title="Settings">
+        <button class="header-action-btn mobile-only-header" id="header-nav-settings" title="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -95,48 +112,98 @@
           
           <!-- CLEAN OMNIDOWNLOADER-STYLE INPUT CARD -->
           <div class="input-omni-card">
-            <div class="input-card-title-row">
-              <label class="input-section-label" for="single-url-input">Paste Media URL</label>
-              <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
-                <span class="detect-icon" id="detect-icon">🌐</span>
-                <span class="detect-text" id="detect-name">None</span>
+            
+            <!-- Sleek Single-Line Input Bar with inline icons and actions -->
+            <div class="omni-input-bar">
+              <div class="omni-input-prefix">
+                <svg class="omni-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
               </div>
-            </div>
 
-            <div class="omni-textarea-wrapper">
-              <textarea 
+              <input 
+                type="text"
                 id="single-url-input" 
-                class="omni-textarea" 
-                rows="2"
-                placeholder="Paste video, playlist, or batch links (one per line)" 
+                class="omni-input-field" 
+                placeholder="Paste media or playlist URL (YouTube, Facebook, Instagram, X, TikTok...)" 
                 autocomplete="off"
                 spellcheck="false"
-              ></textarea>
+              />
+
               <button class="btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
+
+              <div class="omni-bar-actions">
+                <button class="omni-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  </svg>
+                  <span>Batch</span>
+                </button>
+
+                <button class="omni-action-pill btn-paste-omni" id="btn-paste" title="Paste from clipboard">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  </svg>
+                  <span>Paste</span>
+                </button>
+
+                <button class="omni-fetch-btn" id="btn-analyze" title="Analyze media details">
+                  <span class="btn-text">Analyze</span>
+                </button>
+              </div>
             </div>
 
-            <div class="omni-input-actions">
-              <button class="secondary-btn btn-paste-omni" id="btn-paste" title="Paste from clipboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                </svg>
-                <span>Paste</span>
-              </button>
-
-              <button class="primary-btn btn-fetch-omni" id="btn-analyze">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <span class="btn-text">Fetch Details</span>
-              </button>
+            <!-- Optional Batch Links Drawer -->
+            <div class="omni-batch-drawer" id="omni-batch-drawer" style="display: none;">
+              <textarea 
+                id="batch-urls-input" 
+                class="omni-batch-textarea" 
+                rows="3" 
+                placeholder="Paste multiple URLs (one per line) for batch download..."
+                autocomplete="off"
+                spellcheck="false"
+              ></textarea>
             </div>
+
+            <!-- Platforms Chips Row (Without VPN notice) -->
+            <div class="omni-platforms-row">
+              <div class="omni-platform-chips">
+                <span class="platform-chip">YouTube</span>
+                <span class="platform-chip">Facebook</span>
+                <span class="platform-chip">Instagram</span>
+                <span class="platform-chip">X</span>
+                <span class="platform-chip">TikTok</span>
+                <span class="platform-chip">Reddit</span>
+                <span class="platform-chip">1000+ Sites</span>
+              </div>
+            </div>
+
+            <!-- Bottom Trust Badge Row -->
+            <div class="omni-trust-bar">
+              <div class="trust-pill">
+                <span class="trust-paw brand-paw" title="Droply Feline Polish">🐾</span>
+                <span>Droply <strong id="trust-version">v1.2.9</strong> • Private On-Device Processing • Zero External Telemetry</span>
+              </div>
+              <a href="https://github.com/Amlan-Sarkar/Droply" target="_blank" class="trust-github-link" title="Open GitHub Repository">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <span>GitHub</span>
+              </a>
+            </div>
+
           </div>
 
           <!-- SKELETON LOADING STATE -->
@@ -367,7 +434,17 @@
           <!-- BATCH URLS CONTAINER -->
           <div id="batch-container"></div>
 
-          <!-- ACTIVE & RECENT DOWNLOADS (OMNIDOWNLOADER STYLE) -->
+          <!-- CAT-INSPIRED CUE DIVIDER -->
+          <div class="cat-cue-divider">
+            <span class="cat-cue-mark" title="Droply Feline Polish">
+              <svg viewBox="0 0 24 14" fill="currentColor" style="width: 22px; height: 12px;">
+                <polygon points="2,13 6,1 10,13"></polygon>
+                <polygon points="14,13 18,1 22,13"></polygon>
+              </svg>
+            </span>
+          </div>
+
+          <!-- ACTIVE & RECENT DOWNLOADS -->
           <div class="downloader-queue-section" id="downloader-queue-section">
             <div class="recent-downloads-header" id="recent-downloads-header" style="display: none;">
               <h3 class="recent-title">Recent Downloads (<span id="recent-downloads-count">0</span>)</h3>
@@ -428,10 +505,19 @@
 
           <!-- HISTORY ITEMS CONTAINER -->
           <div class="history-items-list" id="history-items-container">
-            <div class="empty-state" id="history-empty-state">
-              <div class="empty-icon">📁</div>
+            <div class="empty-state cat-empty-state" id="history-empty-state">
+              <div class="cat-empty-icon">
+                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="cat-empty-svg">
+                  <path d="M19 44 C13 37 14 26 23 20 C25 15 29 13 33 13 C38 13 41 15 44 20 C52 26 53 37 47 44 C41 50 25 50 19 44 Z"></path>
+                  <path d="M25 18 L21 9 L29 14"></path>
+                  <path d="M41 18 L45 9 L37 14"></path>
+                  <path d="M26 27 C28 29 30 29 32 27"></path>
+                  <path d="M34 27 C36 29 38 29 40 27"></path>
+                  <path d="M47 38 C54 41 55 49 49 53 C43 57 32 55 28 51"></path>
+                </svg>
+              </div>
               <h4>No downloads recorded yet</h4>
-              <p>Your finished downloads and saved files will appear here.</p>
+              <p>Quiet as a resting kitten. Your finished downloads and saved files will appear here.</p>
             </div>
           </div>
 
@@ -595,38 +681,92 @@
 
     <!-- CHECK FOR UPDATES MODAL (OMNIDOWNLOADER STYLE) -->
     <div class="modal-overlay" id="update-modal" style="display: none;">
-      <div class="modal-card update-modal-card">
-        <div class="update-modal-header">
-          <div class="update-modal-icon" id="update-modal-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="9 12 11 14 15 10"></polyline>
-            </svg>
-          </div>
-          <h3 class="update-modal-title" id="update-modal-title">Droply is Up to Date</h3>
-        </div>
-
-        <div class="update-modal-body">
-          <div class="update-version-row">
-            <span class="update-ver-label">Installed: <strong id="update-ver-installed">v1.2.4</strong></span>
-            <span class="update-ver-dot">•</span>
-            <span class="update-ver-label">Latest: <strong id="update-ver-latest">v1.2.4</strong></span>
-          </div>
-          <p class="update-modal-desc" id="update-modal-desc">
-            You are running the newest release of Droply. You can also update the embedded yt-dlp core engine for latest platform fixes.
-          </p>
-          <div id="update-status-msg" style="display: none; font-size: 13px; color: #38bdf8; margin-top: 12px; font-weight: 500;"></div>
-        </div>
-
-        <div class="update-modal-actions">
-          <button class="secondary-btn" id="btn-close-update-modal">Close</button>
-          <button class="primary-btn btn-update-core" id="btn-update-ytdlp">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+      <div class="modal-card omni-update-dialog">
+        <!-- Top Header -->
+        <div class="omni-update-header">
+          <div class="update-icon-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00e5a3" stroke-width="2.2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span id="btn-update-ytdlp-text">Update yt-dlp Core</span>
+          </div>
+          <div class="update-title-wrap">
+            <h3 class="update-dialog-title" id="update-modal-title">Application Update Available <span class="brand-paw" title="Droply Feline Polish">🐾</span></h3>
+            <p class="update-dialog-sub" id="update-modal-desc">A newer version of Droply is ready to install</p>
+          </div>
+          <button class="btn-close-modal-x" id="btn-close-update-modal" title="Close dialog">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="omni-update-body">
+          <!-- Versions Comparison Card -->
+          <div class="update-version-card">
+            <div class="ver-col">
+              <span class="ver-label">INSTALLED VERSION</span>
+              <span class="ver-value" id="update-cur-ver">v1.2.9</span>
+            </div>
+            <div class="ver-arrow">➔</div>
+            <div class="ver-col">
+              <span class="ver-label">LATEST RELEASE</span>
+              <span class="ver-value highlight-ver" id="update-new-ver">v1.4.9</span>
+            </div>
+          </div>
+
+          <!-- Metadata row -->
+          <div class="update-meta-row">
+            <span class="meta-item"><span class="meta-icon">🗓</span> Released: <strong id="update-release-date">Today</strong></span>
+            <span class="meta-item"><span class="meta-icon">📥</span> Size: <strong id="update-release-size">~65 MB</strong></span>
+          </div>
+
+          <!-- What's new in this release section -->
+          <div class="update-changelog-wrap">
+            <div class="changelog-tag">WHAT'S NEW IN THIS RELEASE:</div>
+            <div class="changelog-scrollbox" id="update-changelog-content">
+              <div class="changelog-placeholder">Fetching release highlights...</div>
+            </div>
+          </div>
+
+          <!-- Live Download Progress Card (visible during downloading / completed) -->
+          <div class="update-dl-progress-box" id="update-dl-progress-box" style="display: none;">
+            <div class="dl-progress-header">
+              <span class="dl-status-title" id="update-dl-status-title">Downloading installer...</span>
+              <span class="dl-percent-badge" id="update-dl-percent">0%</span>
+            </div>
+            <div class="dl-bar-track">
+              <div class="dl-bar-fill" id="update-dl-bar-fill" style="width: 0%;"></div>
+            </div>
+            <div class="dl-progress-footer">
+              <span class="dl-bytes-text" id="update-dl-bytes">0 MB / 0 MB</span>
+              <span class="dl-speed-text" id="update-dl-speed">0 MB/s</span>
+            </div>
+          </div>
+
+          <div id="update-status-msg" style="display: none; font-size: 13px; color: #38bdf8; margin-top: 10px; font-weight: 500;"></div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="omni-update-footer">
+          <a class="update-btn-action btn-view-github" id="btn-view-github" href="https://github.com/Amlan-Sarkar/Droply/releases" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>View on GitHub</span>
+          </a>
+
+          <button class="update-btn-action btn-cancel-dl" id="btn-cancel-installer-dl" style="display: none;">
+            <span>Cancel Download</span>
+          </button>
+
+          <button class="update-btn-action btn-primary-dl" id="btn-installer-primary">
+            <svg id="primary-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="btn-installer-primary-text">Download Update</span>
           </button>
         </div>
       </div>

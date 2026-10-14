@@ -129,15 +129,6 @@ const Components = {
       container.appendChild(chip);
     });
   },
-          c.classList.toggle('selected', c.getAttribute('data-fid') === chosen.format_id);
-        });
-        onSelect(chosen);
-      }
-    });
-
-    dropWrap.appendChild(select);
-    container.parentElement.insertBefore(dropWrap, container);
-  },
 
   formatBytes(bytes) {
     if (!bytes || bytes <= 0) return '0 MB';
