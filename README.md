@@ -24,7 +24,7 @@
 
 ---
 
-## Why Droply?
+## ✧ Why Droply?
 
 Media downloads shouldn't require juggling browser tabs, managing scattered files, or guessing how long a download will take.
 
