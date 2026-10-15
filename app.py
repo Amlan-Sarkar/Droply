@@ -6,6 +6,11 @@ Application Entry Point and Desktop Window Launcher
 import os
 import sys
 
+# Priority import path for self-updated yt-dlp core engine
+_engine_updates = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply", "engine_updates")
+if os.path.isdir(_engine_updates) and _engine_updates not in sys.path:
+    sys.path.insert(0, _engine_updates)
+
 # Safe stream redirection for PyInstaller --noconsole / --windowed mode on Windows
 class SafeStream:
     def __init__(self, target_file=None):

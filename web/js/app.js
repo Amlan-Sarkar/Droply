@@ -935,9 +935,8 @@ class DroplyApp {
         if (line.toLowerCase().includes('tested on windows') || line.toLowerCase().includes('download droply')) continue;
         if (line.toLowerCase().includes('###') || line.toLowerCase().includes('platform |')) continue;
         
-        if (line.startsWith('*') || line.startsWith('-')) {
-          let content = line.substring(1).trim();
-          content = content.replace(/^[-*]\s*/, '').trim();
+        if (/^[-*+]\s+/.test(line)) {
+          let content = line.replace(/^[-*+]\s+/, '').trim();
           if (!content || content === '-' || content === '--') continue;
           content = content.replace(/\*\*(.*?)\*\*:?/g, (match, p1) => {
             return `<span class="cl-feature-highlight">${p1}:</span>`;
@@ -963,7 +962,11 @@ class DroplyApp {
 
       const titleEl = document.getElementById('update-modal-title');
       const descEl = document.getElementById('update-modal-desc');
+      const curVerEl = document.getElementById('update-cur-ver');
+      const newVerEl = document.getElementById('update-new-ver');
 
+      if (curVerEl) curVerEl.textContent = 'v1.2.12';
+      if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
       changelogEl.innerHTML = '<div style="color: #64748b; font-size: 13px;">Fetching release notes...</div>';

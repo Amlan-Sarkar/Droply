@@ -16,6 +16,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
+# Priority import path for self-updated yt-dlp core engine
+_engine_updates = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply", "engine_updates")
+if os.path.isdir(_engine_updates) and _engine_updates not in sys.path:
+    sys.path.insert(0, _engine_updates)
+
 import yt_dlp
 import imageio_ffmpeg
 
@@ -760,19 +765,79 @@ async def update_ytdlp_endpoint():
     loop = asyncio.get_event_loop()
 
     def _run_update():
-        import subprocess
+        import json
+        import urllib.request
+        import zipfile
+        import tempfile
+        import importlib
+
         try:
-            cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"]
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
-            if proc.returncode == 0:
-                import importlib
-                importlib.reload(yt_dlp)
-                new_ver = getattr(yt_dlp, "__version__", "updated")
-                return {"status": "success", "message": f"Updated yt-dlp core to {new_ver}!", "version": new_ver}
-            else:
-                return {"status": "error", "message": proc.stderr or proc.stdout or "Update failed"}
+            current_ver = getattr(yt_dlp, "__version__", "unknown")
+
+            # 1. Query latest version info from PyPI
+            req = urllib.request.Request(
+                "https://pypi.org/pypi/yt-dlp/json",
+                headers={"User-Agent": "Droply-Updater"}
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+            latest_ver = data.get("info", {}).get("version")
+            if not latest_ver:
+                return {"status": "error", "message": "Could not verify latest yt-dlp version from PyPI."}
+
+            if latest_ver == current_ver:
+                return {
+                    "status": "success",
+                    "message": f"yt-dlp core engine is already up to date ({current_ver}).",
+                    "version": current_ver
+                }
+
+            # 2. Locate pure Python wheel package
+            wheel_url = None
+            for file_info in data.get("urls", []):
+                fname = file_info.get("filename", "")
+                if fname.endswith(".whl") and "none-any" in fname:
+                    wheel_url = file_info.get("url")
+                    break
+
+            if not wheel_url:
+                for file_info in data.get("urls", []):
+                    if file_info.get("filename", "").endswith(".whl"):
+                        wheel_url = file_info.get("url")
+                        break
+
+            if not wheel_url:
+                return {"status": "error", "message": f"No wheel package found for yt-dlp {latest_ver}."}
+
+            # 3. Download wheel and extract yt_dlp directly into local engine_updates directory
+            updates_base = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply", "engine_updates")
+            os.makedirs(updates_base, exist_ok=True)
+
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                tmp_whl = os.path.join(tmp_dir, "ytdlp_update.whl")
+                urllib.request.urlretrieve(wheel_url, tmp_whl)
+
+                with zipfile.ZipFile(tmp_whl, "r") as zf:
+                    for member in zf.infolist():
+                        if member.filename.startswith("yt_dlp/") or member.filename.startswith("yt_dlp\\"):
+                            zf.extract(member, updates_base)
+
+            # 4. Ensure path priority and reload yt_dlp in memory
+            if updates_base not in sys.path:
+                sys.path.insert(0, updates_base)
+
+            importlib.invalidate_caches()
+            importlib.reload(yt_dlp)
+            new_ver = getattr(yt_dlp, "__version__", latest_ver)
+
+            return {
+                "status": "success",
+                "message": f"Updated yt-dlp core from {current_ver} to {new_ver}!",
+                "version": new_ver
+            }
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            return {"status": "error", "message": f"Engine update failed: {str(e)}"}
 
     result = await loop.run_in_executor(None, _run_update)
     return result
