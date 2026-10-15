@@ -2,6 +2,8 @@
 
 <img src="assets/logo.png" width="128" alt="Droply Logo">
 
+# Droply
+
 ## Your media. Your quality. Your library
 
 *A local-first video, audio, and social media downloader for Windows, with an experimental Android edition.*
@@ -14,7 +16,7 @@
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Execution: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-10b981.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply)
 
-[**Get Droply**](#-get-droply) · [**Explore Features**](#-built-for-your-downloads) · [**Supported Sources**](#-where-droply-works) · [**How to Use**](#-using-droply)
+[**Get Droply**](#get-droply) · [**Explore Features**](#built-for-your-downloads) · [**Supported Sources**](#where-droply-works) · [**How to Use**](#using-droply)
 
 </div>
 
@@ -35,6 +37,7 @@ Droply brings media extraction, quality selection, download management, and file
 
 ---
 
+<a id="built-for-your-downloads"></a>
 ## ✦ Built for your downloads
 
 <table>
@@ -108,6 +111,7 @@ Droply also features a minimalist cat-outline divider and a sleeping-kitten idle
 
 ---
 
+<a id="get-droply"></a>
 ## ⬇️ Get Droply
 
 Droply provides pre-compiled packages for Windows and Android. Development tools and a separate Python installation are not required for the packaged releases.
@@ -182,6 +186,7 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 ---
 
+<a id="where-droply-works"></a>
 ## 🌐 Where Droply works
 
 Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compatibility, available streams, and maximum quality depend on the source website and individual media link.
@@ -201,6 +206,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 
 ---
 
+<a id="using-droply"></a>
 ## 🎯 Using Droply
 
 ### 01 — Download a single video or audio track

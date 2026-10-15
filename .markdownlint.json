@@ -1,15 +1,6 @@
 {
   "default": true,
   "MD013": false,
-  "MD033": {
-    "allowed_elements": [
-      "div",
-      "p",
-      "span",
-      "img",
-      "br",
-      "kbd",
-      "a"
-    ]
-  }
+  "MD033": false,
+  "MD041": false
 }
