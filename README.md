@@ -6,7 +6,7 @@
 
 <img src="assets/logo.png" width="160" alt="Droply Logo">
 
-### Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android
+## Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android
 
 *Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X (Twitter), Bilibili, and popular media sites with real-time speed & progress tracking.*
 
