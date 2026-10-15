@@ -598,6 +598,8 @@ class InstallerDownloadManager:
                         self.downloaded_bytes = bytes_written
                         if self.total_bytes == 0:
                             self.total_bytes = bytes_written
+                        else:
+                            self.downloaded_bytes = max(bytes_written, self.total_bytes)
                         self.status = "completed"
                         self.percent = 100.0
                         self.speed_bps = 0

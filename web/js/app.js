@@ -896,7 +896,7 @@ class DroplyApp {
     let downloadState = 'idle'; // 'idle', 'can-download', 'downloading', 'ready-to-install', 'ytdlp-core'
 
     const formatBytes = (bytes) => {
-      if (!bytes || isNaN(bytes)) return '65.6 MB';
+      if (bytes === undefined || bytes === null || isNaN(bytes) || bytes <= 0) return '0 MB';
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     };
 
@@ -939,7 +939,8 @@ class DroplyApp {
           let content = line.replace(/^[-*+]\s+/, '').trim();
           if (!content || content === '-' || content === '--') continue;
           content = content.replace(/\*\*(.*?)\*\*:?/g, (match, p1) => {
-            return `<span class="cl-feature-highlight">${p1}:</span>`;
+            const title = p1.replace(/:+$/, '').trim();
+            return `<span class="cl-feature-highlight">${title}:</span>`;
           });
           items.push(`<li>${content}</li>`);
         }
@@ -1069,6 +1070,9 @@ class DroplyApp {
                 dlBar.style.width = '100%';
                 dlPercent.textContent = '100%';
                 dlTitle.textContent = 'Download Complete!';
+                const finalSize = st.total_bytes || st.downloaded_bytes || size || 0;
+                dlBytes.textContent = `${formatBytes(finalSize)} / ${formatBytes(finalSize)}`;
+                dlSpeed.textContent = 'Completed';
                 btnCancelDl.style.display = 'none';
                 btnPrimary.disabled = false;
                 btnPrimaryText.textContent = 'Restart and Install';
