@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release Tag (e.g. v1.2.10)'
+        description: 'Release Tag (e.g. v1.2.12)'
         required: false
-        default: 'v1.2.10'
+        default: 'v1.2.12'
 
 permissions:
   contents: write
@@ -40,9 +40,20 @@ jobs:
         run: |
           choco install innosetup --no-progress
 
+      - name: Configure Version Metadata
+        shell: pwsh
+        run: |
+          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag_name }}" } else { "${{ github.ref_name }}" }
+          if (-not $tag -or $tag -eq "") { $tag = "v1.2.12" }
+          $tagClean = $tag.TrimStart('v')
+          Write-Host "Configuring Droply version: $tag (Clean: $tagClean)"
+          Set-Content -Path VERSION -Value $tagClean
+          "DROPLY_VERSION=$tag" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "RELEASE_VERSION_CLEAN=$tagClean" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Build Standalone (Windows)
         run: |
-          pyinstaller --noconfirm --name Droply --onedir --windowed --noconsole --icon Droply.ico --add-data "web;web" --add-data "Droply.ico;." --collect-all imageio_ffmpeg --collect-all pywebview --collect-all pythonnet --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
+          pyinstaller --noconfirm --name Droply --onedir --windowed --noconsole --icon Droply.ico --add-data "web;web" --add-data "Droply.ico;." --add-data "VERSION;." --collect-all imageio_ffmpeg --collect-all pywebview --collect-all pythonnet --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
           New-Item -ItemType Directory -Force -Path dist/Droply/bin
           if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
             Copy-Item (Get-Command ffmpeg).Source -Destination dist/Droply/bin/ffmpeg.exe
@@ -50,6 +61,7 @@ jobs:
             python -c "import shutil, imageio_ffmpeg; shutil.copy(imageio_ffmpeg.get_ffmpeg_exe(), 'dist/Droply/bin/ffmpeg.exe')"
           }
           Copy-Item Droply.ico -Destination dist/Droply/Droply.ico -Force
+          Copy-Item VERSION -Destination dist/Droply/VERSION -Force
           Compress-Archive -Path dist/Droply -DestinationPath Droply-Windows-x64.zip -Force
 
       - name: Build Inno Setup Windows Installer
@@ -59,8 +71,8 @@ jobs:
           if (-not (Test-Path $iscc)) {
             $iscc = (Get-Command iscc.exe).Source
           }
-          Write-Host "Compiling Inno Setup using: $iscc"
-          & $iscc installer.iss
+          Write-Host "Compiling Inno Setup using: $iscc with version: $env:RELEASE_VERSION_CLEAN"
+          & $iscc "/DMyAppVersion=$env:RELEASE_VERSION_CLEAN" installer.iss
           if (-not (Test-Path "dist/Droply-Setup.exe")) {
             Write-Error "dist/Droply-Setup.exe was not created!"
             exit 1
@@ -155,7 +167,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.tag_name }}"
-            if [ -z "$TAG" ]; then TAG="v1.2.10"; fi
+            if [ -z "$TAG" ]; then TAG="v1.2.12"; fi
           else
             TAG="${{ github.ref_name }}"
           fi
@@ -168,6 +180,15 @@ jobs:
           files: release-assets/*
           name: Droply ${{ steps.release_tag.outputs.tag }} - Windows & Android Release
           body: |
+            ### 🚀 What's New in this Release:
+            - **Refined Cat-Inspired Design:** Minimalist feline outline divider, sleeping kitten idle state in the downloader queue, and cleaned-up UI hints.
+            - **Theme-Adaptive Interface:** Analyze button, update controls, and security badges automatically harmonize with your active color theme.
+            - **Live Services Monitor:** Animated breathing pulse indicator displays real-time local background engine connectivity and status.
+            - **Private by Design:** 100% on-device local processing with zero telemetry, zero analytics, and no external tracking.
+            - **Core Engine Stability:** Embedded yt-dlp core engine update system with dynamic version detection and seamless restart installer.
+
+            ---
+
             ### 🪟 Windows (Stable)
 
             | Platform | Package | Direct Link |

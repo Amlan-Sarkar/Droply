@@ -22,7 +22,7 @@
 <body data-theme="dark">
   <div class="app-layout">
     
-    <!-- TOP NAVIGATION HEADER (OMNIDOWNLOADER STYLE FOR DESKTOP) -->
+    <!-- TOP NAVIGATION HEADER (DROPLY DESKTOP) -->
     <header class="app-header">
       <div class="header-brand" id="header-brand-btn" title="Back to Downloader">
         <div class="brand-logo">
@@ -32,7 +32,7 @@
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
-        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.2.10</span>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.2.12</span>
         <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
@@ -110,7 +110,7 @@
       <section class="tab-pane active" id="pane-single">
         <div class="pane-content-single">
           
-          <!-- CLEAN OMNIDOWNLOADER-STYLE INPUT CARD -->
+          <!-- CLEAN INPUT CARD -->
           <div class="input-omni-card">
             
             <!-- Sleek Single-Line Input Bar with inline icons and actions -->
@@ -140,13 +140,8 @@
 
               <div class="omni-bar-actions">
                 <button class="omni-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="8" y1="6" x2="21" y2="6"></line>
-                    <line x1="8" y1="12" x2="21" y2="12"></line>
-                    <line x1="8" y1="18" x2="21" y2="18"></line>
-                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style="width: 10px; height: 10px; margin-right: 2px;">
+                    <polygon points="5,8 19,8 12,17"></polygon>
                   </svg>
                   <span>Batch</span>
                 </button>
@@ -304,7 +299,7 @@
                   </div>
                 </div>
 
-                <!-- FORMAT SELECTION SECTION (OMNIDOWNLOADER STYLE) -->
+                <!-- FORMAT SELECTION SECTION -->
                 <div class="format-selection-wrap" id="video-formats-section">
                   <div class="format-header">
                     <label class="section-label">Select Download Quality</label>
@@ -323,7 +318,7 @@
                   </div>
                 </div>
 
-                <!-- ESTIMATED DOWNLOAD SIZE BANNER (OMNIDOWNLOADER STYLE) -->
+                <!-- ESTIMATED DOWNLOAD SIZE BANNER -->
                 <div class="omni-size-banner" id="omni-size-banner">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
@@ -540,7 +535,7 @@
           
           <div class="settings-card">
             <h2>Application Preferences</h2>
-            <p>Customize storage paths, default qualities, concurrent threads, and visuals.</p>
+            <p>Customize storage paths, default qualities, concurrent threads, and visuals. Click on the "Save Preferences" button below to save changes.</p>
 
             <div class="settings-form">
               
@@ -684,7 +679,7 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- CHECK FOR UPDATES MODAL (OMNIDOWNLOADER STYLE) -->
+    <!-- CHECK FOR UPDATES MODAL -->
     <div class="modal-overlay" id="update-modal" style="display: none;">
       <div class="modal-card omni-update-dialog">
         <!-- Top Header -->
@@ -709,7 +704,7 @@
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.2.10</span>
+              <span class="ver-value" id="update-cur-ver">v1.2.12</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">

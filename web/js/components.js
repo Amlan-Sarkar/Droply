@@ -46,7 +46,7 @@ const Components = {
     }, duration);
   },
 
-  // Render Format Chips for Video (OmniDownloader Style)
+  // Render Format Chips for Video (Droply Modern Style)
   renderVideoFormats(formats, selectedFormatId, onSelect) {
     const container = document.getElementById('video-formats-grid');
     if (!container) return;
@@ -92,7 +92,7 @@ const Components = {
     });
   },
 
-  // Render Audio Codec Chips (OmniDownloader Style)
+  // Render Audio Codec Chips (Droply Modern Style)
   renderAudioFormats(formats, selectedFormatId, onSelect) {
     const container = document.getElementById('audio-formats-grid');
     if (!container) return;
@@ -153,7 +153,7 @@ const Components = {
     return h > 0 ? `${pad(h)}:${pad(remM)}:${pad(remS)}` : `${pad(remM)}:${pad(remS)}`;
   },
 
-  // Render Queue / Recent Download Card (OmniDownloader Style)
+  // Render Queue / Recent Download Card (Droply Modern Style)
   renderQueueItem(task) {
     const card = document.createElement('div');
     card.id = `q-task-${task.id}`;

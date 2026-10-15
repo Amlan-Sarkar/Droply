@@ -2464,7 +2464,7 @@ input:checked + .toggle-slider:before {
   transform: none;
 }
 
-/* Recent Downloads Section (OmniDownloader Style - Screenshot 1) */
+/* Recent Downloads Section */
 .downloader-queue-section {
   margin-top: 26px;
 }
@@ -2920,8 +2920,8 @@ input:checked + .toggle-slider:before {
   font-size: 14.5px;
   font-weight: 700;
   border-radius: 12px;
-  background: #00e5a3;
-  color: #041f16;
+  background: var(--accent-gradient, linear-gradient(135deg, #6366f1 0%, #a855f7 100%));
+  color: #ffffff;
   border: none;
   display: inline-flex;
   align-items: center;
@@ -2929,12 +2929,13 @@ input:checked + .toggle-slider:before {
   gap: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 16px rgba(0, 229, 163, 0.25);
+  box-shadow: 0 4px 16px var(--accent-glow, rgba(99, 102, 241, 0.35));
 }
 
 .btn-download-playlist-now:hover {
-  background: #00fcae;
+  filter: brightness(1.1);
   transform: translateY(-1px);
+  box-shadow: 0 6px 22px var(--accent-glow, rgba(99, 102, 241, 0.5));
 }
 
 .btn-download-playlist-now:disabled {
@@ -3042,7 +3043,7 @@ input:checked + .toggle-slider:before {
   transform: scale(1.02) !important;
 }
 
-/* OmniDownloader Quality Chips Grid */
+/* Quality Chips Grid */
 .omni-quality-chips-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -3077,10 +3078,10 @@ input:checked + .toggle-slider:before {
 }
 
 .omni-quality-chip.selected {
-  background: #00e5a3 !important;
-  border-color: #00e5a3 !important;
-  color: #041f16 !important;
-  box-shadow: 0 4px 18px rgba(0, 229, 163, 0.35) !important;
+  background: var(--accent-gradient, linear-gradient(135deg, #6366f1 0%, #a855f7 100%)) !important;
+  border-color: var(--accent-primary, #6366f1) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 18px var(--accent-glow, rgba(99, 102, 241, 0.35)) !important;
   transform: translateY(-1px);
 }
 
@@ -3101,25 +3102,25 @@ input:checked + .toggle-slider:before {
 }
 
 .omni-quality-chip.selected .chip-label {
-  color: #041f16 !important;
+  color: #ffffff !important;
 }
 
 .omni-quality-chip.selected .chip-size {
-  color: #041f16 !important;
-  background: rgba(0, 0, 0, 0.15) !important;
+  color: #ffffff !important;
+  background: rgba(0, 0, 0, 0.25) !important;
   font-weight: 700 !important;
 }
 
-/* Estimated Download Size Banner (OmniDownloader Style) */
+/* Estimated Download Size Banner */
 .omni-size-banner {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 11px 16px;
-  background: rgba(0, 229, 163, 0.07);
-  border: 1px solid rgba(0, 229, 163, 0.22);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid var(--accent-primary, #6366f1);
   border-radius: 12px;
-  color: #00e5a3;
+  color: var(--accent-primary, #6366f1);
   font-size: 13px;
   font-weight: 500;
   margin-top: 14px;
@@ -3129,7 +3130,7 @@ input:checked + .toggle-slider:before {
   width: 17px;
   height: 17px;
   flex-shrink: 0;
-  stroke: #00e5a3;
+  stroke: var(--accent-primary, #6366f1);
 }
 
 .omni-size-banner strong {
@@ -3140,19 +3141,19 @@ input:checked + .toggle-slider:before {
 
 /* Download to Phone Button */
 .btn-download-to-phone {
-  background: #00e5a3 !important;
-  color: #041f16 !important;
+  background: var(--accent-gradient, linear-gradient(135deg, #6366f1 0%, #a855f7 100%)) !important;
+  color: #ffffff !important;
   font-weight: 800 !important;
   border-radius: 14px !important;
   padding: 14px 24px !important;
-  box-shadow: 0 4px 18px rgba(0, 229, 163, 0.28) !important;
+  box-shadow: 0 4px 18px var(--accent-glow, rgba(99, 102, 241, 0.35)) !important;
   transition: all 0.2s ease !important;
   border: none !important;
 }
 
 .btn-download-to-phone:hover {
-  background: #00fcae !important;
-  box-shadow: 0 6px 24px rgba(0, 229, 163, 0.45) !important;
+  filter: brightness(1.1) !important;
+  box-shadow: 0 6px 24px var(--accent-glow, rgba(99, 102, 241, 0.55)) !important;
   transform: translateY(-2px) !important;
 }
 
@@ -3304,7 +3305,7 @@ input:checked + .toggle-slider:before {
   line-height: 1.5;
 }
 
-/* ================= DESKTOP HEADER BAR (OMNIDOWNLOADER STYLE) ================= */
+/* ================= DESKTOP HEADER BAR ================= */
 .desktop-pill-badge {
   display: inline-flex;
   align-items: center;
@@ -3454,7 +3455,7 @@ input:checked + .toggle-slider:before {
   }
 }
 
-/* ================= OMNIDOWNLOADER INPUT CARD ================= */
+/* ================= DESKTOP INPUT CARD ================= */
 .input-omni-card {
   background: #0d1219;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3722,7 +3723,7 @@ input:checked + .toggle-slider:before {
   margin: 0 2px;
 }
 
-/* ================= OMNIDOWNLOADER UPDATE MODAL ================= */
+/* ================= APPLICATION UPDATE MODAL ================= */
 .omni-update-dialog {
   background: #0d121b;
   border: 1px solid rgba(255, 255, 255, 0.1);

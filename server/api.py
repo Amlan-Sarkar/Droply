@@ -458,7 +458,32 @@ async def browse_folder():
     return {"folder": None, "updated": False}
 
 
-APP_VERSION = "v1.2.10"
+def _load_app_version():
+    env_v = os.environ.get("DROPLY_VERSION")
+    if env_v:
+        return env_v if env_v.startswith("v") else f"v{env_v}"
+
+    candidates = []
+    if getattr(sys, "frozen", False):
+        if hasattr(sys, "_MEIPASS"):
+            candidates.append(os.path.join(sys._MEIPASS, "VERSION"))
+        candidates.append(os.path.join(os.path.dirname(sys.executable), "VERSION"))
+    candidates.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION"))
+    candidates.append(os.path.join(os.getcwd(), "VERSION"))
+
+    for p in candidates:
+        if p and os.path.exists(p):
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    ver = f.read().strip()
+                    if ver:
+                        return ver if ver.startswith("v") else f"v{ver}"
+            except Exception:
+                pass
+    return "v1.2.12"
+
+
+APP_VERSION = _load_app_version()
 
 
 class InstallerDownloadManager:

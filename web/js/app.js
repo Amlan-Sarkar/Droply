@@ -832,7 +832,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.2.10';
+      const appVer = status.app_version || 'v1.2.12';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -867,7 +867,7 @@ class DroplyApp {
     }
   }
 
-  // ================= UPDATE SYSTEM (OmniDownloader Style) =================
+  // ================= UPDATE SYSTEM =================
   setupUpdateSystem() {
     const modal = document.getElementById('update-modal');
     const btnClose = document.getElementById('btn-close-update-modal');
@@ -911,23 +911,34 @@ class DroplyApp {
     };
 
     const renderChangelog = (notes) => {
+      const defaultFeatures = `
+        <ul>
+          <li><span class="cl-feature-highlight">Refined Cat-Inspired Design:</span> Minimalist feline outline divider, sleeping kitten idle state in the downloader queue, and cleaned-up UI hints.</li>
+          <li><span class="cl-feature-highlight">Theme-Adaptive Interface:</span> Analyze button, update controls, and security badges automatically harmonize with your active color theme.</li>
+          <li><span class="cl-feature-highlight">Live Services Monitor:</span> Animated breathing pulse indicator displays real-time local background engine connectivity and status.</li>
+          <li><span class="cl-feature-highlight">Private by Design:</span> 100% on-device local processing with zero telemetry, zero analytics, and no external tracking.</li>
+          <li><span class="cl-feature-highlight">Core Engine Stability:</span> Embedded yt-dlp core engine update system with dynamic version detection and seamless restart installer.</li>
+        </ul>
+      `;
+
       if (!notes || !notes.trim()) {
-        return `
-          <ul>
-            <li><span class="cl-feature-highlight">Smart Playlist & Batch Engine:</span> Detects and extracts playlists with granular item selection checkboxes.</li>
-            <li><span class="cl-feature-highlight">Bot Challenge Bypass:</span> Integrated cookie manager and in-app sign-in WebView.</li>
-            <li><span class="cl-feature-highlight">Live Real-Time SSE Stream:</span> Millisecond-accurate download speed, downloaded size, and dynamic ETA tracking.</li>
-            <li><span class="cl-feature-highlight">Silent Native Launch:</span> Instant background engine startup with zero PowerShell or console window.</li>
-          </ul>
-        `;
+        return defaultFeatures;
       }
 
       const lines = notes.split('\n');
       const items = [];
       for (let line of lines) {
         line = line.trim();
+        if (!line) continue;
+        // Skip release download table, dividers, and installation instructions
+        if (line.startsWith('|') || line.startsWith('---') || line.startsWith('===') || line === '--') continue;
+        if (line.toLowerCase().includes('tested on windows') || line.toLowerCase().includes('download droply')) continue;
+        if (line.toLowerCase().includes('###') || line.toLowerCase().includes('platform |')) continue;
+        
         if (line.startsWith('*') || line.startsWith('-')) {
           let content = line.substring(1).trim();
+          content = content.replace(/^[-*]\s*/, '').trim();
+          if (!content || content === '-' || content === '--') continue;
           content = content.replace(/\*\*(.*?)\*\*:?/g, (match, p1) => {
             return `<span class="cl-feature-highlight">${p1}:</span>`;
           });
@@ -939,7 +950,7 @@ class DroplyApp {
         return `<ul>${items.slice(0, 10).join('')}</ul>`;
       }
 
-      return `<p style="margin: 0; color: #94a3b8;">${notes.replace(/\n/g, '<br>')}</p>`;
+      return defaultFeatures;
     };
 
     const openUpdateCheck = async () => {
@@ -960,8 +971,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.2.10';
-        const appLatest = info.app_latest || 'v1.2.10';
+        const appInst = info.app_installed || 'v1.2.12';
+        const appLatest = info.app_latest || 'v1.2.12';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -988,8 +999,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.2.10';
-        newVerEl.textContent = 'v1.2.10';
+        curVerEl.textContent = 'v1.2.12';
+        newVerEl.textContent = 'v1.2.12';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can refresh the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1023,7 +1034,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.10'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.12'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';
