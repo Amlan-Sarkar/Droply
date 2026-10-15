@@ -6,7 +6,13 @@ Provides REST endpoints and real-time WebSocket broadcasting.
 import os
 import re
 import sys
+import time
+import json
 import asyncio
+import threading
+import tempfile
+import subprocess
+import urllib.request
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
@@ -492,7 +498,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.1"
+    return "v1.3.2"
 
 
 APP_VERSION = _load_app_version()

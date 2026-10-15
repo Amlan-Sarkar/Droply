@@ -8,7 +8,7 @@
 
 *Download videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites — with live progress and speed tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.3.1-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.3.2-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -120,10 +120,10 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 *The primary Droply experience, powered by the full Windows download engine.*
 
-| Package | Format | Download (v1.3.1) | Latest Mirror |
+| Package | Format | Download (v1.3.2) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.1**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.1/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable** | Standalone `.zip` | [**Download v1.3.1**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.1/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.2**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.2/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable** | Standalone `.zip` | [**Download v1.3.2**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.2/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Install or launch
 
@@ -157,9 +157,9 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 *An early mobile build for community testing and feedback. Android support is still being validated, particularly around storage locations, folder navigation, and batch queue behavior.*
 
-| Package | Supported Architectures | Download (v1.3.1) | Latest Mirror |
+| Package | Supported Architectures | Download (v1.3.2) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download APK (v1.3.1)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.1/Droply-Android.apk) | [Latest APK Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
+| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download APK (v1.3.2)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.2/Droply-Android.apk) | [Latest APK Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
 
 #### Installation
 
