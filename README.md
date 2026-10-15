@@ -1,7 +1,3 @@
-# Droply
-
-<!-- markdownlint-disable MD033 -->
-
 <div align="center">
 
 <img src="assets/logo.png" width="128" alt="Droply Logo">
