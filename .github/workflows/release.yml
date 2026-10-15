@@ -176,54 +176,8 @@ jobs:
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
-      - name: Extract Release Notes from CHANGELOG
-        id: release_notes
-        shell: bash
-        run: |
-          python3 - << 'EOF'
-          import os, re
-          tag = "${{ steps.release_tag.outputs.tag }}"
-          ver = tag.lstrip("v")
-          notes = ""
-          if os.path.exists("CHANGELOG.md"):
-              with open("CHANGELOG.md", "r", encoding="utf-8") as f:
-                  text = f.read()
-              pattern = rf"##\s*\[?{re.escape(ver)}\]?[^\n]*\n(.*?)(?=\n##|\Z)"
-              m = re.search(pattern, text, re.DOTALL)
-              if m:
-                  notes = m.group(1).strip()
-          if not notes:
-              notes = "- **Maintenance & Polish:** Engine and UI stability enhancements."
-
-          body = f"""### 🚀 What's New in this Release:
-{notes}
-
----
-
-### 🪟 Windows (Stable)
-
-| Platform | Package | Direct Link |
-| :--- | :--- | :--- |
-| 🪟 **Windows 10 / 11** | **Setup Wizard (Recommended)** | [Download Droply-Setup.exe](https://github.com/Amlan-Sarkar/Droply/releases/download/{tag}/Droply-Setup.exe) |
-| 🪟 **Windows 10 / 11** | Standalone Portable ZIP | [Download Droply-Windows-x64.zip](https://github.com/Amlan-Sarkar/Droply/releases/download/{tag}/Droply-Windows-x64.zip) |
-
-*Tested on Windows 11. Run `Droply-Setup.exe` for an effortless modern setup with Start Menu and Desktop shortcuts (no administrator rights needed). Or extract the portable zip and run `Droply.exe`.*
-
----
-
-### 🤖 Android (Experimental)
-
-| Platform | Package | Direct Link |
-| :--- | :--- | :--- |
-| 🤖 **Android (7.0+)** | Standalone APK | [Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/{tag}/Droply-Android.apk) |
-
-> [!WARNING]
-> **Android is currently experimental:** The Android APK is provided for testing and community validation. Core download flows, storage paths, and UI interactions are under active development and may behave unexpectedly while mobile issues are being resolved.
-"""
-
-          with open("release_body.md", "w", encoding="utf-8") as f:
-              f.write(body)
-          EOF
+      - name: Generate Release Notes
+        run: python3 scripts/generate_release_notes.py "${{ steps.release_tag.outputs.tag }}"
 
       - name: Upload Assets to GitHub Release
         uses: softprops/action-gh-release@v2
