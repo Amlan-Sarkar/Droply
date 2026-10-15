@@ -11,8 +11,8 @@ android {
         applicationId "com.droply.app"
         minSdk 24
         targetSdk 34
-        versionCode 3
-        versionName "1.2.9"
+        versionCode 4
+        versionName "1.3.3"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -52,19 +52,6 @@ android {
         }
     }
 }
-
-task copyWebAssets(type: Copy) {
-    from '../../web'
-    into 'src/main/assets/web'
-}
-
-task copyRootWebAssets(type: Copy) {
-    from '../../web'
-    into 'src/main/assets'
-}
-
-preBuild.dependsOn copyWebAssets
-preBuild.dependsOn copyRootWebAssets
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
