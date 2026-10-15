@@ -2,8 +2,6 @@
 
 <img src="assets/logo.png" width="128" alt="Droply Logo">
 
-# Droply
-
 ## Your media. Your quality. Your library
 
 *A local-first video, audio, and social media downloader for Windows, with an experimental Android edition.*
