@@ -127,11 +127,11 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 #### Install or launch
 
-- **Option A. Setup Installer:**
+- **A. Setup Installer:**
   1. Download **`Droply-Setup.exe`**.
   2. Run the installer and follow the prompts. Droply installs into your user profile without requiring administrator prompts.
   3. Launch from the Start Menu, Windows Search, or desktop shortcut. Supports clean, seamless updates.
-- **Option B. Portable Archive:**
+- **B. Portable Archive:**
   1. Download **`Droply-Windows-x64.zip`**.
   2. Extract the archive to your preferred folder.
   3. Run **`Droply.exe`**. No installation required—runs from any folder or USB drive.
