@@ -47,7 +47,7 @@ Droply brings media extraction, quality selection, download management, and file
 
 ### 🎬 Video & Audio
 
-Select from available resolutions, including 360p, 480p, 720p, 1080p, 2K, and 4K where supported. Choose the best available format or inspect available containers and estimated file sizes.
+Select from available resolutions, including 4K/2160p, 2K/1440p, 1080p, 720p, 480p, 360p where supported. Choose the best available format or inspect available containers and estimated file sizes.
 
 Extract audio as MP3 at up to 320 kbps, Apple AAC in M4A, or WAV where supported.
 
@@ -112,7 +112,7 @@ Droply also features a minimalist cat-outline divider and a sleeping-kitten idle
 
 ---
 
-## ↓ Get Droply
+## ⬇️ Get Droply
 
 Droply provides pre-compiled packages for Windows and Android. Development tools and a separate Python installation are not required for the packaged releases.
 
@@ -213,7 +213,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 2. **Paste it:** Paste the URL into the input field, or click **Paste**.
 3. **Analyze it:** Click **Analyze** (or press **Enter**) to preview title, uploader, thumbnail, and duration.
 4. **Choose a format:**
-   - **Video Mode:** Choose *Best Available*, *1080p*, *720p*, or another available resolution.
+   - **Video Mode:** Choose *Best Available*, *4K/2160p*, *2K/1440p*, *1080p*, *720p*, or another available resolution.
    - **Audio Mode:** Select *MP3 (320 kbps HQ)*, *M4A*, or *WAV*.
 5. **Start the download:** Click **Download Media** and follow live progress, speed, downloaded size, and ETA.
 6. **Open the result:** Click **Play File** to play immediately, or **Open Containing Folder** to reveal the file.
