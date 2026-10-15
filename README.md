@@ -38,6 +38,7 @@ Droply brings media extraction, quality selection, download management, and file
 ---
 
 <a id="built-for-your-downloads"></a>
+
 ## ✦ Built for your downloads
 
 <table>
@@ -112,6 +113,7 @@ Droply also features a minimalist cat-outline divider and a sleeping-kitten idle
 ---
 
 <a id="get-droply"></a>
+
 ## ⬇️ Get Droply
 
 Droply provides pre-compiled packages for Windows and Android. Development tools and a separate Python installation are not required for the packaged releases.
@@ -187,6 +189,7 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 ---
 
 <a id="where-droply-works"></a>
+
 ## 🌐 Where Droply works
 
 Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compatibility, available streams, and maximum quality depend on the source website and individual media link.
@@ -207,6 +210,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 ---
 
 <a id="using-droply"></a>
+
 ## 🎯 Using Droply
 
 ### 01 — Download a single video or audio track
