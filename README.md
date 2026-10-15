@@ -6,7 +6,7 @@
 
 <img src="assets/logo.png" width="128" alt="Droply Logo">
 
-## Your media. Your quality. Your library.
+## Your media. Your quality. Your library
 
 *A local-first video, audio, and social media downloader for Windows, with an experimental Android edition.*
 
@@ -46,6 +46,7 @@ Droply brings media extraction, quality selection, download management, and file
 <td width="50%" valign="top">
 
 ### 🎬 Video & Audio
+
 Select from available resolutions, including 360p, 480p, 720p, 1080p, 2K, and 4K where supported. Choose the best available format or inspect available containers and estimated file sizes.
 
 Extract audio as MP3 at up to 320 kbps, Apple AAC in M4A, or WAV where supported.
@@ -54,6 +55,7 @@ Extract audio as MP3 at up to 320 kbps, Apple AAC in M4A, or WAV where supported
 <td width="50%" valign="top">
 
 ### 📚 Playlists & Albums
+
 Detect supported playlist and album URLs, inspect the available item count, and organize downloads into a dedicated folder named after the playlist.
 
 Keep related media together instead of scattering individual files across your download directory.
@@ -64,6 +66,7 @@ Keep related media together instead of scattering individual files across your d
 <td width="50%" valign="top">
 
 ### ⚡ Live Download Tracking
+
 Follow downloads with a live progress bar, speed in MB/s, downloaded file size, and a dynamically updated estimated time of arrival (ETA).
 
 A breathing local services indicator also displays real-time engine connectivity and status.
@@ -72,6 +75,7 @@ A breathing local services indicator also displays real-time engine connectivity
 <td width="50%" valign="top">
 
 ### 📥 Batch Queue
+
 Add multiple URLs on separate lines or separated by commas. Droply parses valid links, applies global presets, and displays queue counters with live progress feedback.
 
 </td>
@@ -80,6 +84,7 @@ Add multiple URLs on separate lines or separated by commas. Droply parses valid 
 <td width="50%" valign="top">
 
 ### 🗂️ Local Library & History
+
 Review past downloads, play completed files, open their containing folders, or clear your download history.
 
 Filename sanitization preserves original media titles while removing reserved filesystem characters and helping prevent accidental file overwrites.
@@ -88,6 +93,7 @@ Filename sanitization preserves original media titles while removing reserved fi
 <td width="50%" valign="top">
 
 ### 🎨 A Personal Touch
+
 Choose between three curated themes with glowing accents, smooth micro-animations, theme-adaptive buttons, and a glassmorphic interface.
 
 Droply also features a minimalist cat-outline divider and a sleeping-kitten idle queue graphic.
