@@ -121,7 +121,7 @@ Pre-compiled standalone packages are available below. **No Python or development
    - **Video Mode**: Choose your preferred quality (`Best Available`, `1080p`, `720p`, etc.).
    - **Audio Mode**: Switch to Audio mode to extract in `MP3 (320 kbps HQ)`, `M4A`, or `WAV`.
 5. **Download**: Click **Download Media**. Watch live progress, download speed, and ETA.
-6. **Open File**: Once complete, click **Open Containing Folder** to reveal your file or **Play File** to play it immediately.
+6. **Open File**: Once complete, CLICK **Play File** to play it immediately. or click **Open Containing Folder** to reveal your file.
 
 ### 2. Playlists & Albums
 
