@@ -8,7 +8,7 @@
 
 ## Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android
 
-*Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X, Bilibili, and popular 1000+ media sites with real-time speed & progress tracking.*
+*Download videos, Reels, Shorts, and audio from YouTube, Facebook, Instagram, TikTok, Reddit, X, Bilibili, and popular 1000+ media sites with real-time speed & progress tracking.*
 
 [![Latest Release](https://img.shields.io/badge/Release-v1.2.12-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
