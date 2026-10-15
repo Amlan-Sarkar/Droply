@@ -24,7 +24,7 @@
 
 ## ✨ Features
 
-- **🌐 Broad Media Extraction**: Extract videos and audio from YouTube, Instagram, TikTok, X (Twitter), Facebook, Reddit, Bilibili, Vimeo, SoundCloud, and direct media URLs.
+- **🌐 Broad Media Extraction**: Extract videos and audio from YouTube, Facebook, Instagram, TikTok, Reddit, X, Bilibili, Vimeo, SoundCloud, and direct media URLs.
 - **⚡ Real-Time Progress & Speed Tracking**: Millisecond-accurate live progress bar, active download speed (`MB/s`), downloaded file size counter, and dynamic Estimated Time of Arrival (ETA).
 - **🎶 High-Fidelity Audio Extraction**: Built-in audio conversion supporting **MP3 (320 kbps High Quality)**, **Apple AAC (M4A)**, and **Lossless WAV**.
 - **📁 Smart Playlist Downloader**: Detects full playlists and albums, automatically creating a dedicated subfolder named after the playlist in your download directory to keep files organized.
