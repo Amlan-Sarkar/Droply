@@ -167,7 +167,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.tag_name }}"
-            if [ -z "$TAG" ]; then TAG="v1.2.12"; fi
+            if [ -z "$TAG" ]; then TAG="v1.3.0"; fi
           else
             TAG="${{ github.ref_name }}"
           fi

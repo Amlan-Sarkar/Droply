@@ -24,6 +24,13 @@ if os.path.isdir(_engine_updates) and _engine_updates not in sys.path:
 import yt_dlp
 import imageio_ffmpeg
 
+def _get_ytdlp_version() -> str:
+    try:
+        import yt_dlp.version
+        return getattr(yt_dlp.version, "__version__", None) or getattr(yt_dlp, "__version__", "installed")
+    except Exception:
+        return getattr(yt_dlp, "__version__", "installed")
+
 from engine.providers.registry import registry
 from engine.providers.ytdlp_provider import humanize_error
 from engine.settings_manager import settings_manager
@@ -485,7 +492,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.2.12"
+    return "v1.3.0"
 
 
 APP_VERSION = _load_app_version()
@@ -608,7 +615,7 @@ async def system_status():
         "app_version": APP_VERSION,
         "ffmpeg_ready": bool(ffmpeg_exe and os.path.exists(ffmpeg_exe)),
         "ffmpeg_path": ffmpeg_exe,
-        "ytdlp_version": getattr(yt_dlp, "__version__", getattr(yt_dlp.version, "__version__", "installed")),
+        "ytdlp_version": _get_ytdlp_version(),
         "default_dir": settings_manager.get("download_dir", get_default_download_dir()),
         "python_version": sys.version.split()[0]
     }
@@ -617,7 +624,7 @@ async def system_status():
 @app.get("/api/system/check-updates")
 async def check_updates_endpoint():
     import json
-    current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
+    current_ytdlp_version = _get_ytdlp_version()
     release_url = "https://github.com/Amlan-Sarkar/Droply/releases"
 
     loop = asyncio.get_event_loop()
@@ -772,7 +779,7 @@ async def update_ytdlp_endpoint():
         import importlib
 
         try:
-            current_ver = getattr(yt_dlp, "__version__", "unknown")
+            current_ver = _get_ytdlp_version()
 
             # 1. Query latest version info from PyPI
             req = urllib.request.Request(
@@ -786,7 +793,7 @@ async def update_ytdlp_endpoint():
             if not latest_ver:
                 return {"status": "error", "message": "Could not verify latest yt-dlp version from PyPI."}
 
-            if latest_ver == current_ver:
+            if latest_ver.strip().lstrip('v') == current_ver.strip().lstrip('v'):
                 return {
                     "status": "success",
                     "message": f"yt-dlp core engine is already up to date ({current_ver}).",
@@ -828,8 +835,13 @@ async def update_ytdlp_endpoint():
                 sys.path.insert(0, updates_base)
 
             importlib.invalidate_caches()
+            try:
+                import yt_dlp.version
+                importlib.reload(yt_dlp.version)
+            except Exception:
+                pass
             importlib.reload(yt_dlp)
-            new_ver = getattr(yt_dlp, "__version__", latest_ver)
+            new_ver = _get_ytdlp_version()
 
             return {
                 "status": "success",

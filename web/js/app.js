@@ -832,7 +832,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.2.12';
+      const appVer = status.app_version || 'v1.3.0';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -965,7 +965,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.2.12';
+      if (curVerEl) curVerEl.textContent = 'v1.3.0';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -974,8 +974,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.2.12';
-        const appLatest = info.app_latest || 'v1.2.12';
+        const appInst = info.app_installed || 'v1.3.0';
+        const appLatest = info.app_latest || 'v1.3.0';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1002,8 +1002,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.2.12';
-        newVerEl.textContent = 'v1.2.12';
+        curVerEl.textContent = 'v1.3.0';
+        newVerEl.textContent = 'v1.3.0';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can refresh the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1037,7 +1037,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.2.12'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.0'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';
