@@ -1054,6 +1054,7 @@ class DroplyApp {
         try {
           await api.downloadInstaller(url, size);
           
+          if (pollInterval) clearInterval(pollInterval);
           pollInterval = setInterval(async () => {
             try {
               const st = await api.getInstallerDownloadStatus();

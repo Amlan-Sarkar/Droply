@@ -507,89 +507,111 @@ class InstallerDownloadManager:
         self.percent = 0.0
         self.error_message = ""
         self.installer_path = ""
-        self._cancel_flag = False
-        import threading
+        self._cancel_event = threading.Event()
+        self._current_gen = 0
         self._lock = threading.Lock()
 
     def start_download(self, url: str, expected_size: int = 0):
-        import os
-        import tempfile
-        import threading
         with self._lock:
-            if self.status == "downloading":
-                return
+            # Cancel any existing or lingering thread immediately
+            self._cancel_event.set()
+            self._current_gen += 1
+            gen = self._current_gen
+            self._cancel_event = threading.Event()
+
             self.status = "downloading"
             self.downloaded_bytes = 0
             self.total_bytes = expected_size or 0
             self.speed_bps = 0
             self.percent = 0.0
             self.error_message = ""
-            self._cancel_flag = False
             self.installer_path = os.path.join(tempfile.gettempdir(), "Droply-Setup.exe")
 
-        threading.Thread(target=self._download_worker, args=(url,), daemon=True).start()
+        threading.Thread(target=self._download_worker, args=(url, gen), daemon=True).start()
 
     def cancel_download(self):
         with self._lock:
-            self._cancel_flag = True
-            self.status = "cancelled"
+            self._cancel_event.set()
+            self.status = "idle"
+            self.downloaded_bytes = 0
+            self.speed_bps = 0
+            self.percent = 0.0
 
-    def _download_worker(self, url: str):
-        import os
+    def _download_worker(self, url: str, gen: int):
         import time
         import urllib.request
+        resp = None
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Droply-App"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                total_len = resp.headers.get("Content-Length")
-                if total_len:
-                    try:
-                        self.total_bytes = int(total_len)
-                    except Exception:
-                        pass
+            resp = urllib.request.urlopen(req, timeout=30)
+            total_len = resp.headers.get("Content-Length")
+            if total_len:
+                try:
+                    with self._lock:
+                        if self._current_gen == gen:
+                            self.total_bytes = int(total_len)
+                except Exception:
+                    pass
 
-                chunk_size = 64 * 1024
-                last_time = time.time()
-                bytes_since_last = 0
+            chunk_size = 64 * 1024
+            last_time = time.time()
+            bytes_since_last = 0
+            bytes_written = 0
 
-                with open(self.installer_path, "wb") as f:
-                    while True:
-                        if self._cancel_flag:
-                            break
-                        chunk = resp.read(chunk_size)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        self.downloaded_bytes += len(chunk)
-                        bytes_since_last += len(chunk)
+            with open(self.installer_path, "wb") as f:
+                while True:
+                    if self._cancel_event.is_set() or self._current_gen != gen:
+                        break
+                    chunk = resp.read(chunk_size)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    bytes_written += len(chunk)
+                    bytes_since_last += len(chunk)
 
-                        now = time.time()
-                        dt = now - last_time
-                        if dt >= 0.5:
-                            self.speed_bps = int(bytes_since_last / dt)
-                            bytes_since_last = 0
-                            last_time = now
+                    now = time.time()
+                    dt = now - last_time
+                    if dt >= 0.4:
+                        speed = int(bytes_since_last / dt)
+                        bytes_since_last = 0
+                        last_time = now
+                        with self._lock:
+                            if self._current_gen == gen:
+                                self.downloaded_bytes = bytes_written
+                                self.speed_bps = speed
+                                if self.total_bytes > 0:
+                                    self.percent = min(round((bytes_written / self.total_bytes) * 100, 1), 99.9)
 
-                        if self.total_bytes > 0:
-                            self.percent = round((self.downloaded_bytes / self.total_bytes) * 100, 1)
-
-            if self._cancel_flag:
+            if self._cancel_event.is_set() or self._current_gen != gen:
                 try:
                     if os.path.exists(self.installer_path):
                         os.remove(self.installer_path)
                 except Exception:
                     pass
                 with self._lock:
-                    self.status = "idle"
+                    if self._current_gen == gen:
+                        self.status = "idle"
+                        self.downloaded_bytes = 0
             else:
                 with self._lock:
-                    self.status = "completed"
-                    self.percent = 100.0
-                    self.speed_bps = 0
+                    if self._current_gen == gen:
+                        self.downloaded_bytes = bytes_written
+                        if self.total_bytes == 0:
+                            self.total_bytes = bytes_written
+                        self.status = "completed"
+                        self.percent = 100.0
+                        self.speed_bps = 0
         except Exception as e:
             with self._lock:
-                self.status = "error"
-                self.error_message = str(e)
+                if self._current_gen == gen:
+                    self.status = "error"
+                    self.error_message = str(e)
+        finally:
+            if resp:
+                try:
+                    resp.close()
+                except Exception:
+                    pass
 
 
 installer_manager = InstallerDownloadManager()
