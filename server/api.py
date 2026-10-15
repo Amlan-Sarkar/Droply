@@ -498,7 +498,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.2"
+    return "v1.3.3"
 
 
 APP_VERSION = _load_app_version()
@@ -651,6 +651,59 @@ async def system_status():
     }
 
 
+def _read_native_clipboard() -> str:
+    """Reads plain text directly from the OS clipboard without browser permission prompts."""
+    text = ""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            from ctypes import wintypes
+            CF_UNICODETEXT = 13
+            user32 = ctypes.windll.user32
+            kernel32 = ctypes.windll.kernel32
+
+            opened = False
+            for _ in range(5):
+                if user32.OpenClipboard(None):
+                    opened = True
+                    break
+                time.sleep(0.02)
+
+            if opened:
+                try:
+                    h_data = user32.GetClipboardData(CF_UNICODETEXT)
+                    if h_data:
+                        ptr = kernel32.GlobalLock(h_data)
+                        if ptr:
+                            try:
+                                text = ctypes.wstring_at(ptr) or ""
+                            finally:
+                                kernel32.GlobalUnlock(h_data)
+                finally:
+                    user32.CloseClipboard()
+        except Exception:
+            pass
+
+    if not text:
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()
+            text = root.clipboard_get()
+            root.destroy()
+        except Exception:
+            pass
+
+    return text.strip() if text else ""
+
+
+@app.get("/api/system/clipboard")
+async def get_system_clipboard():
+    loop = asyncio.get_event_loop()
+    text = await loop.run_in_executor(None, _read_native_clipboard)
+    return {"text": text}
+
+
 @app.get("/api/system/check-updates")
 async def check_updates_endpoint():
     import json
@@ -721,7 +774,9 @@ async def check_updates_endpoint():
                 data = json.loads(resp.read().decode('utf-8'))
                 ver = data.get("info", {}).get("version")
                 if ver:
-                    return ver, (ver == current_ytdlp_version)
+                    clean_ver = str(ver).strip().lstrip('v')
+                    clean_curr = str(current_ytdlp_version).strip().lstrip('v')
+                    return ver, (clean_ver == clean_curr)
         except Exception:
             pass
         return current_ytdlp_version, True
@@ -819,13 +874,17 @@ async def update_ytdlp_endpoint():
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
 
-            latest_ver = data.get("info", {}).get("version")
+            latest_ver = str(data.get("info", {}).get("version", "")).strip()
             if not latest_ver:
                 return {"status": "error", "message": "Could not verify latest yt-dlp version from PyPI."}
 
-            if latest_ver.strip().lstrip('v') == current_ver.strip().lstrip('v'):
+            clean_latest = latest_ver.lstrip('v')
+            clean_curr = str(current_ver).strip().lstrip('v')
+
+            if clean_latest == clean_curr:
                 return {
                     "status": "success",
+                    "already_up_to_date": True,
                     "message": f"yt-dlp core engine is already up to date ({current_ver}).",
                     "version": current_ver
                 }
@@ -872,9 +931,19 @@ async def update_ytdlp_endpoint():
                 pass
             importlib.reload(yt_dlp)
             new_ver = _get_ytdlp_version()
+            clean_new = str(new_ver).strip().lstrip('v')
+
+            if clean_curr == clean_new or clean_latest == clean_new:
+                return {
+                    "status": "success",
+                    "already_up_to_date": True,
+                    "message": f"yt-dlp core engine is already up to date ({new_ver}).",
+                    "version": new_ver
+                }
 
             return {
                 "status": "success",
+                "already_up_to_date": False,
                 "message": f"Updated yt-dlp core from {current_ver} to {new_ver}!",
                 "version": new_ver
             }

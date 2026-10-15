@@ -700,23 +700,38 @@ class DroplyAPI {
     });
   }
 
+  async getClipboard() {
+    if (this.isNativeMobile()) {
+      if (typeof window.DroplyAndroid !== 'undefined' && typeof window.DroplyAndroid.getClipboardText === 'function') {
+        try {
+          const t = window.DroplyAndroid.getClipboardText();
+          return { text: t || '' };
+        } catch (e) {
+          return { text: '' };
+        }
+      }
+      return { text: '' };
+    }
+    return this.request('/api/system/clipboard');
+  }
+
   async checkUpdates() {
     if (this.isNativeMobile()) {
       if (typeof window.DroplyAndroid !== 'undefined' && typeof window.DroplyAndroid.checkUpdates === 'function') {
         return new Promise((resolve) => {
           const handler = (e) => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve(e.detail || { app_installed: 'v1.3.2', app_latest: 'v1.3.2', app_up_to_date: true });
+            resolve(e.detail || { app_installed: 'v1.3.3', app_latest: 'v1.3.3', app_up_to_date: true });
           };
           window.addEventListener('droply_update_checked', handler);
           window.DroplyAndroid.checkUpdates();
           setTimeout(() => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve({ app_installed: 'v1.3.2', app_latest: 'v1.3.2', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
+            resolve({ app_installed: 'v1.3.3', app_latest: 'v1.3.3', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
           }, 6000);
         });
       }
-      return { app_installed: 'v1.3.2', app_latest: 'v1.3.2', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
+      return { app_installed: 'v1.3.3', app_latest: 'v1.3.3', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
     }
     return this.request('/api/system/check-updates');
   }

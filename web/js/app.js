@@ -147,20 +147,32 @@ class DroplyApp {
       });
     }
 
-    // Paste button (reads clipboard directly)
+    // Paste button (reads clipboard directly from native backend or web API)
     btnPaste.addEventListener('click', async () => {
       let text = '';
-      if (window.DroplyAndroid && window.DroplyAndroid.getClipboardText) {
-        text = window.DroplyAndroid.getClipboardText();
+
+      // 1. First try native backend clipboard endpoint (instant, zero browser permission prompt)
+      try {
+        const res = await api.getClipboard();
+        if (res && res.text) {
+          text = res.text;
+        }
+      } catch (e) {}
+
+      // 2. Android native interface
+      if (!text && window.DroplyAndroid && window.DroplyAndroid.getClipboardText) {
+        try {
+          text = window.DroplyAndroid.getClipboardText();
+        } catch (e) {}
       }
+
+      // 3. Web clipboard API fallback (if supported and permitted)
       if (!text && navigator.clipboard && navigator.clipboard.readText) {
         try {
           text = await navigator.clipboard.readText();
         } catch (err) {}
       }
-      if (!text) {
-        text = prompt("Paste your video, playlist, or batch links here:");
-      }
+
       if (text && text.trim()) {
         const trimmed = text.trim();
         if (batchDrawer && batchDrawer.style.display !== 'none' && batchTextarea) {
@@ -170,6 +182,9 @@ class DroplyApp {
           btnClear.style.display = 'flex';
           this.instantDetectPlatform(trimmed);
         }
+        Components.showToast('Pasted from clipboard', 'info');
+      } else {
+        Components.showToast('Clipboard is empty or contains no link.', 'info');
       }
     });
 
@@ -832,7 +847,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.2';
+      const appVer = status.app_version || 'v1.3.3';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -913,11 +928,11 @@ class DroplyApp {
     const renderChangelog = (notes) => {
       const defaultFeatures = `
         <ul>
-          <li><span class="cl-feature-highlight">Refined Cat-Inspired Design:</span> Minimalist feline outline divider, sleeping kitten idle state in the downloader queue, and cleaned-up UI hints.</li>
-          <li><span class="cl-feature-highlight">Theme-Adaptive Interface:</span> Analyze button, update controls, and security badges automatically harmonize with your active color theme.</li>
-          <li><span class="cl-feature-highlight">Live Services Monitor:</span> Animated breathing pulse indicator displays real-time local background engine connectivity and status.</li>
-          <li><span class="cl-feature-highlight">Private by Design:</span> 100% on-device local processing with zero telemetry, zero analytics, and no external tracking.</li>
-          <li><span class="cl-feature-highlight">Core Engine Stability:</span> Embedded yt-dlp core engine update system with dynamic version detection and seamless restart installer.</li>
+          <li><span class="cl-feature-highlight">Native Desktop Clipboard:</span> Seamless one-click paste with zero browser permission prompts.</li>
+          <li><span class="cl-feature-highlight">Accurate Progress Tracking:</span> Synchronized download counters and completion states.</li>
+          <li><span class="cl-feature-highlight">Intelligent Core Engine:</span> Dynamic yt-dlp core status detection and self-updating engine.</li>
+          <li><span class="cl-feature-highlight">Refined Theme-Adaptive UI:</span> Minimalist design with real-time local background engine monitoring.</li>
+          <li><span class="cl-feature-highlight">Private & Local:</span> 100% on-device processing with zero telemetry and zero external tracking.</li>
         </ul>
       `;
 
@@ -966,7 +981,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.2';
+      if (curVerEl) curVerEl.textContent = 'v1.3.3';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -975,8 +990,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.2';
-        const appLatest = info.app_latest || 'v1.3.2';
+        const appInst = info.app_installed || 'v1.3.3';
+        const appLatest = info.app_latest || 'v1.3.3';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -991,9 +1006,16 @@ class DroplyApp {
 
         if (isUpToDate) {
           titleEl.textContent = 'Droply is Up to Date';
-          descEl.textContent = 'You are running the newest release of Droply. You can update the embedded yt-dlp core engine for latest platform fixes.';
-          btnPrimary.disabled = false;
-          btnPrimaryText.textContent = 'Update yt-dlp Core';
+          const ytdlpUpToDate = Boolean(info.ytdlp_up_to_date);
+          if (ytdlpUpToDate) {
+            descEl.textContent = `You are running the newest release of Droply (${appInst}), and the embedded yt-dlp core engine (${info.ytdlp_installed || 'Latest'}) is fully up to date.`;
+            btnPrimary.disabled = false;
+            btnPrimaryText.textContent = 'Core is Up to Date';
+          } else {
+            descEl.textContent = `Droply is up to date, but a newer yt-dlp core engine (${info.ytdlp_latest || 'Update'}) is available for latest platform fixes.`;
+            btnPrimary.disabled = false;
+            btnPrimaryText.textContent = 'Update yt-dlp Core';
+          }
           downloadState = 'ytdlp-core';
         } else {
           titleEl.textContent = 'Application Update Available';
@@ -1003,13 +1025,13 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.3.2';
-        newVerEl.textContent = 'v1.3.2';
+        curVerEl.textContent = 'v1.3.3';
+        newVerEl.textContent = 'v1.3.3';
         titleEl.textContent = 'Droply Core Engine';
-        descEl.textContent = 'Verified online. You can refresh the embedded yt-dlp core engine.';
+        descEl.textContent = 'Verified online. You can check the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
         btnPrimary.disabled = false;
-        btnPrimaryText.textContent = 'Update yt-dlp Core';
+        btnPrimaryText.textContent = 'Check yt-dlp Core';
         downloadState = 'ytdlp-core';
       }
     };
@@ -1038,7 +1060,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.2'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.3'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';
@@ -1145,29 +1167,38 @@ class DroplyApp {
         }, 1500);
 
       } else if (downloadState === 'ytdlp-core') {
-        // Update yt-dlp core
+        // Update / Verify yt-dlp core
         btnPrimary.disabled = true;
-        btnPrimaryText.textContent = 'Updating core...';
+        btnPrimaryText.textContent = 'Checking core engine...';
         statusMsg.style.display = 'block';
-        statusMsg.textContent = 'Downloading and installing latest yt-dlp core engine...';
+        statusMsg.style.color = '#a78bfa';
+        statusMsg.textContent = 'Checking PyPI for latest yt-dlp engine status...';
 
         try {
           const res = await api.updateYtdlpCore();
           if (res.status === 'success') {
             statusMsg.style.color = '#10b981';
-            statusMsg.textContent = res.message || 'Core engine successfully updated!';
-            Components.showToast('yt-dlp core engine updated!', 'success');
+            if (res.already_up_to_date) {
+              statusMsg.textContent = res.message || `yt-dlp core engine is already up to date (${res.version || ''}).`;
+              Components.showToast(res.message || 'yt-dlp core is up to date', 'info');
+              btnPrimaryText.textContent = 'Core is Up to Date';
+            } else {
+              statusMsg.textContent = res.message || `Updated yt-dlp core engine to ${res.version}!`;
+              Components.showToast(`yt-dlp core updated to ${res.version}!`, 'success');
+              btnPrimaryText.textContent = 'Core Updated';
+            }
             await this.loadSystemStatus();
           } else {
             statusMsg.style.color = '#ef4444';
-            statusMsg.textContent = res.message || 'Update failed.';
+            statusMsg.textContent = res.message || 'Update check failed.';
+            btnPrimaryText.textContent = 'Check yt-dlp Core';
           }
         } catch (e) {
           statusMsg.style.color = '#ef4444';
           statusMsg.textContent = `Update error: ${e.message}`;
+          btnPrimaryText.textContent = 'Check yt-dlp Core';
         } finally {
           btnPrimary.disabled = false;
-          btnPrimaryText.textContent = 'Update yt-dlp Core';
         }
       }
     });
