@@ -211,7 +211,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 
 ## 🎯 Using Droply
 
-### 01 — Download a single video or audio track
+### A. Download a single video or audio track
 
 1. **Copy a link:** Copy a video, Reel, post, or audio URL from a browser or mobile app.
 2. **Paste it:** Paste the URL into the input field, or click **Paste**.
@@ -222,25 +222,25 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 5. **Start the download:** Click **Download Media** and follow live progress, speed, downloaded size, and ETA.
 6. **Open the result:** Click **Play File** to play immediately, or **Open Containing Folder** to reveal the file.
 
-### 02 — Download playlists and albums
+### B. Download playlists and albums
 
 1. Paste a supported YouTube playlist, album, or series URL into the input field.
 2. Droply detects the playlist and displays its item count.
 3. Start the download: Droply automatically creates a dedicated subfolder named after the playlist inside your selected download directory.
 
-### 03 — Queue multiple links
+### C. Queue multiple links
 
 1. Open the **Batch Downloader** tab.
 2. Paste multiple URLs (one per line or separated by commas).
 3. Click **Add URLs to Queue**. Droply parses valid URLs, queues them, and processes downloads with live progress.
 4. Click **Clear Completed** when you want to remove finished tasks and refresh the queue counter.
 
-### 04 — Browse your download history
+### D. Browse your download history
 
 - Open **Library & History** to review previous downloads.
 - Open files directly, reveal their exact folder location, or clear download history with one click.
 
-### 05 — Customize your experience
+### E. Customize your experience
 
 - Open **Settings** to choose between 3 curated themes:
   - 🌌 **Neon Midnight** (Default dark palette with indigo and violet accents)
@@ -249,7 +249,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 - Customize default download directory, quality presets, and concurrent connections.
 - Click **Save Preferences** to apply your changes.
 
-### 06 — Check for updates
+### F. Check for updates
 
 - Click **Check for Updates** in the application header or Settings.
 - View the latest Droply release information or update the embedded yt-dlp core engine with a single click.
