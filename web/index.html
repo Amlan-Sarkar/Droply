@@ -30,10 +30,10 @@
           <div class="brand-glow"></div>
         </div>
         <div class="brand-text">
-          <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw" title="Droply Feline Polish">🐾</span></span>
+          <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
         <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.2.10</span>
-        <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine v...</span>
+        <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
       <!-- NAVIGATION TABS (Desktop) -->
@@ -83,7 +83,7 @@
         <!-- SERVER STATUS PILL (READY / RECONNECTING) -->
         <div class="header-server-pill status-ready" id="server-status-pill">
           <span class="server-dot"></span>
-          <span class="server-label" id="server-status-label">Server Available</span>
+          <span class="server-label" id="server-status-label">Services Online</span>
         </div>
 
         <!-- MOBILE-ONLY HEADER ICONS -->
@@ -192,16 +192,21 @@
 
             <!-- Bottom Trust Badge Row -->
             <div class="omni-trust-bar">
-              <div class="trust-pill">
-                <span class="trust-paw brand-paw" title="Droply Feline Polish">🐾</span>
-                <span>Droply <strong id="trust-version">v1.2.10</strong> • Private On-Device Processing • Zero External Telemetry</span>
+              <div class="trust-badge-container">
+                <span class="trust-shield-badge">
+                  <svg class="trust-shield-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <polyline points="9 12 11 14 15 10"></polyline>
+                  </svg>
+                </span>
+                <div class="trust-pill">
+                  <span>Private by Design</span>
+                  <span class="trust-dot">•</span>
+                  <span>Zero Tracking</span>
+                  <span class="trust-dot">•</span>
+                  <span>Yours Truly, Droply</span>
+                </div>
               </div>
-              <a href="https://github.com/Amlan-Sarkar/Droply" target="_blank" class="trust-github-link" title="Open GitHub Repository">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
-                </svg>
-                <span>GitHub</span>
-              </a>
             </div>
 
           </div>
@@ -436,10 +441,14 @@
 
           <!-- CAT-INSPIRED CUE DIVIDER -->
           <div class="cat-cue-divider">
-            <span class="cat-cue-mark" title="Droply Feline Polish">
-              <svg viewBox="0 0 24 14" fill="currentColor" style="width: 22px; height: 12px;">
-                <polygon points="2,13 6,1 10,13"></polygon>
-                <polygon points="14,13 18,1 22,13"></polygon>
+            <span class="cat-cue-mark">
+              <svg viewBox="0 0 32 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cat-face-divider-svg">
+                <path d="M 4 17 C 3 13, 3 8, 5 6 L 10 13 L 22 13 L 27 6 C 29 8, 29 13, 28 17 C 24 19, 8 19, 4 17 Z"></path>
+                <path d="M 15 14 L 17 14 L 16 15.5 Z" fill="currentColor"></path>
+                <path d="M 12 15 L 6 14"></path>
+                <path d="M 12 16.5 L 7 17.5"></path>
+                <path d="M 20 15 L 26 14"></path>
+                <path d="M 20 16.5 L 25 17.5"></path>
               </svg>
             </span>
           </div>
@@ -613,10 +622,6 @@
                       <span class="theme-color-preview cyber"></span>
                       <span>Cyberpunk Cyan</span>
                     </button>
-                    <button class="theme-chip" data-theme="nord">
-                      <span class="theme-color-preview nord"></span>
-                      <span>Nordic Slate</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -692,7 +697,7 @@
             </svg>
           </div>
           <div class="update-title-wrap">
-            <h3 class="update-dialog-title" id="update-modal-title">Application Update Available <span class="brand-paw" title="Droply Feline Polish">🐾</span></h3>
+            <h3 class="update-dialog-title" id="update-modal-title">Application Update Available <span class="brand-paw">🐾</span></h3>
             <p class="update-dialog-sub" id="update-modal-desc">A newer version of Droply is ready to install</p>
           </div>
           <button class="btn-close-modal-x" id="btn-close-update-modal" title="Close dialog">✕</button>

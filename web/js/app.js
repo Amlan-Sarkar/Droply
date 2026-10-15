@@ -300,10 +300,13 @@ class DroplyApp {
       Components.showToast('Title copied to clipboard!', 'success');
     });
 
-    // Header open folder button
-    document.getElementById('header-open-folder').addEventListener('click', async () => {
-      await api.openFolder(this.settings.download_dir);
-    });
+    // Header open folder button (guarded)
+    const headerOpenFolder = document.getElementById('header-open-folder');
+    if (headerOpenFolder) {
+      headerOpenFolder.addEventListener('click', async () => {
+        await api.openFolder(this.settings.download_dir);
+      });
+    }
 
     // Clear recent downloads button in downloader view
     const btnClearRecent = document.getElementById('btn-clear-recent-downloads');
@@ -621,6 +624,24 @@ class DroplyApp {
     container.innerHTML = '';
     if (!this.tasks || this.tasks.length === 0) {
       this.updateRecentDownloadsHeader();
+      container.innerHTML = `
+        <div class="downloader-cat-idle">
+          <svg class="cat-idle-svg" viewBox="0 0 120 70" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 28 50 C 28 36, 46 26, 66 26 C 86 26, 98 36, 98 50 C 98 58, 84 62, 62 62 C 38 62, 28 58, 28 50 Z" />
+            <path d="M 24 43 C 18 39, 14 33, 17 27 C 19 24, 23 26, 26 28 C 30 25, 35 24, 38 27 C 42 32, 39 39, 34 44" />
+            <path d="M 18 27 L 16 16 L 24 24" />
+            <path d="M 32 24 L 40 16 L 38 27" />
+            <path d="M 20 33 Q 23 36 26 33" />
+            <path d="M 29 33 Q 32 36 35 33" />
+            <path d="M 98 48 C 106 43, 112 47, 110 53 C 108 59, 101 60, 93 60" />
+            <path d="M 15 37 L 6 37" />
+            <path d="M 15 40 L 7 42" />
+            <path d="M 37 37 L 46 37" />
+            <path d="M 36 40 L 45 42" />
+          </svg>
+          <div class="cat-idle-text">Ready for media. Paste a link above to begin downloading.</div>
+        </div>
+      `;
       return;
     }
 
@@ -829,7 +850,7 @@ class DroplyApp {
         serverPill.className = 'header-server-pill status-ready';
       }
       if (serverLabel) {
-        serverLabel.textContent = 'Server Available';
+        serverLabel.textContent = 'Services Online';
       }
 
       const diagYtdlp = document.getElementById('diag-ytdlp');
@@ -1092,7 +1113,7 @@ class DroplyApp {
             if (st && st.python_version) {
               clearInterval(reconnectTimer);
               if (serverPill) serverPill.className = 'header-server-pill status-ready';
-              if (serverLabel) serverLabel.textContent = 'Server Available';
+              if (serverLabel) serverLabel.textContent = 'Services Online';
               Components.showToast('Droply updated and reconnected!', 'success');
               await this.loadSystemStatus();
             }
