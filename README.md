@@ -4,11 +4,13 @@
 
 <div align="center">
 
-<img src="assets/logo.png" width="160" alt="Droply Logo">
+<img src="assets/logo.png" width="128" alt="Droply Logo">
 
-## Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android
+## Your media. Your quality. Your library.
 
-*Download Videos, Reels, Shorts, and Audio from YouTube, Facebook, Instagram, TikTok, Reddit, X, Bilibili, and popular 1000+ media sites with real-time speed & progress tracking.*
+*A local-first video, audio, and social media downloader for Windows, with an experimental Android edition.*
+
+*Download videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites — with live progress and speed tracking.*
 
 [![Latest Release](https://img.shields.io/badge/Release-v1.2.12-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
@@ -16,158 +18,283 @@
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Execution: 100% Local](https://img.shields.io/badge/Privacy-100%25%20Local-10b981.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply)
 
-[**Download Releases**](#-quick-start-downloads) • [**Features**](#-features) • [**Supported Sources**](#-supported-sources) • [**Platform Support**](#-platform-support--compatibility) • [**How to Use**](#-how-to-use)
+[**Get Droply**](#-get-droply) · [**Explore Features**](#-built-for-your-downloads) · [**Supported Sources**](#-where-droply-works) · [**How to Use**](#-using-droply)
 
 </div>
 
 ---
 
-## ✨ Features
+## Why Droply?
 
-- **🌐 Broad Media Extraction**: Extract videos and audio from YouTube, Facebook, Instagram, TikTok, Reddit, X, Bilibili, Vimeo, SoundCloud, and direct media URLs.
-- **⚡ Real-Time Progress & Speed Tracking**: Millisecond-accurate live progress bar, active download speed (`MB/s`), downloaded file size counter, and dynamic Estimated Time of Arrival (ETA).
-- **🎶 High-Fidelity Audio Extraction**: Built-in audio conversion supporting **MP3 (320 kbps High Quality)**, **Apple AAC (M4A)**, and **Lossless WAV**.
-- **📁 Smart Playlist Downloader**: Detects full playlists and albums, automatically creating a dedicated subfolder named after the playlist in your download directory to keep files organized.
-- **📑 Multi-Link Batch Queue**: Paste multiple URLs at once (one per line or comma-separated), parse valid links, apply global presets, and track batch progress with live queue counters.
-- **🎬 Quality & Format Selection**: Detects genuine available stream resolutions (4K UHD, 2K QHD, 1080p FHD, 720p HD, 480p, 360p, or Best Auto) with container details and estimated file sizes.
-- **🏷️ Clean Filename Sanitization**: Automatically preserves authentic media titles while removing reserved filesystem characters (`:`, `*`, `?`, `"`, `<`, `>`, `|`) and prevents accidental file overwrites.
-- **📜 Local History & 1-Click File Explorer**: Stores download history with quick shortcuts to **"Open Containing Folder"** and **"Play File"**.
-- **🎨 Glassmorphic Themes & Dynamic Accents**: Clean interface with glowing accents, smooth micro-animations, theme-adaptive buttons, and 3 curated themes (*Neon Midnight*, *OLED Pure Black*, and *Cyberpunk Cyan*).
-- **🐱 Feline Polish**: Minimalist cat outline divider and sleeping kitten idle queue graphic.
-- **🛡️ Private by Design**: 100% on-device local execution. Zero telemetry, zero analytics, no third-party proxies, and no external tracking.
-- **🔄 Seamless In-App Updates**: Built-in update checker modal, dynamic version synchronization, and one-click embedded yt-dlp core engine update manager.
-- **🟢 Live Services Monitor**: Real-time breathing pulse indicator displaying local engine connectivity and status.
+Media downloads shouldn't require juggling browser tabs, managing scattered files, or guessing how long a download will take.
+
+Droply brings media extraction, quality selection, download management, and file organization into one interface. Paste a supported link, inspect the available media, choose your preferred format, and follow the download from start to finish.
+
+- **Choose your format:** Select available video resolutions or extract audio in supported formats.
+- **Keep collections organized:** Download playlists and albums into dedicated folders.
+- **Handle multiple links:** Queue multiple URLs and track their progress together.
+- **See every download in motion:** Monitor progress, speed, downloaded size, and estimated time remaining.
+- **Make it yours:** Customize download preferences, choose a theme, and revisit your local download history.
+- **Keep control local:** Download operations run on your device without built-in analytics or third-party proxy routing.
 
 ---
 
-## 🌐 Supported Sources
+## ✦ Built for your downloads
 
-Droply supports media extraction across major video, audio, and social streaming platforms:
+<table>
+<tr>
+<td width="50%" valign="top">
 
-| Source | Supported Media Types | Quality & Notes |
-| :--- | :--- | :--- |
-| **YouTube** | Videos, Shorts, Music & Playlists | Up to 4K UHD 60fps with automatic high-bitrate video/audio stream merging *(Windows)* |
-| **Instagram** | Reels, Stories, Posts & Carousels | Clean MP4 video clips & high-resolution images |
-| **TikTok** | Video posts & Audio clips | Clean high-definition video streams without platform watermarks |
-| **Twitter / X** | Video tweets, clips & GIF loops | Best available progressive MP4 bitrate streams |
-| **Facebook** | Public watch videos & Reels | High-definition and standard MP4 streams |
-| **Reddit** | Hosted video posts (`v.redd.it`) | Automatic video and audio track merging |
-| **Bilibili** | Videos & animation clips | High-resolution streaming media |
-| **Vimeo** | Showcase & portfolio videos | Adaptive MP4 streams |
-| **SoundCloud** | Audio tracks & full albums | High-quality audio extraction |
-| **Direct Links** | Direct `.mp4`, `.webm`, `.mp3`, `.wav` | Accelerated streaming chunk downloads |
+### 🎬 Video & Audio
+Select from available resolutions, including 360p, 480p, 720p, 1080p, 2K, and 4K where supported. Choose the best available format or inspect available containers and estimated file sizes.
+
+Extract audio as MP3 at up to 320 kbps, Apple AAC in M4A, or WAV where supported.
+
+</td>
+<td width="50%" valign="top">
+
+### 📚 Playlists & Albums
+Detect supported playlist and album URLs, inspect the available item count, and organize downloads into a dedicated folder named after the playlist.
+
+Keep related media together instead of scattering individual files across your download directory.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### ⚡ Live Download Tracking
+Follow downloads with a live progress bar, speed in MB/s, downloaded file size, and a dynamically updated estimated time of arrival (ETA).
+
+A breathing local services indicator also displays real-time engine connectivity and status.
+
+</td>
+<td width="50%" valign="top">
+
+### 📥 Batch Queue
+Add multiple URLs on separate lines or separated by commas. Droply parses valid links, applies global presets, and displays queue counters with live progress feedback.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🗂️ Local Library & History
+Review past downloads, play completed files, open their containing folders, or clear your download history.
+
+Filename sanitization preserves original media titles while removing reserved filesystem characters and helping prevent accidental file overwrites.
+
+</td>
+<td width="50%" valign="top">
+
+### 🎨 A Personal Touch
+Choose between three curated themes with glowing accents, smooth micro-animations, theme-adaptive buttons, and a glassmorphic interface.
+
+Droply also features a minimalist cat-outline divider and a sleeping-kitten idle queue graphic.
+
+</td>
+</tr>
+</table>
+
+### More built in
+
+- **In-app updates:** Check for new Droply releases and view release notes directly inside the application.
+- **Engine maintenance:** Update the embedded yt-dlp core engine from within the application with a single click.
+- **Dynamic version synchronization:** Keeps the displayed application version synchronized with release tags.
+- **Flexible download settings:** Customize default download directory, quality presets, and concurrent-connection preferences.
+- **Local-first execution:** No built-in telemetry, analytics, or external tracking.
 
 ---
 
-## 📋 Platform Support & Compatibility
+## ↓ Get Droply
 
-Droply focuses officially on two platforms: **Windows (Stable)** as the primary desktop experience and **Android (Experimental)** for mobile testing.
+Droply provides pre-compiled packages for Windows and Android. Development tools and a separate Python installation are not required for the packaged releases.
 
-| Platform | Status | Min OS Version | Architecture | System Requirements | Capabilities & Notes |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 🪟 **Windows** | **Stable** *(Primary)* | Windows 10 (1809+) or Windows 11 | x86_64 | Microsoft Edge WebView2, .NET Framework 4.5+ | **Full Engine**: `yt-dlp` + bundled FFmpeg. Supports 4K stream merging, 320k audio conversion, playlist folders, and native taskbar integration. Tested on Windows 11. |
-| 🤖 **Android** | **Experimental** *(Testing)* | Android 7.0+ (Nougat, API 24+) | `arm64-v8a`, `armeabi-v7a`, `x86_64` | Android System WebView | **Under Validation**: Embedded Python 3.11 with `yt-dlp`. Downloads best progressive streams (up to 720p HD) and audio. Storage location routing and queue flows are experimental. |
+### 🪟 Windows — Stable
 
-> [!WARNING]
-> **Android Experimental Notice:**
-> The Android release is currently provided for community testing and early feedback. Core download operations, folder navigation, batch queue behavior, and file storage locations are undergoing active debugging and validation. Expect occasional instability while mobile engine issues are being addressed.
+*The primary Droply experience, powered by the full Windows download engine.*
 
----
-
-## 📦 Quick Start (Downloads)
-
-Pre-compiled standalone packages are available below. **No Python or development tools are required.**
-
-### 🪟 Windows (Stable - Primary Release)
-
-| Package | Format | Direct Download (v1.2.12) | Latest Mirror |
+| Package | Format | Download (v1.2.12) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Setup.exe) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Windows-x64.zip) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.2.12**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable** | Standalone `.zip` | [**Download v1.2.12**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
-#### Installing and Launching on Windows
+#### Install or launch
 
-- **Setup Wizard (Recommended):** Download and run **`Droply-Setup.exe`**. It installs without administrator prompts, places Droply into your Start Menu, Windows Search, and Desktop, and supports clean updates.
-- **Portable Zip:** Download and extract **`Droply-Windows-x64.zip`**, then run **`Droply.exe`** directly without installation.
+- **Option A — Setup Installer:**
+  1. Download **`Droply-Setup.exe`**.
+  2. Run the installer and follow the prompts. Droply installs into your user profile without requiring administrator prompts.
+  3. Launch from the Start Menu, Windows Search, or desktop shortcut. Supports clean, seamless updates.
+- **Option B — Portable Archive:**
+  1. Download **`Droply-Windows-x64.zip`**.
+  2. Extract the archive to your preferred folder.
+  3. Run **`Droply.exe`**. No installation required—runs from any folder or USB drive.
 
-*(If Microsoft Edge WebView2 is not installed, Droply automatically opens the interface in your default web browser).*
+#### Windows compatibility
+
+| Requirement | Details |
+| :--- | :--- |
+| **Operating system** | Windows 10, version 1809 or later, or Windows 11 |
+| **Architecture** | x86_64 |
+| **Interface dependency** | Microsoft Edge WebView2 *(with automatic browser fallback)* |
+| **Framework** | .NET Framework 4.5+ |
+| **Media engine** | yt-dlp with bundled FFmpeg |
+| **Media capabilities** | High-resolution stream merging, audio conversion, playlist folders |
+| **Desktop integration** | Native taskbar integration & badges |
+| **Testing note** | Tested on Windows 11 |
+
+[Browse all Windows releases →](https://github.com/Amlan-Sarkar/Droply/releases)
 
 ---
 
-### 🤖 Android (Experimental - Testing Only)
+### 🤖 Android — Experimental
 
-| Package | Supported ABIs | Direct Download (v1.2.12) | Latest Mirror |
+*An early mobile build for community testing and feedback. Android support is still being validated, particularly around storage locations, folder navigation, and batch queue behavior.*
+
+| Package | Supported Architectures | Download (v1.2.12) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download Droply-Android.apk (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Android.apk) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
+| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download APK (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Android.apk) | [Latest APK Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
 
-#### Installing on Android
+#### Installation
 
 1. Download **`Droply-Android.apk`** to your device.
-2. Tap the APK file to install. If prompted, grant permission to *"Install unknown apps"*.
-3. Open Droply from your app drawer.
-4. *Share Sheet*: You can share links directly from YouTube or social media app share menus to Droply.
-   *(Note: Storage routing and file management are currently experimental; downloaded files can be located in your device's media player or public `Download/Droply` directory).*
+2. Open the APK file. If prompted, allow installation using Android's *"Install unknown apps"* permission.
+3. Launch Droply from your app drawer.
+4. To send a media link to Droply, use the Android **Share** menu from a supported browser or social media app.
+
+#### Android compatibility
+
+| Requirement | Details |
+| :--- | :--- |
+| **Minimum operating system** | Android 7.0 Nougat, API 24+ |
+| **Architectures** | `arm64-v8a`, `armeabi-v7a`, `x86_64` |
+| **Interface dependency** | Android System WebView |
+| **Media engine** | Embedded Python 3.11 with yt-dlp |
+| **Current capabilities** | Best available progressive streams (up to 720p HD) and audio |
+| **Status** | Experimental; under validation |
+
+> [!WARNING]
+> **Android is not yet a fully validated release.**
+> Core download operations, folder navigation, batch queue behavior, and file-storage locations are undergoing active debugging and validation. Occasional instability is possible while mobile engine issues are being addressed.
+> Downloaded files may be located through your device's media player or in the public `Download/Droply` directory.
 
 ---
 
-## 🎯 How to Use
+## 🌐 Where Droply works
 
-### 1. Single Media Downloader
+Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compatibility, available streams, and maximum quality depend on the source website and individual media link.
 
-1. **Copy Link**: Copy any video, reel, post, or audio link from your browser or mobile app.
-2. **Paste**: Paste the URL into the search bar (or click the **Paste** button).
-3. **Analyze**: Click **Analyze** (or press **Enter**) to preview title, uploader, thumbnail, and duration.
-4. **Select Format**:
-   - **Video Mode**: Choose your preferred quality (`Best Available`, `1080p`, `720p`, etc.).
-   - **Audio Mode**: Switch to Audio mode to extract in `MP3 (320 kbps HQ)`, `M4A`, or `WAV`.
-5. **Download**: Click **Download Media**. Watch live progress, download speed, and ETA.
-6. **Open File**: Once complete, CLICK **Play File** to play it immediately. or click **Open Containing Folder** to reveal your file.
+| Source | Supported media | Quality and behavior |
+| :--- | :--- | :--- |
+| **YouTube** | Videos, Shorts, music, playlists | Up to 4K UHD 60fps on Windows, with automatic high-bitrate video/audio stream merging |
+| **Instagram** | Reels, Stories, posts, carousels | MP4 video clips and high-resolution images where available |
+| **TikTok** | Video posts and audio clips | High-definition video streams without platform watermarks where supported |
+| **X / Twitter** | Video tweets, clips, GIF loops | Best available progressive MP4 bitrate streams |
+| **Facebook** | Public watch videos and Reels | High-definition and standard MP4 streams |
+| **Reddit** | Hosted videos (`v.redd.it`) | Automatic video and audio track merging |
+| **Bilibili** | Videos and animation clips | High-resolution streaming media |
+| **Vimeo** | Showcase and portfolio videos | Adaptive MP4 streams |
+| **SoundCloud** | Audio tracks and full albums | High-quality audio extraction |
+| **Direct links** | `.mp4`, `.webm`, `.mp3`, `.wav` | Accelerated streaming chunk downloads |
 
-### 2. Playlists & Albums
+---
 
-- Paste a YouTube playlist, album, or series URL into the search bar.
-- Droply detects playlist links and displays the item count.
-- On download, Droply automatically creates a **dedicated folder named after the playlist** inside your download directory so all items remain organized.
+## 🎯 Using Droply
 
-### 3. Multi-Link Batch Queue
+### 01 — Download a single video or audio track
+
+1. **Copy a link:** Copy a video, Reel, post, or audio URL from a browser or mobile app.
+2. **Paste it:** Paste the URL into the input field, or click **Paste**.
+3. **Analyze it:** Click **Analyze** (or press **Enter**) to preview title, uploader, thumbnail, and duration.
+4. **Choose a format:**
+   - **Video Mode:** Choose *Best Available*, *1080p*, *720p*, or another available resolution.
+   - **Audio Mode:** Select *MP3 (320 kbps HQ)*, *M4A*, or *WAV*.
+5. **Start the download:** Click **Download Media** and follow live progress, speed, downloaded size, and ETA.
+6. **Open the result:** Click **Play File** to play immediately, or **Open Containing Folder** to reveal the file.
+
+### 02 — Download playlists and albums
+
+1. Paste a supported YouTube playlist, album, or series URL into the input field.
+2. Droply detects the playlist and displays its item count.
+3. Start the download: Droply automatically creates a dedicated subfolder named after the playlist inside your selected download directory.
+
+### 03 — Queue multiple links
 
 1. Open the **Batch Downloader** tab.
-2. Paste multiple links (one per line or comma-separated).
-3. Click **Add URLs to Queue**.
-4. Droply parses all valid URLs, enqueues them, and processes them with live progress feedback.
-5. Click **Clear Completed** anytime to reset finished tasks and refresh the queue counter.
+2. Paste multiple URLs (one per line or separated by commas).
+3. Click **Add URLs to Queue**. Droply parses valid URLs, queues them, and processes downloads with live progress.
+4. Click **Clear Completed** when you want to remove finished tasks and refresh the queue counter.
 
-### 4. Library & History
+### 04 — Browse your download history
 
-- Open the **Library & History** tab to view your past downloads.
-- Open files directly, reveal their exact folder location, or clean up your download history with one click.
+- Open **Library & History** to review previous downloads.
+- Open files directly, reveal their exact folder location, or clear download history with one click.
 
-### 5. Personalization & Themes
+### 05 — Customize your experience
 
-- Open the **Settings** tab to choose between 3 curated themes:
-  - 🌌 **Neon Midnight** (Default dark palette with indigo & violet accents)
-  - 🖤 **OLED Pure Black** (Pure black for AMOLED displays)
+- Open **Settings** to choose between 3 curated themes:
+  - 🌌 **Neon Midnight** (Default dark palette with indigo and violet accents)
+  - 🖤 **OLED Pure Black** (Pure black designed for AMOLED displays)
   - ⚡ **Cyberpunk Cyan** (High-energy cyan and neon accents)
-- Customize default download directory, quality presets, and concurrent connections (remember to click **Save Preferences** to apply).
+- Customize default download directory, quality presets, and concurrent connections.
+- Click **Save Preferences** to apply your changes.
 
-### 6. Updates & yt-dlp Engine Maintenance
+### 06 — Check for updates
 
-- Click **Check for Updates** in the header or in Settings to view the latest Droply release notes or update the embedded yt-dlp core engine with a single click.
-
----
-
-## ⚖️ Privacy & Legal Disclaimer
-
-Droply is an open-source utility designed exclusively for **personal archival, educational, and authorized fair-use purposes** (such as backing up content you created, accessing public-domain material, or saving media with explicit permission from the copyright holder).
-
-- **100% Local & Private**: All extraction and download operations execute locally on your machine. Droply contains zero telemetry, collects no personal data, and routes no traffic through third-party proxy servers.
-- **Respect Copyright & Terms**: Users are solely responsible for complying with applicable copyright laws and website Terms of Service. Droply does not bypass DRM (Digital Rights Management), decrypt subscription-protected streams, or circumvent private authentication walls.
+- Click **Check for Updates** in the application header or Settings.
+- View the latest Droply release information or update the embedded yt-dlp core engine with a single click.
 
 ---
 
-## 📄 License & Community
+## ⚙️ Under the hood
 
-Droply is licensed under the [MIT License](LICENSE).
+Droply combines a local interface with its media extraction engine and supporting tools:
 
-- 🐛 **Issues & Feedback**: [Report an issue or suggest a feature](https://github.com/Amlan-Sarkar/Droply/issues)
-- 🚀 **Releases & Updates**: [View all GitHub Releases](https://github.com/Amlan-Sarkar/Droply/releases)
+| Component | Role |
+| :--- | :--- |
+| **yt-dlp** | Media metadata extraction, format discovery, and downloading |
+| **FFmpeg** | Video/audio stream merging and audio conversion on Windows |
+| **Embedded Python 3.11** | Part of the experimental Android media engine |
+| **Microsoft Edge WebView2** | Windows interface dependency, with browser fallback when unavailable |
+| **Android System WebView** | Android interface dependency |
+
+---
+
+## ⚖️ Privacy & responsible use
+
+Droply is an open-source utility designed for personal archival, educational, and authorized fair-use purposes.
+
+### Local-first by design
+
+- **Local execution:** Media extraction and download operations execute locally on your device.
+- **No built-in telemetry:** Contains no built-in telemetry or analytics and collects no personal data.
+- **No third-party proxy routing:** Normal download operations do not route traffic through third-party proxy servers.
+- **No external tracking:** Droply does not include external tracking.
+
+*Note: Downloading media and checking for updates still require network requests to the relevant websites or update sources.*
+
+### Copyright and platform terms
+
+Users are solely responsible for complying with applicable copyright laws and website Terms of Service. Droply does not bypass DRM (Digital Rights Management), decrypt subscription-protected streams, or circumvent private authentication walls. Only download media you own or are authorized to access and save.
+
+---
+
+## 💬 Feedback & community
+
+- 🐛 **Issues & feature requests:** [Open an issue on GitHub](https://github.com/Amlan-Sarkar/Droply/issues)
+- 🚀 **Releases & updates:** [Browse all Droply releases](https://github.com/Amlan-Sarkar/Droply/releases)
+- 📂 **Source code:** [Explore the Droply repository](https://github.com/Amlan-Sarkar/Droply)
+
+---
+
+## 📄 License
+
+Droply is distributed under the [MIT License](LICENSE).
+
+<div align="center">
+<br>
+
+Made with care, a little curiosity, and a sleeping cat. 🐈  
+**Yours Truly, Droply**
+
+</div>
