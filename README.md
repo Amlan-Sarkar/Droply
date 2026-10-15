@@ -1,14 +1,16 @@
+# Droply
+
+<!-- markdownlint-disable MD033 -->
+
 <div align="center">
 
 <img src="assets/logo.png" width="160" alt="Droply Logo">
 
-<br>
-
-**Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android**
+### Universal High-Performance Video, Audio & Social Media Downloader for Windows & Android
 
 *Download videos, Reels, Shorts, and audio from YouTube, Instagram, TikTok, X (Twitter), Bilibili, and popular media sites with real-time speed & progress tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.2.7-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.2.12-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -30,8 +32,11 @@
 - **🎬 Quality & Format Selection**: Detects genuine available stream resolutions (4K UHD, 2K QHD, 1080p FHD, 720p HD, 480p, 360p, or Best Auto) with container details and estimated file sizes.
 - **🏷️ Clean Filename Sanitization**: Automatically preserves authentic media titles while removing reserved filesystem characters (`:`, `*`, `?`, `"`, `<`, `>`, `|`) and prevents accidental file overwrites.
 - **📜 Local History & 1-Click File Explorer**: Stores download history with quick shortcuts to **"Open Containing Folder"** and **"Play File"**.
-- **🎨 Glassmorphic Dark UI**: Clean interface with glowing accents, responsive layout, and 4 curated themes (*Neon Midnight*, *OLED Pure Black*, *Cyberpunk Cyan*, and *Nordic Slate*).
-- **🛡️ 100% Local & Privacy-Focused**: Runs completely on your device. No third-party proxy servers, zero telemetry, no user accounts, and no data tracking.
+- **🎨 Glassmorphic Themes & Dynamic Accents**: Clean interface with glowing accents, smooth micro-animations, theme-adaptive buttons, and 3 curated themes (*Neon Midnight*, *OLED Pure Black*, and *Cyberpunk Cyan*).
+- **🐱 Feline Polish**: Minimalist cat outline divider and sleeping kitten idle queue graphic.
+- **🛡️ Private by Design**: 100% on-device local execution. Zero telemetry, zero analytics, no third-party proxies, and no external tracking.
+- **🔄 Seamless In-App Updates**: Built-in update checker modal, dynamic version synchronization, and one-click embedded yt-dlp core engine update manager.
+- **🟢 Live Services Monitor**: Real-time breathing pulse indicator displaying local engine connectivity and status.
 
 ---
 
@@ -75,29 +80,32 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 ### 🪟 Windows (Stable - Primary Release)
 
-| Package | Format | Direct Download |
-| :--- | :--- | :--- |
-| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Wizard | [**Download Droply-Setup.exe**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| Package | Format | Direct Download (v1.2.12) | Latest Mirror |
+| :--- | :--- | :--- | :--- |
+| **Droply Modern Wizard** *(Recommended)* | `.exe` Modern Setup | [**Download Droply-Setup.exe (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Setup.exe) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable Archive** | Standalone `.zip` | [**Download Droply-Windows-x64.zip (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Windows-x64.zip) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
-#### Installing and Launching on Windows:
+#### Installing and Launching on Windows
+
 - **Setup Wizard (Recommended):** Download and run **`Droply-Setup.exe`**. It installs without administrator prompts, places Droply into your Start Menu, Windows Search, and Desktop, and supports clean updates.
 - **Portable Zip:** Download and extract **`Droply-Windows-x64.zip`**, then run **`Droply.exe`** directly without installation.
+
 *(If Microsoft Edge WebView2 is not installed, Droply automatically opens the interface in your default web browser).*
 
 ---
 
 ### 🤖 Android (Experimental - Testing Only)
 
-| Package | Supported ABIs | Direct Download |
-| :--- | :--- | :--- |
-| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download Droply-Android.apk**](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
+| Package | Supported ABIs | Direct Download (v1.2.12) | Latest Mirror |
+| :--- | :--- | :--- | :--- |
+| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download Droply-Android.apk (v1.2.12)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.2.12/Droply-Android.apk) | [Latest Release Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Android.apk) |
 
-#### Installing on Android:
+#### Installing on Android
+
 1. Download **`Droply-Android.apk`** to your device.
 2. Tap the APK file to install. If prompted, grant permission to *"Install unknown apps"*.
 3. Open Droply from your app drawer.
-4. *Share Sheet*: You can share links directly from the YouTube or social app share menu to Droply.
+4. *Share Sheet*: You can share links directly from YouTube or social media app share menus to Droply.
    *(Note: Storage routing and file management are currently experimental; downloaded files can be located in your device's media player or public `Download/Droply` directory).*
 
 ---
@@ -105,21 +113,24 @@ Pre-compiled standalone packages are available below. **No Python or development
 ## 🎯 How to Use
 
 ### 1. Single Media Downloader
+
 1. **Copy Link**: Copy any video, reel, post, or audio link from your browser or mobile app.
 2. **Paste**: Paste the URL into the search bar (or click the **Paste** button).
-3. **Analyze**: Click **Analyze** (or press <kbd>Enter</kbd>) to preview title, uploader, thumbnail, and duration.
+3. **Analyze**: Click **Analyze** (or press **Enter**) to preview title, uploader, thumbnail, and duration.
 4. **Select Format**:
-   * **Video Mode**: Choose your preferred quality (`Best Available`, `1080p`, `720p`, etc.).
-   * **Audio Mode**: Switch to Audio mode to extract in `MP3 (320 kbps HQ)`, `M4A`, or `WAV`.
+   - **Video Mode**: Choose your preferred quality (`Best Available`, `1080p`, `720p`, etc.).
+   - **Audio Mode**: Switch to Audio mode to extract in `MP3 (320 kbps HQ)`, `M4A`, or `WAV`.
 5. **Download**: Click **Download Media**. Watch live progress, download speed, and ETA.
 6. **Open File**: Once complete, click **Open Containing Folder** to reveal your file or **Play File** to play it immediately.
 
 ### 2. Playlists & Albums
-* Paste a YouTube playlist, album, or series URL into the search bar.
-* Droply detects playlist links and displays the item count.
-* On download, Droply automatically creates a **dedicated folder named after the playlist** inside your download directory so all items remain organized.
+
+- Paste a YouTube playlist, album, or series URL into the search bar.
+- Droply detects playlist links and displays the item count.
+- On download, Droply automatically creates a **dedicated folder named after the playlist** inside your download directory so all items remain organized.
 
 ### 3. Multi-Link Batch Queue
+
 1. Open the **Batch Downloader** tab.
 2. Paste multiple links (one per line or comma-separated).
 3. Click **Add URLs to Queue**.
@@ -127,16 +138,21 @@ Pre-compiled standalone packages are available below. **No Python or development
 5. Click **Clear Completed** anytime to reset finished tasks and refresh the queue counter.
 
 ### 4. Library & History
-* Open the **Library & History** tab to view your past downloads.
-* Open files directly, reveal their exact folder location, or clean up your download history with one click.
+
+- Open the **Library & History** tab to view your past downloads.
+- Open files directly, reveal their exact folder location, or clean up your download history with one click.
 
 ### 5. Personalization & Themes
-* Open the **Settings** tab to choose between 4 curated themes:
-  * 🌌 **Neon Midnight** (Default dark palette with indigo & violet accents)
-  * 🖤 **OLED Pure Black** (Pure black for AMOLED displays)
-  * ⚡ **Cyberpunk Cyan** (High-energy cyan and neon accents)
-  * 🏔️ **Nordic Slate** (Muted minimalist dark aesthetic)
-* Configure your preferred default download path and quality presets.
+
+- Open the **Settings** tab to choose between 3 curated themes:
+  - 🌌 **Neon Midnight** (Default dark palette with indigo & violet accents)
+  - 🖤 **OLED Pure Black** (Pure black for AMOLED displays)
+  - ⚡ **Cyberpunk Cyan** (High-energy cyan and neon accents)
+- Customize default download directory, quality presets, and concurrent connections (remember to click **Save Preferences** to apply).
+
+### 6. Updates & yt-dlp Engine Maintenance
+
+- Click **Check for Updates** in the header or in Settings to view the latest Droply release notes or update the embedded yt-dlp core engine with a single click.
 
 ---
 
@@ -144,8 +160,8 @@ Pre-compiled standalone packages are available below. **No Python or development
 
 Droply is an open-source utility designed exclusively for **personal archival, educational, and authorized fair-use purposes** (such as backing up content you created, accessing public-domain material, or saving media with explicit permission from the copyright holder).
 
-* **100% Local & Private**: All extraction and download operations execute locally on your machine. Droply contains zero telemetry, collects no personal data, and routes no traffic through third-party proxy servers.
-* **Respect Copyright & Terms**: Users are solely responsible for complying with applicable copyright laws and website Terms of Service. Droply does not bypass DRM (Digital Rights Management), decrypt subscription-protected streams, or circumvent private authentication walls.
+- **100% Local & Private**: All extraction and download operations execute locally on your machine. Droply contains zero telemetry, collects no personal data, and routes no traffic through third-party proxy servers.
+- **Respect Copyright & Terms**: Users are solely responsible for complying with applicable copyright laws and website Terms of Service. Droply does not bypass DRM (Digital Rights Management), decrypt subscription-protected streams, or circumvent private authentication walls.
 
 ---
 
@@ -153,5 +169,5 @@ Droply is an open-source utility designed exclusively for **personal archival, e
 
 Droply is licensed under the [MIT License](LICENSE).
 
-* 🐛 **Issues & Feedback**: [Report an issue or suggest a feature](https://github.com/Amlan-Sarkar/Droply/issues)
-* 🚀 **Releases & Updates**: [View all GitHub Releases](https://github.com/Amlan-Sarkar/Droply/releases)
+- 🐛 **Issues & Feedback**: [Report an issue or suggest a feature](https://github.com/Amlan-Sarkar/Droply/issues)
+- 🚀 **Releases & Updates**: [View all GitHub Releases](https://github.com/Amlan-Sarkar/Droply/releases)
