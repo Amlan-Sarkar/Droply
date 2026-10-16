@@ -556,6 +556,7 @@ class DroplyApp {
     const formatId = this.selectedFormat ? this.selectedFormat.format_id : 'best';
     const formatLabel = this.selectedFormat ? this.selectedFormat.label : 'Best Quality';
     const audioCodec = isAudio && this.selectedFormat ? this.selectedFormat.ext : 'mp3';
+    const outDir = document.getElementById('selected-save-dir').textContent.trim() || this.settings.download_dir;
 
     try {
       const task = await api.startDownload({
@@ -564,7 +565,7 @@ class DroplyApp {
         format_label: formatLabel,
         is_audio: isAudio,
         audio_format: audioCodec,
-        output_dir: this.settings.download_dir,
+        output_dir: outDir,
         title: this.currentMedia.title,
         thumbnail: this.currentMedia.thumbnail
       });
@@ -756,21 +757,24 @@ class DroplyApp {
       const container = document.getElementById('history-items-container');
       const emptyState = document.getElementById('history-empty-state');
 
+      // Filter out any 0-byte ghost entries or entries without a file path
+      const validItems = (items || []).filter(it => it.file_path && (it.file_size > 0 || it.status === 'completed'));
+
       // Update statistics
       let totalBytes = 0;
       let completedCount = 0;
-      items.forEach(it => {
-        if (it.status === 'completed' || !it.status) completedCount++;
+      validItems.forEach(it => {
+        completedCount++;
         const sz = it.file_size || it.filesize || it.downloaded_bytes || it.total_bytes || 0;
         totalBytes += Number(sz) || 0;
       });
 
-      document.getElementById('hist-stat-total').textContent = items.length;
+      document.getElementById('hist-stat-total').textContent = validItems.length;
       document.getElementById('hist-stat-completed').textContent = completedCount;
       document.getElementById('hist-stat-size').textContent = Components.formatBytes(totalBytes);
       document.getElementById('hist-stat-folder').textContent = this.settings.download_dir || 'Downloads/Droply';
 
-      if (!items || items.length === 0) {
+      if (validItems.length === 0) {
         container.innerHTML = '';
         container.appendChild(emptyState);
         emptyState.style.display = 'block';
@@ -780,7 +784,7 @@ class DroplyApp {
       emptyState.style.display = 'none';
       container.innerHTML = '';
 
-      items.forEach(it => {
+      validItems.forEach(it => {
         const card = Components.renderHistoryItem(it);
         container.appendChild(card);
       });
@@ -858,7 +862,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.4';
+      const appVer = status.app_version || 'v1.3.5';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -992,7 +996,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.4';
+      if (curVerEl) curVerEl.textContent = 'v1.3.5';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1001,8 +1005,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.4';
-        const appLatest = info.app_latest || 'v1.3.4';
+        const appInst = info.app_installed || 'v1.3.5';
+        const appLatest = info.app_latest || 'v1.3.5';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1036,8 +1040,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.3.4';
-        newVerEl.textContent = 'v1.3.4';
+        curVerEl.textContent = 'v1.3.5';
+        newVerEl.textContent = 'v1.3.5';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can check the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1071,7 +1075,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.4'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.5'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';

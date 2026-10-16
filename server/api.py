@@ -28,7 +28,11 @@ if os.path.isdir(_engine_updates) and _engine_updates not in sys.path:
     sys.path.insert(0, _engine_updates)
 
 import yt_dlp
-import imageio_ffmpeg
+try:
+    import imageio_ffmpeg
+except ImportError:
+    imageio_ffmpeg = None
+
 
 def _get_ytdlp_version() -> str:
     try:
@@ -498,7 +502,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.4"
+    return "v1.3.5"
 
 
 APP_VERSION = _load_app_version()
@@ -635,7 +639,7 @@ async def system_status():
     base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
     bundled = base_dir / "bin" / "ffmpeg.exe"
     ffmpeg_exe = str(bundled) if bundled.exists() else None
-    if not ffmpeg_exe:
+    if not ffmpeg_exe and imageio_ffmpeg is not None:
         try:
             ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
         except Exception:

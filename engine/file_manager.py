@@ -10,7 +10,7 @@ import sys
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Optional
 
 
 def sanitize_filename(name: str, max_length: int = 200) -> str:
@@ -94,6 +94,32 @@ def format_seconds(seconds: int) -> str:
     return f"{m:02d}:{s:02d}"
 
 
+def _normalize_name(name: str) -> str:
+    return name.replace('’', "'").replace('‘', "'").replace('“', '"').replace('”', '"').strip()
+
+
+def resolve_existing_path(file_path: str) -> Optional[str]:
+    """Finds actual path on disk even if unicode apostrophes or quotes differ."""
+    if not file_path:
+        return None
+    p = os.path.abspath(file_path)
+    if os.path.exists(p):
+        return p
+    parent = os.path.dirname(p)
+    if not os.path.isdir(parent):
+        return None
+    target_norm = _normalize_name(os.path.basename(p)).lower()
+    try:
+        for fname in os.listdir(parent):
+            if _normalize_name(fname).lower() == target_norm:
+                cand = os.path.join(parent, fname)
+                if os.path.isfile(cand):
+                    return cand
+    except Exception:
+        pass
+    return None
+
+
 def open_folder(directory_path: str) -> bool:
     """Open folder in Windows Explorer or default file manager."""
     try:
@@ -116,18 +142,23 @@ def open_folder(directory_path: str) -> bool:
 def open_in_folder(file_path: str) -> bool:
     """Reveal file in Windows Explorer or file manager."""
     try:
-        path = os.path.abspath(file_path)
-        if not os.path.exists(path):
-            # Fallback to containing folder
-            return open_folder(os.path.dirname(path))
+        real_path = resolve_existing_path(file_path)
+        if real_path:
+            if sys.platform == "win32":
+                subprocess.Popen(f'explorer.exe /select,"{real_path}"')
+                return True
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", real_path])
+                return True
+            else:
+                subprocess.Popen(["xdg-open", os.path.dirname(real_path)])
+                return True
 
-        if sys.platform == "win32":
-            subprocess.Popen(f'explorer.exe /select,"{path}"')
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", "-R", path])
-        else:
-            subprocess.Popen(["xdg-open", os.path.dirname(path)])
-        return True
+        # Fallback to containing folder
+        parent = os.path.dirname(os.path.abspath(file_path)) if file_path else None
+        if parent and os.path.isdir(parent):
+            return open_folder(parent)
+        return False
     except Exception as e:
         print(f"Failed to reveal file: {e}")
         return False
@@ -136,16 +167,16 @@ def open_in_folder(file_path: str) -> bool:
 def open_file(file_path: str) -> bool:
     """Launch/play downloaded file with system default player."""
     try:
-        path = os.path.abspath(file_path)
-        if not os.path.exists(path):
+        real_path = resolve_existing_path(file_path)
+        if not real_path:
             return False
 
         if sys.platform == "win32":
-            os.startfile(path)
+            os.startfile(real_path)
         elif sys.platform == "darwin":
-            subprocess.Popen(["open", path])
+            subprocess.Popen(["open", real_path])
         else:
-            subprocess.Popen(["xdg-open", path])
+            subprocess.Popen(["xdg-open", real_path])
         return True
     except Exception as e:
         print(f"Failed to open file: {e}")

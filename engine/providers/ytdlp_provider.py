@@ -13,10 +13,14 @@ from typing import List, Dict, Any, Callable, Optional
 from urllib.parse import urlparse
 
 import yt_dlp
-import imageio_ffmpeg
+try:
+    import imageio_ffmpeg
+except ImportError:
+    imageio_ffmpeg = None
+
 
 from .base import BaseProvider, MediaMetadata, MediaFormat, ProviderCapabilities
-from ..file_manager import sanitize_filename, get_unique_filename, format_bytes, format_seconds
+from ..file_manager import sanitize_filename, get_unique_filename, format_bytes, format_seconds, resolve_existing_path
 
 
 PLATFORM_PATTERNS = [
@@ -132,12 +136,13 @@ class YtDlpProvider(BaseProvider):
         ])
 
         # 3. imageio_ffmpeg bundled binary
-        try:
-            img_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
-            if img_ffmpeg and os.path.exists(img_ffmpeg):
-                candidates.append(Path(img_ffmpeg))
-        except Exception:
-            pass
+        if imageio_ffmpeg is not None:
+            try:
+                img_ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+                if img_ffmpeg and os.path.exists(img_ffmpeg):
+                    candidates.append(Path(img_ffmpeg))
+            except Exception:
+                pass
 
         # 4. System PATH
         which_path = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
@@ -339,19 +344,52 @@ class YtDlpProvider(BaseProvider):
 
             filesize = f.get('filesize') or f.get('filesize_approx') or 0
             tbr = f.get('tbr') or f.get('vbr') or 0
+
+            # Realistic bitrate ceiling per resolution bucket to prevent outlier VP9 experimental streams from bloating estimates
+            bitrate_cap_map = {
+                2160: 7500,
+                1440: 4500,
+                1080: 3200,
+                720: 1600,
+                480: 800,
+                360: 450,
+                240: 280,
+                144: 160
+            }
+            closest_h = min(bitrate_cap_map.keys(), key=lambda k: abs(k - h))
+            cap = bitrate_cap_map[closest_h]
+            if tbr > cap * 1.5:
+                tbr = cap
+
             if filesize == 0 and duration > 0 and tbr > 0:
                 # Include approximate audio stream overhead (128 kbps) for complete estimate
                 filesize = int((tbr + 128) * 1024 * duration / 8)
+            elif filesize > 0 and duration > 0 and filesize > int((cap * 1.6 + 128) * 1024 * duration / 8):
+                # Clamp extreme outlier format sizes
+                filesize = int((cap + 128) * 1024 * duration / 8)
 
             ext = f.get('ext', 'mp4')
-            # Prefer higher quality / known filesize or MP4 container
-            if h not in resolutions_found or filesize > resolutions_found[h].get('filesize', 0) or (ext == 'mp4' and resolutions_found[h].get('ext') != 'mp4'):
+            is_preferred_ext = (ext == 'mp4')
+            curr = resolutions_found.get(h)
+
+            if not curr:
                 resolutions_found[h] = {
                     'format_id': f.get('format_id'),
                     'height': h,
                     'width': f.get('width', 0),
                     'ext': 'mp4',
                     'filesize': filesize,
+                    'fps': f.get('fps'),
+                    'vcodec': vcodec,
+                    'acodec': f.get('acodec', ''),
+                }
+            elif (is_preferred_ext and curr.get('ext') != 'mp4') or (filesize > 0 and curr.get('filesize', 0) == 0):
+                resolutions_found[h] = {
+                    'format_id': f.get('format_id'),
+                    'height': h,
+                    'width': f.get('width', 0),
+                    'ext': 'mp4',
+                    'filesize': filesize if filesize > 0 else curr.get('filesize', 0),
                     'fps': f.get('fps'),
                     'vcodec': vcodec,
                     'acodec': f.get('acodec', ''),
@@ -477,17 +515,15 @@ class YtDlpProvider(BaseProvider):
             rate = best_audio_tbr if best_audio_tbr > 0 else 128
             best_audio_fs = int(rate * 1024 * duration / 8)
 
-        # Bitrate estimates based on codec and duration
-        mp3_fs = int(320 * 1024 * duration / 8) if duration > 0 else best_audio_fs
-        m4a_fs = best_audio_fs if best_audio_fs > 0 else (int(160 * 1024 * duration / 8) if duration > 0 else 0)
-        opus_fs = best_audio_fs if best_audio_fs > 0 else (int(160 * 1024 * duration / 8) if duration > 0 else 0)
-        wav_fs = int(1411.2 * 1024 * duration / 8) if duration > 0 else 0
+        # Network stream download size (what yt-dlp fetches over the wire)
+        net_fs = best_audio_fs if best_audio_fs > 0 else (int(128 * 1024 * duration / 8) if duration > 0 else 0)
+        net_fs_str = format_bytes(net_fs) if net_fs > 0 else "Source Audio"
 
         audio_options = [
-            ("mp3", "MP3 Audio (320 kbps High Quality)", mp3_fs, f"320 kbps • ~{format_bytes(mp3_fs)}" if mp3_fs > 0 else "320 kbps High Quality"),
-            ("m4a", "M4A Audio (Apple / AAC Quality)", m4a_fs, f"Source AAC • ~{format_bytes(m4a_fs)}" if m4a_fs > 0 else "Source Audio"),
-            ("wav", "WAV Audio (Uncompressed Lossless)", wav_fs, f"Lossless PCM • ~{format_bytes(wav_fs)}" if wav_fs > 0 else "Lossless PCM"),
-            ("opus", "Opus Audio (Best Web Codec)", opus_fs, f"Source Bitrate • ~{format_bytes(opus_fs)}" if opus_fs > 0 else "Source Bitrate"),
+            ("mp3", "MP3 Audio (Universal 320 kbps)", net_fs, f"~{net_fs_str} download • 320 kbps MP3" if net_fs > 0 else "320 kbps Universal"),
+            ("m4a", "M4A Audio (Apple / AAC Quality)", net_fs, f"~{net_fs_str} download • Source AAC" if net_fs > 0 else "Source AAC"),
+            ("wav", "WAV Audio (Uncompressed Lossless)", net_fs, f"~{net_fs_str} download • 1411 kbps PCM" if net_fs > 0 else "Lossless PCM"),
+            ("opus", "Opus Audio (Best Web Codec)", net_fs, f"~{net_fs_str} download • Source Opus" if net_fs > 0 else "Source Opus"),
         ]
 
         result = []
@@ -562,6 +598,12 @@ class YtDlpProvider(BaseProvider):
                     "eta_str": "A few seconds"
                 })
 
+        def ytdl_postprocessor_hook(d):
+            if d.get('status') == 'finished':
+                fn = d.get('info_dict', {}).get('filepath') or d.get('filepath')
+                if fn and os.path.exists(fn):
+                    final_file_info['final_path'] = fn
+
         # Base YDL options
         outtmpl = os.path.join(output_dir, '%(title).150s.%(ext)s')
         ydl_opts: Dict[str, Any] = {
@@ -569,7 +611,12 @@ class YtDlpProvider(BaseProvider):
             'quiet': True,
             'no_warnings': True,
             'noplaylist': True,
+            'socket_timeout': 15,
+            'retries': 5,
+            'fragment_retries': 5,
+            'continuedl': False,
             'progress_hooks': [ytdl_hook],
+            'postprocessor_hooks': [ytdl_postprocessor_hook],
             'restrictfilenames': False,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
@@ -642,6 +689,15 @@ class YtDlpProvider(BaseProvider):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
         except Exception as e:
+            # Clean up partial files from aborted or errored download
+            try:
+                for fn in os.listdir(output_dir):
+                    if fn.endswith('.part') or '.temp' in fn:
+                        fp = os.path.join(output_dir, fn)
+                        if os.path.isfile(fp):
+                            os.remove(fp)
+            except Exception:
+                pass
             if cancel_check():
                 raise Exception("Download cancelled by user.")
             err_dict = humanize_error(str(e))
@@ -649,7 +705,9 @@ class YtDlpProvider(BaseProvider):
 
         # Determine output file path
         saved_file = None
-        if 'finished_path' in final_file_info and os.path.exists(final_file_info['finished_path']):
+        if 'final_path' in final_file_info and os.path.exists(final_file_info['final_path']):
+            saved_file = final_file_info['final_path']
+        elif 'finished_path' in final_file_info and os.path.exists(final_file_info['finished_path']):
             saved_file = final_file_info['finished_path']
         elif info:
             # Check requested_downloads or default prepared filename
@@ -660,8 +718,17 @@ class YtDlpProvider(BaseProvider):
                 if is_audio:
                     base, _ = os.path.splitext(expected)
                     expected = f"{base}.{audio_format.lower()}"
-                if os.path.exists(expected):
-                    saved_file = expected
+                elif has_ffmpeg:
+                    base, _ = os.path.splitext(expected)
+                    expected = f"{base}.mp4"
+
+                saved_file = resolve_existing_path(expected)
+
+        if not saved_file or not os.path.exists(saved_file):
+            if 'final_path' in final_file_info:
+                saved_file = resolve_existing_path(final_file_info['final_path'])
+            elif 'finished_path' in final_file_info:
+                saved_file = resolve_existing_path(final_file_info['finished_path'])
 
         if not saved_file or not os.path.exists(saved_file):
             # Scan directory for the most recently modified file in output_dir

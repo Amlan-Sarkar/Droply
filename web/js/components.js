@@ -197,6 +197,8 @@ const Components = {
     let statusLabel = task.status || 'Queued';
     if (task.status === 'processing') statusLabel = 'Merging';
     if (task.status === 'downloading') statusLabel = 'Downloading';
+    if (task.status === 'cancelled') statusLabel = 'Cancelled';
+    if (task.status === 'failed') statusLabel = 'Failed';
 
     const actionButtons = this._getQueueItemActions(task);
     const metaRowContent = this._getQueueItemMeta(task);
@@ -264,7 +266,13 @@ const Components = {
   },
 
   _getQueueItemMeta(task) {
-    if (task.status === 'failed' || task.status === 'cancelled') {
+    if (task.status === 'cancelled') {
+      return `
+        <span style="color: #fbbf24; font-weight: 600;">Download Cancelled</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    if (task.status === 'failed') {
       return `
         <span style="color: #f87171; font-weight: 600;">Download Failed</span>
         <span style="color: #a5b4fc;">${task.format_label || ''}</span>
@@ -304,7 +312,12 @@ const Components = {
     const statusTag = el.querySelector('.status-tag');
     if (statusTag) {
       statusTag.className = `status-tag ${task.status}`;
-      statusTag.textContent = task.status;
+      let label = task.status;
+      if (task.status === 'processing') label = 'Merging';
+      if (task.status === 'downloading') label = 'Downloading';
+      if (task.status === 'cancelled') label = 'Cancelled';
+      if (task.status === 'failed') label = 'Failed';
+      statusTag.textContent = label;
     }
 
     const metaRow = el.querySelector('.queue-item-meta-row');

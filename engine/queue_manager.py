@@ -4,6 +4,7 @@ Coordinates concurrent download jobs, batch queues, status tracking,
 cancellation, retries, and WebSocket event broadcasts.
 """
 
+import os
 import time
 import uuid
 import threading
@@ -180,11 +181,23 @@ class QueueManager:
         with self._lock:
             return [self.tasks[tid].to_dict() for tid in self.task_order if tid in self.tasks]
 
+    def _cleanup_partial_files(self, task: DownloadTask):
+        try:
+            if task.output_dir and os.path.isdir(task.output_dir):
+                for fn in os.listdir(task.output_dir):
+                    if fn.endswith('.part') or '.temp' in fn:
+                        fp = os.path.join(task.output_dir, fn)
+                        if os.path.isfile(fp):
+                            os.remove(fp)
+        except Exception:
+            pass
+
     def cancel_task(self, task_id: str) -> bool:
         with self._lock:
             task = self.tasks.get(task_id)
             if task:
                 task.cancel()
+                self._cleanup_partial_files(task)
                 self._broadcast("task_updated", task)
                 return True
         return False
@@ -193,6 +206,7 @@ class QueueManager:
         with self._lock:
             task = self.tasks.get(task_id)
             if task and task.status in ("failed", "cancelled"):
+                self._cleanup_partial_files(task)
                 task.status = "queued"
                 task._cancelled = False
                 task.percent = 0.0
@@ -326,27 +340,11 @@ class QueueManager:
             else:
                 friendly = err_str
 
+            self._cleanup_partial_files(task)
             task.status = "failed"
             task.error_friendly = friendly
             task.error_technical = technical
             self._broadcast("task_failed", task)
-
-            # Record failure in history
-            history_manager.add_entry({
-                "id": task.id,
-                "title": task.title,
-                "url": task.url,
-                "platform": task.platform,
-                "filename": "",
-                "file_path": "",
-                "file_size": 0,
-                "file_size_str": "0 B",
-                "format_label": task.format_label,
-                "is_audio": task.is_audio,
-                "thumbnail": task.thumbnail,
-                "status": "failed",
-                "error": friendly
-            })
 
 
 queue_manager = QueueManager()
