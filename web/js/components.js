@@ -617,15 +617,16 @@ const Components = {
       }
       const selectedEntries = entries.filter((_, i) => selectedIndices.has(i));
       let formatId = 'best';
-      if (selectedQuality === '1080p') formatId = 'bestvideo[height<=1080]+bestaudio/best';
-      else if (selectedQuality === '720p') formatId = 'bestvideo[height<=720]+bestaudio/best';
-      else if (selectedQuality === '480p') formatId = 'bestvideo[height<=480]+bestaudio/best';
-      else if (isAudio) formatId = 'bestaudio/best';
+      if (selectedQuality === '2160p' || selectedQuality === '4k') formatId = '2160p';
+      else if (selectedQuality === '1080p') formatId = '1080p';
+      else if (selectedQuality === '720p') formatId = '720p';
+      else if (selectedQuality === '480p') formatId = '480p';
+      else if (isAudio) formatId = 'bestaudio';
 
       onDownloadSelected(data, selectedEntries, {
         qualityKey: selectedQuality,
         format_id: formatId,
-        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : selectedQuality.toUpperCase(),
+        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : (selectedQuality === 'best' ? 'Best Quality' : selectedQuality.toUpperCase()),
         is_audio: isAudio,
         audio_format: audioFormat
       });
@@ -660,11 +661,14 @@ const Components = {
       <div class="omni-playlist-quality-wrap">
         <label class="omni-sublabel">Select Download Quality Preset:</label>
         <div class="omni-quality-chips-grid">
-          <button class="omni-q-chip" data-quality="720p">
-            <span class="q-label">HD 720p</span>
+          <button class="omni-q-chip" data-quality="2160p">
+            <span class="q-label">4K 2160p</span>
           </button>
           <button class="omni-q-chip" data-quality="1080p">
             <span class="q-label">Full HD 1080p</span>
+          </button>
+          <button class="omni-q-chip" data-quality="720p">
+            <span class="q-label">HD 720p</span>
           </button>
           <button class="omni-q-chip active" data-quality="best">
             <span class="q-label">Best Auto</span>
@@ -762,9 +766,13 @@ const Components = {
     card.querySelector('#btn-download-batch-now').addEventListener('click', () => {
       if (selectedIndices.size === 0) return;
       const sel = items.filter((_, i) => selectedIndices.has(i));
+      let formatId = selectedQuality;
+      if (selectedQuality === 'audio_mp3') {
+        formatId = 'audio_mp3';
+      }
       onDownloadSelected(sel, {
-        format_id: selectedQuality === '1080p' ? 'bestvideo[height<=1080]+bestaudio/best' : (selectedQuality === '720p' ? 'bestvideo[height<=720]+bestaudio/best' : 'best'),
-        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : selectedQuality.toUpperCase(),
+        format_id: formatId,
+        format_label: isAudio ? `Audio (${audioFormat.toUpperCase()})` : (selectedQuality === 'best' ? 'Best Auto' : selectedQuality.toUpperCase()),
         is_audio: isAudio,
         audio_format: audioFormat
       });

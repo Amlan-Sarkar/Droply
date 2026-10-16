@@ -225,6 +225,10 @@ class DroplyApp {
       modeBtnAudio.classList.remove('active');
       document.getElementById('video-formats-section').style.display = 'block';
       document.getElementById('audio-formats-section').style.display = 'none';
+      const btnText = document.getElementById('btn-start-download-text');
+      if (btnText && (!window.DroplyAndroid || !window.DroplyAndroid.getClipboardText)) {
+        btnText.textContent = 'Download';
+      }
       if (this.currentMedia && this.currentMedia.formats && this.currentMedia.formats.length > 0) {
         this.selectedFormat = this.currentMedia.formats[0];
         const sizeEl = document.getElementById('omni-estimated-size');
@@ -238,6 +242,10 @@ class DroplyApp {
       modeBtnVideo.classList.remove('active');
       document.getElementById('video-formats-section').style.display = 'none';
       document.getElementById('audio-formats-section').style.display = 'block';
+      const btnText = document.getElementById('btn-start-download-text');
+      if (btnText && (!window.DroplyAndroid || !window.DroplyAndroid.getClipboardText)) {
+        btnText.textContent = 'Download';
+      }
       if (this.currentMedia && this.currentMedia.audio_formats && this.currentMedia.audio_formats.length > 0) {
         this.selectedFormat = this.currentMedia.audio_formats[0];
         const sizeEl = document.getElementById('omni-estimated-size');
@@ -357,6 +365,9 @@ class DroplyApp {
         if (card) card.remove();
         this.tasks = this.tasks.filter(t => t.id !== id);
         this.updateRecentDownloadsHeader();
+        if (this.tasks.length === 0) {
+          this.renderQueueList();
+        }
       }
     });
   }
@@ -847,7 +858,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.3';
+      const appVer = status.app_version || 'v1.3.4';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -981,7 +992,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.3';
+      if (curVerEl) curVerEl.textContent = 'v1.3.4';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -990,8 +1001,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.3';
-        const appLatest = info.app_latest || 'v1.3.3';
+        const appInst = info.app_installed || 'v1.3.4';
+        const appLatest = info.app_latest || 'v1.3.4';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1025,8 +1036,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.3.3';
-        newVerEl.textContent = 'v1.3.3';
+        curVerEl.textContent = 'v1.3.4';
+        newVerEl.textContent = 'v1.3.4';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can check the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1060,7 +1071,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.3'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.4'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';
@@ -1255,6 +1266,14 @@ class DroplyApp {
     api.on('queue_cleared', () => {
       this.tasks = (this.tasks || []).filter(t => t.status === 'queued' || t.status === 'downloading' || t.status === 'processing' || t.status === 'pending');
       this.renderQueueList();
+    });
+
+    api.on('task_removed', (payload) => {
+      const taskId = payload && payload.task ? payload.task.id : (payload ? payload.id : null);
+      if (taskId) {
+        this.tasks = (this.tasks || []).filter(t => t.id !== taskId);
+        this.renderQueueList();
+      }
     });
 
     api.on('task_failed', (payload) => {

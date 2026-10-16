@@ -94,6 +94,16 @@ def humanize_error(raw_err: str) -> Dict[str, str]:
 class YtDlpProvider(BaseProvider):
     def __init__(self):
         self.ffmpeg_path = self._locate_ffmpeg()
+        self.js_runtimes = self._locate_js_runtime()
+
+    def _locate_js_runtime(self) -> Dict[str, Any]:
+        node_path = shutil.which("node") or shutil.which("node.exe")
+        if node_path:
+            return {'node': {'path': node_path}}
+        deno_path = shutil.which("deno") or shutil.which("deno.exe")
+        if deno_path:
+            return {'deno': {'path': deno_path}}
+        return {}
 
     def _locate_ffmpeg(self) -> Optional[str]:
         binary_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
@@ -173,15 +183,12 @@ class YtDlpProvider(BaseProvider):
             'no_warnings': True,
             'extract_flat': 'in_playlist' if is_playlist else False,
             'skip_download': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['ios', 'android', 'web', 'mweb']
-                }
-            },
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
             }
         }
+        if self.js_runtimes:
+            opts['js_runtimes'] = self.js_runtimes
         if not is_playlist:
             opts['noplaylist'] = True
         if self.ffmpeg_path and os.path.exists(self.ffmpeg_path):
@@ -312,7 +319,7 @@ class YtDlpProvider(BaseProvider):
     def _parse_video_formats(self, raw_formats: List[Dict[str, Any]], duration: int) -> List[MediaFormat]:
         """
         Groups and deduplicates formats into clean, user-selectable resolutions:
-        4K (2160p), 1440p, 1080p, 720p, 480p, 360p, and Best.
+        4K (2160p), 1440p, 1080p, 720p, 480p, 360p, 240p, and Best Available.
         Only includes qualities that actually exist in the source stream.
         """
         resolutions_found = {} # height -> best format object or spec
@@ -330,19 +337,20 @@ class YtDlpProvider(BaseProvider):
             if h <= 0:
                 continue
 
-            # Check if this format is better than existing for this height
             filesize = f.get('filesize') or f.get('filesize_approx') or 0
-            tbr = f.get('tbr') or 0
+            tbr = f.get('tbr') or f.get('vbr') or 0
             if filesize == 0 and duration > 0 and tbr > 0:
-                filesize = int(tbr * 1024 * duration / 8)
+                # Include approximate audio stream overhead (128 kbps) for complete estimate
+                filesize = int((tbr + 128) * 1024 * duration / 8)
 
             ext = f.get('ext', 'mp4')
-            if h not in resolutions_found or (ext == 'mp4' and resolutions_found[h].get('ext') != 'mp4'):
+            # Prefer higher quality / known filesize or MP4 container
+            if h not in resolutions_found or filesize > resolutions_found[h].get('filesize', 0) or (ext == 'mp4' and resolutions_found[h].get('ext') != 'mp4'):
                 resolutions_found[h] = {
                     'format_id': f.get('format_id'),
                     'height': h,
                     'width': f.get('width', 0),
-                    'ext': 'mp4', # standard container target
+                    'ext': 'mp4',
                     'filesize': filesize,
                     'fps': f.get('fps'),
                     'vcodec': vcodec,
@@ -352,7 +360,7 @@ class YtDlpProvider(BaseProvider):
         video_formats: List[MediaFormat] = []
 
         # Target standard bucket heights in descending order
-        standard_targets = [2160, 1440, 1080, 720, 480, 360, 240]
+        standard_targets = [2160, 1440, 1080, 720, 480, 360, 240, 144]
         used_heights = set()
 
         for target_h in standard_targets:
@@ -379,10 +387,11 @@ class YtDlpProvider(BaseProvider):
                     tag = "720p HD"
 
                 fs = item['filesize']
-                fs_str = format_bytes(fs) if fs > 0 else "Best Quality"
+                fs_str = format_bytes(fs) if fs > 0 else "Adaptive"
 
-                # Selector instructs yt-dlp to grab best video up to this height + best audio
-                selector = f"bestvideo[height<={matched_h}]+bestaudio/best[height<={matched_h}]/best"
+                # Selector instructs yt-dlp to grab best video up to this height + best audio,
+                # with fallback to lower quality audio or silent video so merging never blocks resolution
+                selector = f"bestvideo[height<={matched_h}]+bestaudio/bestvideo[height<={matched_h}]+ba/best[height<={matched_h}]/bestvideo[height<={matched_h}]/best"
 
                 video_formats.append(MediaFormat(
                     format_id=selector,
@@ -400,12 +409,12 @@ class YtDlpProvider(BaseProvider):
                     raw_info=item
                 ))
 
-        # Add remaining unique heights if any
+        # Add remaining unique heights if any (e.g. non-standard aspect ratios, vertical shorts)
         for h in sorted(resolutions_found.keys(), reverse=True):
             if h not in used_heights and h >= 144:
                 item = resolutions_found[h]
                 fs = item['filesize']
-                selector = f"bestvideo[height<={h}]+bestaudio/best[height<={h}]/best"
+                selector = f"bestvideo[height<={h}]+bestaudio/bestvideo[height<={h}]+ba/best[height<={h}]/bestvideo[height<={h}]/best"
                 video_formats.append(MediaFormat(
                     format_id=selector,
                     ext="mp4",
@@ -422,7 +431,7 @@ class YtDlpProvider(BaseProvider):
         # Always add a Best Quality option at top if formats exist or if source has video
         if video_formats:
             video_formats.insert(0, MediaFormat(
-                format_id="bestvideo+bestaudio/best",
+                format_id="bestvideo+bestaudio/bestvideo+ba/best[ext=mp4]/bestvideo/best",
                 ext="mp4",
                 resolution="Maximum Quality",
                 label="Best Available Quality (Recommended)",
@@ -449,23 +458,46 @@ class YtDlpProvider(BaseProvider):
 
     def _parse_audio_formats(self, raw_formats: List[Dict[str, Any]], duration: int) -> List[MediaFormat]:
         """
-        Creates audio download format options: MP3, M4A, WAV, AAC.
+        Creates audio download format options: MP3, M4A, WAV, Opus.
+        Computes accurate estimated file sizes from audio stream bitrates and video duration.
         """
+        # Find best source audio stream bitrate and filesize
+        best_audio_fs = 0
+        best_audio_tbr = 0
+        for f in raw_formats:
+            if f.get('vcodec') == 'none' and f.get('acodec') != 'none':
+                fs = f.get('filesize') or f.get('filesize_approx') or 0
+                tbr = f.get('abr') or f.get('tbr') or 0
+                if fs > best_audio_fs:
+                    best_audio_fs = fs
+                if tbr > best_audio_tbr:
+                    best_audio_tbr = tbr
+
+        if best_audio_fs == 0 and duration > 0:
+            rate = best_audio_tbr if best_audio_tbr > 0 else 128
+            best_audio_fs = int(rate * 1024 * duration / 8)
+
+        # Bitrate estimates based on codec and duration
+        mp3_fs = int(320 * 1024 * duration / 8) if duration > 0 else best_audio_fs
+        m4a_fs = best_audio_fs if best_audio_fs > 0 else (int(160 * 1024 * duration / 8) if duration > 0 else 0)
+        opus_fs = best_audio_fs if best_audio_fs > 0 else (int(160 * 1024 * duration / 8) if duration > 0 else 0)
+        wav_fs = int(1411.2 * 1024 * duration / 8) if duration > 0 else 0
+
         audio_options = [
-            ("mp3", "MP3 Audio (320 kbps High Quality)", "320 kbps"),
-            ("m4a", "M4A Audio (Apple / AAC Quality)", "Source Audio"),
-            ("wav", "WAV Audio (Uncompressed Lossless)", "Lossless PCM"),
-            ("opus", "Opus Audio (Best Web Codec)", "Source Bitrate"),
+            ("mp3", "MP3 Audio (320 kbps High Quality)", mp3_fs, f"320 kbps • ~{format_bytes(mp3_fs)}" if mp3_fs > 0 else "320 kbps High Quality"),
+            ("m4a", "M4A Audio (Apple / AAC Quality)", m4a_fs, f"Source AAC • ~{format_bytes(m4a_fs)}" if m4a_fs > 0 else "Source Audio"),
+            ("wav", "WAV Audio (Uncompressed Lossless)", wav_fs, f"Lossless PCM • ~{format_bytes(wav_fs)}" if wav_fs > 0 else "Lossless PCM"),
+            ("opus", "Opus Audio (Best Web Codec)", opus_fs, f"Source Bitrate • ~{format_bytes(opus_fs)}" if opus_fs > 0 else "Source Bitrate"),
         ]
 
         result = []
-        for codec, label, note in audio_options:
+        for codec, label, fs, note in audio_options:
             result.append(MediaFormat(
                 format_id=f"audio_{codec}",
                 ext=codec,
                 resolution="Audio",
                 label=label,
-                filesize_approx=0,
+                filesize_approx=fs,
                 filesize_str=note,
                 has_video=False,
                 has_audio=True,
@@ -539,15 +571,12 @@ class YtDlpProvider(BaseProvider):
             'noplaylist': True,
             'progress_hooks': [ytdl_hook],
             'restrictfilenames': False,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['ios', 'android', 'web', 'mweb']
-                }
-            },
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
             }
         }
+        if self.js_runtimes:
+            ydl_opts['js_runtimes'] = self.js_runtimes
         if sys.platform == 'win32':
             ydl_opts['windowsfilenames'] = True
 
@@ -557,7 +586,8 @@ class YtDlpProvider(BaseProvider):
 
         if is_audio:
             target_codec = audio_format.lower() if audio_format else "mp3"
-            ydl_opts['format'] = 'bestaudio/best'
+            # Prioritize genuine audio-only streams so full videos are not downloaded unnecessarily
+            ydl_opts['format'] = 'bestaudio/bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best'
             if has_ffmpeg:
                 ydl_opts['postprocessors'] = [{
                     'key': 'FFmpegExtractAudio',
@@ -569,36 +599,36 @@ class YtDlpProvider(BaseProvider):
             f_norm = (format_id or '').strip().lower()
             if not f_norm or f_norm in ('best', 'auto', 'default'):
                 if has_ffmpeg:
-                    ydl_opts['format'] = 'bestvideo+bestaudio/bestvideo+bestaudio/best'
+                    ydl_opts['format'] = 'bestvideo+bestaudio/bestvideo+ba/best[ext=mp4]/bestvideo/best'
                     ydl_opts['merge_output_format'] = 'mp4'
                 else:
                     ydl_opts['format'] = 'best[ext=mp4]/best/bestvideo+bestaudio'
             elif f_norm in ('2160p', '4k'):
-                ydl_opts['format'] = 'bestvideo[height<=2160]+bestaudio/best[height<=2160]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=2160]/best'
+                ydl_opts['format'] = 'bestvideo[height<=2160]+bestaudio/bestvideo[height<=2160]+ba/best[height<=2160]/bestvideo[height<=2160]/best' if has_ffmpeg else 'best[height<=2160]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             elif f_norm in ('1440p', '2k'):
-                ydl_opts['format'] = 'bestvideo[height<=1440]+bestaudio/best[height<=1440]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=1440]/best'
+                ydl_opts['format'] = 'bestvideo[height<=1440]+bestaudio/bestvideo[height<=1440]+ba/best[height<=1440]/bestvideo[height<=1440]/best' if has_ffmpeg else 'best[height<=1440]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             elif f_norm == '1080p':
-                ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/best[height<=1080]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=1080]/best'
+                ydl_opts['format'] = 'bestvideo[height<=1080]+bestaudio/bestvideo[height<=1080]+ba/best[height<=1080]/bestvideo[height<=1080]/best' if has_ffmpeg else 'best[height<=1080]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             elif f_norm == '720p':
-                ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/best[height<=720]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=720]/best'
+                ydl_opts['format'] = 'bestvideo[height<=720]+bestaudio/bestvideo[height<=720]+ba/best[height<=720]/bestvideo[height<=720]/best' if has_ffmpeg else 'best[height<=720]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             elif f_norm == '480p':
-                ydl_opts['format'] = 'bestvideo[height<=480]+bestaudio/best[height<=480]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=480]/best'
+                ydl_opts['format'] = 'bestvideo[height<=480]+bestaudio/bestvideo[height<=480]+ba/best[height<=480]/bestvideo[height<=480]/best' if has_ffmpeg else 'best[height<=480]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             elif f_norm == '360p':
-                ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/best[height<=360]/bestvideo+bestaudio/best' if has_ffmpeg else 'best[height<=360]/best'
+                ydl_opts['format'] = 'bestvideo[height<=360]+bestaudio/bestvideo[height<=360]+ba/best[height<=360]/bestvideo[height<=360]/best' if has_ffmpeg else 'best[height<=360]/best'
                 if has_ffmpeg:
                     ydl_opts['merge_output_format'] = 'mp4'
             else:
-                # Custom or selector string
+                # Custom or selector string (e.g. from single download format picker)
                 if has_ffmpeg:
                     if '+' in format_id and not format_id.endswith('/best'):
                         ydl_opts['format'] = f"{format_id}/bestvideo+bestaudio/best"
