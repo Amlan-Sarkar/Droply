@@ -6,7 +6,7 @@
 
 *A local-first video, audio, and social media downloader for Windows, with an experimental Android edition.*
 
-*Download videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites — with live progress and speed tracking.*
+*Download Videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites at full quality — with live progress and speed tracking.*
 
 [![Latest Release](https://img.shields.io/badge/Release-v1.3.5-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
