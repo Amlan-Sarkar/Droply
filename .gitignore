@@ -21,6 +21,7 @@ venv/
 # IDE & OS files
 .vscode/
 .idea/
+pyrightconfig.json
 Thumbs.db
 Desktop.ini
 
