@@ -22,9 +22,14 @@ android {
 
         python {
             version "3.11"
+            def pythonEnv = System.getenv("PYTHON_BINARY_PATH") ?: (System.getenv("pythonLocation") ? "${System.getenv('pythonLocation')}/bin/python3" : null)
             def localPy = file("C:/Users/Amlon/AppData/Local/Programs/Python/Python311/python.exe")
-            if (localPy.exists()) {
+            if (pythonEnv != null && file(pythonEnv).exists()) {
+                buildPython pythonEnv.replace('\\', '/')
+            } else if (localPy.exists()) {
                 buildPython localPy.absolutePath.replace('\\', '/')
+            } else {
+                buildPython "python3"
             }
             pip {
                 install "yt-dlp>=2024.8.6"
