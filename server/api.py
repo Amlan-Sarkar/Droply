@@ -15,6 +15,7 @@ import subprocess
 import urllib.request
 from pathlib import Path
 from typing import Dict, Any, List, Optional
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -36,8 +37,8 @@ except ImportError:
 
 def _get_ytdlp_version() -> str:
     try:
-        import yt_dlp.version
-        return getattr(yt_dlp.version, "__version__", None) or getattr(yt_dlp, "__version__", "installed")
+        import yt_dlp.version as ytdlp_ver
+        return getattr(ytdlp_ver, "__version__", None) or getattr(yt_dlp, "__version__", "installed")
     except Exception:
         return getattr(yt_dlp, "__version__", "installed")
 
@@ -55,23 +56,13 @@ from engine.file_manager import (
 )
 
 
-app = FastAPI(title="Droply API", version="1.0.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # Active WebSocket connections
 active_connections: List[WebSocket] = []
 loop: Optional[asyncio.AbstractEventLoop] = None
 
 
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     global loop
     loop = asyncio.get_running_loop()
 
@@ -81,6 +72,18 @@ async def startup_event():
             asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
 
     queue_manager.add_listener(on_queue_event)
+    yield
+
+
+app = FastAPI(title="Droply API", version="1.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def broadcast_ws(message: Dict[str, Any]):
@@ -826,7 +829,7 @@ async def check_updates_endpoint():
                 ver = data.get("info", {}).get("version")
                 if ver:
                     clean_ver = str(ver).strip().lstrip('v')
-                    clean_curr = str(current_ytdlp_version).strip().lstrip('v')
+                    clean_curr = current_ytdlp_version.strip().lstrip('v')
                     return ver, (clean_ver == clean_curr)
         except Exception:
             pass
@@ -930,7 +933,7 @@ async def update_ytdlp_endpoint():
                 return {"status": "error", "message": "Could not verify latest yt-dlp version from PyPI."}
 
             clean_latest = latest_ver.lstrip('v')
-            clean_curr = str(current_ver).strip().lstrip('v')
+            clean_curr = current_ver.strip().lstrip('v')
 
             if clean_latest == clean_curr:
                 return {
@@ -982,7 +985,7 @@ async def update_ytdlp_endpoint():
                 pass
             importlib.reload(yt_dlp)
             new_ver = _get_ytdlp_version()
-            clean_new = str(new_ver).strip().lstrip('v')
+            clean_new = new_ver.strip().lstrip('v')
 
             if clean_curr == clean_new or clean_latest == clean_new:
                 return {
