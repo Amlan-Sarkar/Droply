@@ -28,7 +28,7 @@ _engine_updates = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser
 if os.path.isdir(_engine_updates) and _engine_updates not in sys.path:
     sys.path.insert(0, _engine_updates)
 
-import yt_dlp
+import yt_dlp  # type: ignore
 try:
     import imageio_ffmpeg
 except ImportError:
@@ -37,7 +37,7 @@ except ImportError:
 
 def _get_ytdlp_version() -> str:
     try:
-        import yt_dlp.version as ytdlp_ver
+        import yt_dlp.version as ytdlp_ver  # type: ignore
         return getattr(ytdlp_ver, "__version__", None) or getattr(yt_dlp, "__version__", "installed")
     except Exception:
         return getattr(yt_dlp, "__version__", "installed")
@@ -979,7 +979,7 @@ async def update_ytdlp_endpoint():
 
             importlib.invalidate_caches()
             try:
-                import yt_dlp.version
+                import yt_dlp.version  # type: ignore
                 importlib.reload(yt_dlp.version)
             except Exception:
                 pass
