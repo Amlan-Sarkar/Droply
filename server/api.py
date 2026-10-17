@@ -50,7 +50,8 @@ from engine.file_manager import (
     open_folder,
     open_in_folder,
     open_file,
-    get_default_download_dir
+    get_default_download_dir,
+    resolve_existing_path
 )
 
 
