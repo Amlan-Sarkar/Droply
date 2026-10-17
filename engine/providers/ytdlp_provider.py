@@ -13,7 +13,16 @@ from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
 from urllib.parse import urlparse
 
-import yt_dlp
+_yt_dlp = None
+
+def get_yt_dlp():
+    """Lazy loader for yt-dlp to dramatically accelerate application cold boot."""
+    global _yt_dlp
+    if _yt_dlp is None:
+        import yt_dlp
+        _yt_dlp = yt_dlp
+    return _yt_dlp
+
 try:
     import imageio_ffmpeg
 except ImportError:
@@ -250,9 +259,10 @@ class YtDlpProvider(BaseProvider):
                 return str(pref).lower()
             # Auto-probe mode: find first installed browser that can extract cookies
             candidates = ['firefox', 'brave', 'vivaldi', 'edge', 'chrome', 'opera']
+            ytdlp_mod = get_yt_dlp()
             for b in candidates:
                 try:
-                    probe_ydl = yt_dlp.YoutubeDL({'cookiesfrombrowser': (b,), 'quiet': True})
+                    probe_ydl = ytdlp_mod.YoutubeDL({'cookiesfrombrowser': (b,), 'quiet': True})
                     if len(list(probe_ydl.cookiejar)) > 0:
                         return b
                 except Exception:
@@ -298,11 +308,12 @@ class YtDlpProvider(BaseProvider):
         opts = self._get_ydl_opts(is_playlist=is_playlist)
         info = None
         last_error = None
+        ytdlp_mod = get_yt_dlp()
 
         # Robust extraction with automatic 1-second retry on transient 403 or handshake stalls
         for attempt in range(2):
             try:
-                with yt_dlp.YoutubeDL(opts) as ydl:
+                with ytdlp_mod.YoutubeDL(opts) as ydl:
                     info = ydl.extract_info(url, download=False)
                 if info:
                     break
@@ -317,7 +328,7 @@ class YtDlpProvider(BaseProvider):
             if not is_playlist and ("list=" in url or "playlist" in url):
                 try:
                     p_opts = self._get_ydl_opts(is_playlist=True)
-                    with yt_dlp.YoutubeDL(p_opts) as p_ydl:
+                    with ytdlp_mod.YoutubeDL(p_opts) as p_ydl:
                         info = p_ydl.extract_info(url, download=False)
                 except Exception:
                     err_dict = humanize_error(str(last_error))
@@ -853,8 +864,9 @@ class YtDlpProvider(BaseProvider):
                 else:
                     ydl_opts['format'] = f"{format_id}/best[ext=mp4]/best/bestvideo+bestaudio"
 
+        ytdlp_mod = get_yt_dlp()
         try:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            with ytdlp_mod.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
         except Exception as e:
             # Clean up partial files from aborted or errored download

@@ -147,6 +147,26 @@ def run_server(host: str, port: int):
         sys.stderr.write(f"DroplyServer exception: {e}\n")
 
 
+try:
+    import pyi_splash  # type: ignore
+except ImportError:
+    pyi_splash = None
+
+
+def close_splash():
+    """Safely dismisses the PyInstaller splash screen as soon as the interface is ready."""
+    global pyi_splash
+    if pyi_splash is not None:
+        try:
+            if hasattr(pyi_splash, "is_alive") and pyi_splash.is_alive():
+                pyi_splash.close()
+            elif hasattr(pyi_splash, "close"):
+                pyi_splash.close()
+        except Exception:
+            pass
+        pyi_splash = None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Droply - Universal Local Media Downloader")
     parser.add_argument("--host", default="127.0.0.1", help="Host interface (default: 127.0.0.1)")
@@ -174,6 +194,16 @@ def main():
     )
     server_thread.start()
 
+    # Launch non-essential background tasks in parallel without delaying the UI transition
+    def _prewarm_background_tasks():
+        try:
+            from engine.providers.ytdlp_provider import get_yt_dlp
+            get_yt_dlp()
+        except Exception:
+            pass
+
+    threading.Thread(target=_prewarm_background_tasks, daemon=True, name="DroplyEnginePrewarm").start()
+
     # Wait for server to come online
     server_ready = False
     for _ in range(80):
@@ -186,6 +216,7 @@ def main():
         time.sleep(0.1)
 
     if args.headless:
+        close_splash()
         print("Server running in headless mode. Press Ctrl+C to stop.")
         try:
             while True:
@@ -195,6 +226,7 @@ def main():
             sys.exit(0)
 
     if args.web:
+        close_splash()
         print(f"Opening browser at: {app_url}")
         webbrowser.open(app_url)
         try:
@@ -220,6 +252,19 @@ def main():
             min_size=(920, 640),
             text_select=True,
         )
+
+        # Transition from splash to main interface as soon as essential UI components are ready
+        def on_window_loaded():
+            close_splash()
+
+        window.events.loaded += on_window_loaded
+
+        # Fallback safety timer: ensure splash screen never lingers if window load event is delayed
+        def splash_safety_timer():
+            time.sleep(2.0)
+            close_splash()
+
+        threading.Thread(target=splash_safety_timer, daemon=True, name="SplashSafetyTimer").start()
 
         def set_win32_window_icon():
             """Ensures the Droply icon is set on the Win32 window handle and taskbar."""
@@ -257,8 +302,10 @@ def main():
             webview.start(gui="edgechromium", icon=icon_path)
         except Exception:
             webview.start(icon=icon_path)
+        close_splash()
         print("Desktop application window closed.")
     except Exception as e:
+        close_splash()
         print(f"Native window encountered: {e}. Falling back to default browser...")
         webbrowser.open(app_url)
         try:
