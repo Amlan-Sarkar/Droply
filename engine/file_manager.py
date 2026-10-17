@@ -145,13 +145,13 @@ def open_in_folder(file_path: str) -> bool:
         real_path = resolve_existing_path(file_path)
         if real_path:
             if sys.platform == "win32":
-                subprocess.Popen(f'explorer.exe /select,"{real_path}"')
+                subprocess.Popen(["explorer.exe", f"/select,{real_path}"], shell=False)
                 return True
             elif sys.platform == "darwin":
-                subprocess.Popen(["open", "-R", real_path])
+                subprocess.Popen(["open", "-R", real_path], shell=False)
                 return True
             else:
-                subprocess.Popen(["xdg-open", os.path.dirname(real_path)])
+                subprocess.Popen(["xdg-open", os.path.dirname(real_path)], shell=False)
                 return True
 
         # Fallback to containing folder

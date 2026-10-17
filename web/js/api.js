@@ -10,6 +10,7 @@ class DroplyAPI {
       origin = 'http://127.0.0.1:8765';
     }
     this.baseUrl = origin;
+    this.authToken = window.__DROPLY_AUTH_TOKEN__ || (document.querySelector('meta[name="droply-auth"]')?.content) || '';
     this.ws = null;
     this.listeners = {};
     this.activeMobileTask = null;
@@ -222,7 +223,9 @@ class DroplyAPI {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/events`;
+    const host = window.location.host || '127.0.0.1:8765';
+    const tokenQuery = this.authToken ? `?token=${encodeURIComponent(this.authToken)}` : '';
+    const wsUrl = `${protocol}//${host}/ws/events${tokenQuery}`;
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -308,8 +311,27 @@ class DroplyAPI {
 
   // ---------------- REST & NATIVE APIS ----------------
   async request(endpoint, options = {}, retries = 1) {
+    if (!this.authToken) {
+      this.authToken = window.__DROPLY_AUTH_TOKEN__ || (document.querySelector('meta[name="droply-auth"]')?.content) || '';
+      if (!this.authToken && !endpoint.includes('/api/auth/token')) {
+        try {
+          const tResp = await fetch(`${this.baseUrl}/api/auth/token`);
+          if (tResp.ok) {
+            const tData = await tResp.json();
+            if (tData.token) {
+              this.authToken = tData.token;
+              window.__DROPLY_AUTH_TOKEN__ = this.authToken;
+            }
+          }
+        } catch (e) {}
+      }
+    }
     const url = `${this.baseUrl}${endpoint}`;
-    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(this.authToken ? { 'X-Auth-Token': this.authToken } : {}),
+      ...(options.headers || {})
+    };
     let resp;
     try {
       resp = await fetch(url, { ...options, headers });
@@ -325,6 +347,21 @@ class DroplyAPI {
       };
       throw err;
     }
+
+    if (resp.status === 401 && retries > 0) {
+      try {
+        const tResp = await fetch(`${this.baseUrl}/api/auth/token`);
+        if (tResp.ok) {
+          const tData = await tResp.json();
+          if (tData.token) {
+            this.authToken = tData.token;
+            window.__DROPLY_AUTH_TOKEN__ = this.authToken;
+            return this.request(endpoint, options, retries - 1);
+          }
+        }
+      } catch (e) {}
+    }
+
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) {
       const err = new Error(data.detail || data.error_friendly || 'API Request failed');

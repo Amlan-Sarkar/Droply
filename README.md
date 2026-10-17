@@ -325,14 +325,15 @@ Droply combines a local interface with its media extraction engine and supportin
 
 Droply is an open-source utility designed for personal archival, educational, and authorized fair-use purposes.
 
-### Local-first by design
+### 🛡️ Security & Privacy Architecture
 
-- **Local execution:** Media extraction and download operations execute locally on your device.
-- **No built-in telemetry:** Contains no built-in telemetry or analytics and collects no personal data.
-- **No third-party proxy routing:** Normal download operations do not route traffic through third-party proxy servers.
-- **No external tracking:** Droply does not include external tracking.
-
-*Note: Downloading media and checking for updates still require network requests to the relevant websites or update sources.*
+- **Localhost-Only Binding:** Backend server strictly binds to `127.0.0.1`, ignoring external network interfaces.
+- **Dynamic Authentication Token:** All `/api/*` and WebSocket endpoints require a cryptographic `X-Auth-Token` generated at startup to prevent unauthorized local script or browser tab access.
+- **Cross-Site Attack Protection:** Requests with external `Origin` headers or `Sec-Fetch-Site: cross-site` are blocked with `403 Forbidden`.
+- **Command Injection Prevention:** File launch and directory inspection calls use `os.startfile()` and token-safe `explorer.exe` process arguments without shell expansion (`shell=False`).
+- **Path Traversal Guards:** Strict containment checks ensure all disk operations and file retrieval requests are confined within user-authorized directories.
+- **Input Bounding:** Hard limits on URL lengths (2048 chars), directory paths (1000 chars), and playlist items (500 items ceiling) protect system memory against denial-of-service abuse.
+- **Zero Telemetry:** No third-party analytics, ads, or external cloud telemetry requests.
 
 ### Copyright and platform terms
 

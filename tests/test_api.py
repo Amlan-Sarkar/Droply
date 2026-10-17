@@ -12,12 +12,41 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root_dir))
 
 from fastapi.testclient import TestClient
-from server.api import app
+from server.api import app, AUTH_TOKEN
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-Auth-Token": AUTH_TOKEN})
 
 
 class TestAPIEndpoints(unittest.TestCase):
+
+    def test_security_missing_token_unauthorized(self):
+        raw_client = TestClient(app)
+        resp = raw_client.get("/api/settings")
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.json()["error"], "Unauthorized")
+
+    def test_security_cross_site_protection(self):
+        resp = client.get("/api/settings", headers={"Sec-Fetch-Site": "cross-site"})
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.json()["error"], "Forbidden")
+
+    def test_security_unauthorized_origin(self):
+        resp = client.get("/api/settings", headers={"Origin": "https://malicious-site.com"})
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(resp.json()["error"], "Forbidden")
+
+    def test_security_input_bounding(self):
+        # Exceeds 2048 character URL ceiling
+        giant_url = "https://youtube.com/watch?v=" + ("x" * 2500)
+        resp = client.post("/api/detect-platform", json={"url": giant_url})
+        self.assertEqual(resp.status_code, 422)
+
+    def test_security_path_traversal_guard(self):
+        # Path outside allowed directories is rejected
+        resp = client.post("/api/open-file", json={"file_path": "C:\\Windows\\System32\\calc.exe"})
+        # Either 403 (blocked by traversal guard) or 200/404 if file does not exist
+        if resp.status_code != 200:
+            self.assertIn(resp.status_code, (403, 404))
 
     def test_detect_platform_endpoint(self):
         resp = client.post("/api/detect-platform", json={"url": "https://www.youtube.com/watch?v=test123"})

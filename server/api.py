@@ -8,6 +8,7 @@ import re
 import sys
 import time
 import json
+import secrets
 import asyncio
 import threading
 import tempfile
@@ -16,12 +17,12 @@ import urllib.request
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 
 # Priority import path for self-updated yt-dlp core engine
 _engine_updates = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply", "engine_updates")
@@ -56,6 +57,9 @@ from engine.file_manager import (
 )
 
 
+# Cryptographic dynamic session authentication token
+AUTH_TOKEN = secrets.token_hex(24)
+
 # Active WebSocket connections
 active_connections: List[WebSocket] = []
 loop: Optional[asyncio.AbstractEventLoop] = None
@@ -78,13 +82,70 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Droply API", version="1.0.0", lifespan=lifespan)
 
+# Restrict CORS to localhost and local webview origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://127.0.0.1:8765",
+        "http://localhost:8765",
+        "http://127.0.0.1",
+        "http://localhost",
+        "null",
+    ],
+    allow_origin_regex=r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def security_and_auth_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # 1. Cross-Site Attack Protection (Sec-Fetch-Site check)
+    sec_fetch = request.headers.get("sec-fetch-site", "").lower()
+    if sec_fetch == "cross-site":
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"error": "Forbidden", "detail": "Cross-site requests prohibited."}
+        )
+
+    # 2. Origin Verification: block requests from external websites
+    origin = request.headers.get("origin")
+    if origin:
+        origin_lower = origin.lower()
+        is_local = (
+            origin_lower.startswith("http://127.0.0.1") or
+            origin_lower.startswith("http://localhost") or
+            origin_lower == "null" or
+            origin_lower.startswith("file://")
+        )
+        if not is_local:
+            return JSONResponse(
+                status_code=status.HTTP_403_FORBIDDEN,
+                content={"error": "Forbidden", "detail": f"Origin '{origin}' is not authorized."}
+            )
+
+    # 3. Dynamic Authentication Token verification for /api/* routes
+    public_paths = (
+        "/api/auth/token",
+        "/api/system/status-public",
+        "/docs",
+        "/openapi.json",
+        "/favicon.ico",
+        "/",
+    )
+    if path.startswith("/api/") and path not in public_paths:
+        token = request.headers.get("x-auth-token") or request.query_params.get("token")
+        if not token or not secrets.compare_digest(token, AUTH_TOKEN):
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"error": "Unauthorized", "detail": "Missing or invalid X-Auth-Token."}
+            )
+
+    response = await call_next(request)
+    return response
 
 
 async def broadcast_ws(message: Dict[str, Any]):
@@ -106,6 +167,10 @@ async def broadcast_ws(message: Dict[str, Any]):
 
 @app.websocket("/ws/events")
 async def websocket_endpoint(websocket: WebSocket):
+    token = websocket.query_params.get("token") or websocket.headers.get("x-auth-token")
+    if not token or not secrets.compare_digest(token, AUTH_TOKEN):
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
     await websocket.accept()
     async with _ws_lock:
         active_connections.append(websocket)
@@ -132,40 +197,40 @@ async def websocket_endpoint(websocket: WebSocket):
 # ---------------- API REQUEST MODELS ----------------
 
 class DetectRequest(BaseModel):
-    url: str
+    url: str = Field(..., max_length=2048)
 
 class AnalyzeRequest(BaseModel):
-    url: str
+    url: str = Field(..., max_length=2048)
 
 class DownloadRequest(BaseModel):
-    url: str
-    format_id: str = "bestvideo+bestaudio/best"
-    format_label: str = "Best Quality"
+    url: str = Field(..., max_length=2048)
+    format_id: str = Field("bestvideo+bestaudio/best", max_length=200)
+    format_label: str = Field("Best Quality", max_length=200)
     is_audio: bool = False
-    audio_format: str = "mp3"
-    output_dir: Optional[str] = None
-    title: Optional[str] = None
-    thumbnail: Optional[str] = None
+    audio_format: str = Field("mp3", max_length=50)
+    output_dir: Optional[str] = Field(None, max_length=1000)
+    title: Optional[str] = Field(None, max_length=500)
+    thumbnail: Optional[str] = Field(None, max_length=2048)
 
 class BatchParseRequest(BaseModel):
-    text: str
+    text: str = Field(..., max_length=50000)
 
 class BatchEnqueueRequest(BaseModel):
-    urls: List[str]
+    urls: List[str] = Field(..., max_length=500)
     is_audio: bool = False
-    format_id: str = "bestvideo+bestaudio/best"
-    format_label: str = "Best Quality"
-    audio_format: str = "mp3"
-    output_dir: Optional[str] = None
-    playlist_folder: Optional[str] = None
-    items: Optional[List[Dict[str, Any]]] = None
+    format_id: str = Field("bestvideo+bestaudio/best", max_length=200)
+    format_label: str = Field("Best Quality", max_length=200)
+    audio_format: str = Field("mp3", max_length=50)
+    output_dir: Optional[str] = Field(None, max_length=1000)
+    playlist_folder: Optional[str] = Field(None, max_length=200)
+    items: Optional[List[Dict[str, Any]]] = Field(None, max_length=500)
 
 class PathRequest(BaseModel):
-    path: Optional[str] = None
+    path: Optional[str] = Field(None, max_length=1000)
 
 class FileRequest(BaseModel):
-    file_path: Optional[str] = ""
-    task_id: Optional[str] = None
+    file_path: Optional[str] = Field("", max_length=1000)
+    task_id: Optional[str] = Field(None, max_length=100)
 
 class SettingsUpdateRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = None
@@ -508,10 +573,44 @@ def _resolve_request_file(file_path: Optional[str], task_id: Optional[str] = Non
     return target if (target and os.path.exists(target)) else None
 
 
+def is_safe_disk_path(candidate_path: str) -> bool:
+    """Path Traversal Guard: Ensures file paths cannot traverse outside permitted user directories."""
+    if not candidate_path:
+        return False
+    try:
+        resolved = os.path.realpath(os.path.abspath(candidate_path))
+        download_dir = os.path.realpath(os.path.abspath(settings_manager.get("download_dir", get_default_download_dir())))
+        default_dir = os.path.realpath(os.path.abspath(get_default_download_dir()))
+        temp_dir = os.path.realpath(os.path.abspath(tempfile.gettempdir()))
+        dot_droply = os.path.realpath(os.path.abspath(str(Path.home() / ".droply")))
+        localappdata = os.path.realpath(os.path.abspath(os.environ.get("LOCALAPPDATA", str(Path.home()))))
+
+        allowed_prefixes = [download_dir, default_dir, temp_dir, dot_droply, localappdata]
+
+        for task in queue_manager.get_all_tasks():
+            if task.get("file_path"):
+                allowed_prefixes.append(os.path.realpath(os.path.abspath(task["file_path"])))
+        for record in history_manager.get_all():
+            if record.get("file_path"):
+                allowed_prefixes.append(os.path.realpath(os.path.abspath(record["file_path"])))
+
+        for prefix in allowed_prefixes:
+            try:
+                if resolved == prefix or os.path.commonpath([resolved, prefix]) == prefix:
+                    return True
+            except ValueError:
+                continue
+        return False
+    except Exception:
+        return False
+
+
 @app.post("/api/reveal-file")
 async def api_reveal_file(req: FileRequest):
     resolved = _resolve_request_file(req.file_path, req.task_id)
     if resolved:
+        if not is_safe_disk_path(resolved):
+            raise HTTPException(status_code=403, detail="Path traversal detected: Access denied.")
         success = open_in_folder(resolved)
         return {"success": success}
     folder = settings_manager.get("download_dir", get_default_download_dir())
@@ -523,6 +622,8 @@ async def api_reveal_file(req: FileRequest):
 async def api_open_file(req: FileRequest):
     resolved = _resolve_request_file(req.file_path, req.task_id)
     if resolved:
+        if not is_safe_disk_path(resolved):
+            raise HTTPException(status_code=403, detail="Path traversal detected: Access denied.")
         success = open_file(resolved)
         if not success:
             success = open_in_folder(resolved)
@@ -592,8 +693,18 @@ async def browse_cookie_file():
     return {"cookie_file": None, "updated": False}
 
 
-class CookieUploadRequest(BaseModel):
-    content: str
+@app.get("/api/auth/token")
+async def get_session_token(request: Request):
+    """Provides the active session token only to authorized local origins."""
+    sec_fetch = request.headers.get("sec-fetch-site", "").lower()
+    if sec_fetch == "cross-site":
+        raise HTTPException(status_code=403, detail="Cross-site token extraction prohibited.")
+    origin = request.headers.get("origin")
+    if origin:
+        origin_lower = origin.lower()
+        if not (origin_lower.startswith("http://127.0.0.1") or origin_lower.startswith("http://localhost") or origin_lower == "null" or origin_lower.startswith("file://")):
+            raise HTTPException(status_code=403, detail="Origin not authorized.")
+    return {"token": AUTH_TOKEN}
 
 
 @app.get("/api/auth/browsers")
@@ -647,6 +758,10 @@ async def get_available_browsers():
         }
 
     return await loop.run_in_executor(None, _probe)
+
+
+class CookieUploadRequest(BaseModel):
+    content: str = Field(..., max_length=5000000)
 
 
 @app.post("/api/auth/cookies/upload")
@@ -1204,7 +1319,11 @@ if web_dir and web_dir.exists():
 
     @app.get("/")
     async def index_page():
-        return FileResponse(str(web_dir / "index.html"))
+        html_file = web_dir / "index.html"
+        html = html_file.read_text(encoding="utf-8")
+        injected = f'<meta name="droply-auth" content="{AUTH_TOKEN}">\n  <script>window.__DROPLY_AUTH_TOKEN__="{AUTH_TOKEN}";</script>\n</head>'
+        html = html.replace('</head>', injected, 1)
+        return HTMLResponse(content=html, media_type="text/html")
 
     @app.get("/favicon.ico")
     async def favicon():
