@@ -10,12 +10,6 @@ buildscript {
     }
 }
 
-// Workaround for Windows file locking / renameTo failure in Chaquopy
-def chaquoPythonBuild = file("${rootDir}/app/build/python")
-if (chaquoPythonBuild.exists()) {
-    delete(chaquoPythonBuild)
-}
-
 tasks.register('clean', Delete) {
     delete rootProject.buildDir
     delete file("${rootDir}/app/build")

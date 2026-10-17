@@ -24,7 +24,7 @@ android {
             version "3.11"
             def localPy = file("C:/Users/Amlon/AppData/Local/Programs/Python/Python311/python.exe")
             if (localPy.exists()) {
-                buildPython localPy.absolutePath
+                buildPython localPy.absolutePath.replace('\\', '/')
             }
             pip {
                 install "yt-dlp>=2024.8.6"
