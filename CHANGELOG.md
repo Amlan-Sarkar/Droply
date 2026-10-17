@@ -2,6 +2,14 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.3.8]
+
+- **Precise Video & Audio Filesize Estimations:** Calibrated format stream size parsing to prioritize exact network stream sizes reported by yt-dlp over synthetic approximations, factoring in codec efficiency (AV1 / VP9 / H.264) and audio stream overhead. Video size estimates now accurately match downloaded file sizes (e.g. 1080p estimated at ~122 MB vs actual 122 MB, instead of 423 MB).
+- **Format-Specific Audio Size Calculations:** Audio download options now compute realistic converted file sizes on disk based on the chosen output codec and media duration. Lossless WAV estimates accurately reflect uncompressed 16-bit 44.1kHz stereo PCM (~500 MB for 50-minute audio vs actual 506 MB), MP3 estimates reflect 320 kbps CBR (~100 MB), and M4A/Opus reflect source audio streams (~44 MB) rather than displaying identical footprints across all formats.
+- **Fixed Recent Downloads Blinking & Notification Toast Loop:** Resolved an issue where completed single downloads continuously triggered repetitive "Download completed successfully!" toast notifications and caused the recent downloads list to flicker every 1.5 seconds. Active task IDs are now properly cleared on completion or failure, and queue cards update in-place without rebuilding the DOM.
+- **Fixed Library & History Blank Cards:** Resolved a frontend DOM collision where clearing the history list container inadvertently destroyed the empty-state element, causing subsequent history loads to fail with an unhandled null-reference exception. History cards and download summaries now render reliably.
+- **Default Quality & Audio Format Settings Enforcement:** Saved user preferences for Default Video Quality (e.g. 4K UHD, 2K QHD, 1080p FHD) and Default Audio Format (e.g. WAV, M4A, MP3, Opus) are now actively respected and pre-selected whenever new media links are analyzed or when toggling between video and audio modes.
+
 ## [1.3.7]
 
 - **WebSocket Broadcast Serialization & Live Progress Sync:** Fixed the WebSocket concurrency race condition caused by unsynchronized ASGI send calls across worker threads during yt-dlp download hooks. Download progress, speed, ETA, and completion states now stream live to the UI without freezing at 0.0% ("Starting...").

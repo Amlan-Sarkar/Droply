@@ -9,7 +9,7 @@ on:
       tag_name:
         description: 'Release Tag (e.g. v1.3.6)'
         required: false
-        default: 'v1.3.6'
+        default: 'v1.3.8'
 
 permissions:
   contents: write
@@ -44,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag_name }}" } else { "${{ github.ref_name }}" }
-          if (-not $tag -or $tag -eq "") { $tag = "v1.3.6" }
+          if (-not $tag -or $tag -eq "") { $tag = "v1.3.8" }
           $tagClean = $tag.TrimStart('v')
           Write-Host "Configuring Droply version: $tag (Clean: $tagClean)"
           Set-Content -Path VERSION -Value $tagClean
@@ -174,7 +174,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="${{ inputs.tag_name }}"
-            if [ -z "$TAG" ]; then TAG="v1.3.6"; fi
+            if [ -z "$TAG" ]; then TAG="v1.3.8"; fi
           else
             TAG="${{ github.ref_name }}"
           fi

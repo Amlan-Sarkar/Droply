@@ -32,7 +32,7 @@
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
-        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.3.7</span>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.3.8</span>
         <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
@@ -523,23 +523,24 @@
             </div>
           </div>
 
-          <!-- HISTORY ITEMS CONTAINER -->
-          <div class="history-items-list" id="history-items-container">
-            <div class="empty-state cat-empty-state" id="history-empty-state">
-              <div class="cat-empty-icon">
-                <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="cat-empty-svg">
-                  <path d="M19 44 C13 37 14 26 23 20 C25 15 29 13 33 13 C38 13 41 15 44 20 C52 26 53 37 47 44 C41 50 25 50 19 44 Z"></path>
-                  <path d="M25 18 L21 9 L29 14"></path>
-                  <path d="M41 18 L45 9 L37 14"></path>
-                  <path d="M26 27 C28 29 30 29 32 27"></path>
-                  <path d="M34 27 C36 29 38 29 40 27"></path>
-                  <path d="M47 38 C54 41 55 49 49 53 C43 57 32 55 28 51"></path>
-                </svg>
-              </div>
-              <h4>No downloads recorded yet</h4>
-              <p>Quiet as a resting kitten. Your finished downloads and saved files will appear here.</p>
+          <!-- EMPTY STATE (Rendered when no history items exist) -->
+          <div class="empty-state cat-empty-state" id="history-empty-state" style="display: none;">
+            <div class="cat-empty-icon">
+              <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="cat-empty-svg">
+                <path d="M19 44 C13 37 14 26 23 20 C25 15 29 13 33 13 C38 13 41 15 44 20 C52 26 53 37 47 44 C41 50 25 50 19 44 Z"></path>
+                <path d="M25 18 L21 9 L29 14"></path>
+                <path d="M41 18 L45 9 L37 14"></path>
+                <path d="M26 27 C28 29 30 29 32 27"></path>
+                <path d="M34 27 C36 29 38 29 40 27"></path>
+                <path d="M47 38 C54 41 55 49 49 53 C43 57 32 55 28 51"></path>
+              </svg>
             </div>
+            <h4>No downloads recorded yet</h4>
+            <p>Quiet as a resting kitten. Your finished downloads and saved files will appear here.</p>
           </div>
+
+          <!-- HISTORY ITEMS CONTAINER -->
+          <div class="history-items-list" id="history-items-container"></div>
 
         </div>
       </section>
@@ -720,7 +721,7 @@
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.3.7</span>
+              <span class="ver-value" id="update-cur-ver">v1.3.8</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">

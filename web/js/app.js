@@ -232,9 +232,16 @@ class DroplyApp {
         btnText.textContent = 'Download';
       }
       if (this.currentMedia && this.currentMedia.formats && this.currentMedia.formats.length > 0) {
-        this.selectedFormat = this.currentMedia.formats[0];
+        const preferred = this.getPreferredVideoFormat(this.currentMedia.formats);
+        this.selectedFormat = preferred;
+        const grid = document.getElementById('video-formats-grid');
+        if (grid && preferred) {
+          grid.querySelectorAll('.omni-quality-chip').forEach(c => {
+            c.classList.toggle('selected', c.getAttribute('data-fid') === preferred.format_id);
+          });
+        }
         const sizeEl = document.getElementById('omni-estimated-size');
-        if (sizeEl) sizeEl.textContent = this.selectedFormat.filesize_str || 'Standard';
+        if (sizeEl) sizeEl.textContent = (preferred && preferred.filesize_str) ? preferred.filesize_str : 'Standard';
       }
     });
 
@@ -249,9 +256,16 @@ class DroplyApp {
         btnText.textContent = 'Download';
       }
       if (this.currentMedia && this.currentMedia.audio_formats && this.currentMedia.audio_formats.length > 0) {
-        this.selectedFormat = this.currentMedia.audio_formats[0];
+        const preferred = this.getPreferredAudioFormat(this.currentMedia.audio_formats);
+        this.selectedFormat = preferred;
+        const grid = document.getElementById('audio-formats-grid');
+        if (grid && preferred) {
+          grid.querySelectorAll('.omni-quality-chip').forEach(c => {
+            c.classList.toggle('selected', c.getAttribute('data-fid') === preferred.format_id);
+          });
+        }
         const sizeEl = document.getElementById('omni-estimated-size');
-        if (sizeEl) sizeEl.textContent = this.selectedFormat.filesize_str || '~3.5 MB';
+        if (sizeEl) sizeEl.textContent = (preferred && preferred.filesize_str) ? preferred.filesize_str : '~3.5 MB';
       }
     });
 
@@ -458,6 +472,42 @@ class DroplyApp {
     this.activeSingleTaskId = null;
   }
 
+  getPreferredVideoFormat(formats) {
+    if (!formats || formats.length === 0) return null;
+    const pref = (this.settings.default_video_quality || 'best').toLowerCase();
+    if (pref === 'best') {
+      return formats[0];
+    }
+    const targetH = parseInt(pref.replace('p', ''), 10);
+    if (!isNaN(targetH)) {
+      const exactMatch = formats.find(f => {
+        if (f.raw_info && f.raw_info.height === targetH) return true;
+        if (f.label && f.label.toLowerCase().includes(`${targetH}p`)) return true;
+        if (f.resolution && f.resolution.includes(`x${targetH}`)) return true;
+        return false;
+      });
+      if (exactMatch) return exactMatch;
+
+      // Closest available quality <= target
+      const closest = formats.find(f => {
+        const h = f.raw_info ? f.raw_info.height : parseInt((f.resolution || '').split('x')[1], 10);
+        return h && h <= targetH;
+      });
+      if (closest) return closest;
+    }
+    return formats[0];
+  }
+
+  getPreferredAudioFormat(audioFormats) {
+    if (!audioFormats || audioFormats.length === 0) return null;
+    const pref = (this.settings.default_audio_format || 'mp3').toLowerCase();
+    const matched = audioFormats.find(f => 
+      (f.ext && f.ext.toLowerCase() === pref) || 
+      (f.format_id && f.format_id.toLowerCase().includes(pref))
+    );
+    return matched || audioFormats[0];
+  }
+
   // Unified Analyze Input (handles single URL, multiple URLs, and playlists)
   async analyzeInput(rawText) {
     this.resetSingleView();
@@ -536,14 +586,16 @@ class DroplyApp {
       const saveDir = this.settings.download_dir || data.default_download_dir;
       document.getElementById('selected-save-dir').textContent = saveDir;
 
-      // Render Video Formats
-      this.selectedFormat = data.formats[0] || null;
-      Components.renderVideoFormats(data.formats, this.selectedFormat ? this.selectedFormat.format_id : null, (fmt) => {
+      // Render Video Formats with preferred quality pre-selection
+      const preferredVideo = this.getPreferredVideoFormat(data.formats);
+      this.selectedFormat = preferredVideo || data.formats[0] || null;
+      Components.renderVideoFormats(data.formats, preferredVideo ? preferredVideo.format_id : null, (fmt) => {
         this.selectedFormat = fmt;
       });
 
-      // Render Audio Formats
-      Components.renderAudioFormats(data.audio_formats, null, (fmt) => {
+      // Render Audio Formats with preferred codec pre-selection
+      const preferredAudio = this.getPreferredAudioFormat(data.audio_formats);
+      Components.renderAudioFormats(data.audio_formats, preferredAudio ? preferredAudio.format_id : null, (fmt) => {
         this.selectedFormat = fmt;
       });
 
@@ -551,8 +603,10 @@ class DroplyApp {
       document.getElementById('media-card').style.display = 'block';
 
       if (this.selectedMode === 'audio') {
+        this.selectedFormat = preferredAudio;
         document.getElementById('mode-btn-audio').click();
       } else {
+        this.selectedFormat = preferredVideo;
         document.getElementById('mode-btn-video').click();
       }
 
@@ -734,15 +788,26 @@ class DroplyApp {
         try {
           const freshTasks = await api.getTasks();
           if (Array.isArray(freshTasks)) {
+            // Check if queue list structure changed to avoid wiping DOM and causing flickering
+            const currentSig = (this.tasks || []).map(t => `${t.id}:${t.status}`).join('|');
+            const freshSig = freshTasks.map(t => `${t.id}:${t.status}`).join('|');
             this.tasks = freshTasks;
-            this.renderQueueList();
+
+            if (currentSig !== freshSig) {
+              this.renderQueueList();
+            } else {
+              // Update existing cards in-place smoothly without blinking
+              freshTasks.forEach(t => Components.updateQueueItem(t));
+            }
 
             if (this.activeSingleTaskId) {
               const single = freshTasks.find(t => t.id === this.activeSingleTaskId);
               if (single) {
                 if (single.status === 'completed') {
+                  this.activeSingleTaskId = null; // Clear immediately to prevent repeat triggers
                   this.handleSingleSuccess(single);
                 } else if (single.status === 'failed') {
+                  this.activeSingleTaskId = null;
                   document.getElementById('single-download-card').style.display = 'none';
                   const errCard = document.getElementById('analyze-error');
                   if (errCard) {
@@ -751,9 +816,9 @@ class DroplyApp {
                     errCard.style.display = 'flex';
                   }
                 } else if (single.status === 'cancelled') {
+                  this.activeSingleTaskId = null;
                   document.getElementById('single-download-card').style.display = 'none';
                   if (this.currentMedia) document.getElementById('media-card').style.display = 'block';
-                  this.activeSingleTaskId = null;
                 } else {
                   this.updateSingleProgress(single);
                 }
@@ -852,29 +917,33 @@ class DroplyApp {
         totalBytes += Number(sz) || 0;
       });
 
-      document.getElementById('hist-stat-total').textContent = validItems.length;
-      document.getElementById('hist-stat-completed').textContent = completedCount;
-      document.getElementById('hist-stat-size').textContent = Components.formatBytes(totalBytes);
-      document.getElementById('hist-stat-folder').textContent = this.settings.download_dir || 'Downloads/Droply';
+      const statTotal = document.getElementById('hist-stat-total');
+      const statCompleted = document.getElementById('hist-stat-completed');
+      const statSize = document.getElementById('hist-stat-size');
+      const statFolder = document.getElementById('hist-stat-folder');
 
-      if (validItems.length === 0) {
-        container.innerHTML = '';
-        container.appendChild(emptyState);
-        emptyState.style.display = 'block';
-        return;
+      if (statTotal) statTotal.textContent = validItems.length;
+      if (statCompleted) statCompleted.textContent = completedCount;
+      if (statSize) statSize.textContent = Components.formatBytes(totalBytes);
+      if (statFolder) statFolder.textContent = this.settings.download_dir || 'Downloads/Droply';
+
+      if (emptyState) {
+        emptyState.style.display = validItems.length === 0 ? 'block' : 'none';
       }
 
-      emptyState.style.display = 'none';
-      container.innerHTML = '';
-
-      validItems.forEach(it => {
-        try {
-          const card = Components.renderHistoryItem(it);
-          if (card) container.appendChild(card);
-        } catch (cardErr) {
-          console.error("Error rendering history item card:", cardErr, it);
+      if (container) {
+        container.innerHTML = '';
+        if (validItems.length > 0) {
+          validItems.forEach(it => {
+            try {
+              const card = Components.renderHistoryItem(it);
+              if (card) container.appendChild(card);
+            } catch (cardErr) {
+              console.error("Error rendering history item card:", cardErr, it);
+            }
+          });
         }
-      });
+      }
 
     } catch (e) {
       console.error("Load history error:", e);
@@ -949,7 +1018,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.7';
+      const appVer = status.app_version || 'v1.3.8';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -1083,7 +1152,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.7';
+      if (curVerEl) curVerEl.textContent = 'v1.3.8';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1092,8 +1161,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.7';
-        const appLatest = info.app_latest || 'v1.3.7';
+        const appInst = info.app_installed || 'v1.3.8';
+        const appLatest = info.app_latest || 'v1.3.8';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1337,13 +1406,14 @@ class DroplyApp {
       if (idx >= 0) this.tasks[idx] = task;
 
       if (this.activeSingleTaskId === task.id) {
+        this.activeSingleTaskId = null;
         this.handleSingleSuccess(task);
+      } else {
+        Components.showToast(`Completed download: "${task.title || 'Media'}"`, 'success');
       }
 
       Components.updateQueueItem(task);
       this.updateRecentDownloadsHeader();
-
-      Components.showToast(`Completed download: "${task.title || 'Media'}"`, 'success');
       this.loadHistory();
 
       if (this.settings.notifications && ("Notification" in window) && Notification.permission === "granted") {
@@ -1373,6 +1443,7 @@ class DroplyApp {
       if (idx >= 0) this.tasks[idx] = task;
 
       if (this.activeSingleTaskId === task.id) {
+        this.activeSingleTaskId = null;
         document.getElementById('single-download-card').style.display = 'none';
         const errCard = document.getElementById('analyze-error');
         document.getElementById('error-friendly-text').textContent = task.error_friendly || 'Download failed.';
@@ -1418,6 +1489,7 @@ class DroplyApp {
   }
 
   handleSingleSuccess(task) {
+    this.activeSingleTaskId = null;
     document.getElementById('single-download-card').style.display = 'none';
     const errCard = document.getElementById('analyze-error');
     if (errCard) errCard.style.display = 'none';

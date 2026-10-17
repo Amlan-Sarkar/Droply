@@ -8,7 +8,7 @@
 
 *Download Videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites at full quality — with live progress and speed tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.3.7-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.3.8-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -120,10 +120,10 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 *The primary Droply experience, powered by the full Windows download engine.*
 
-| Package | Format | Download (v1.3.7) | Latest Mirror |
+| Package | Format | Download (v1.3.8) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.7**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.7/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable** | Standalone `.zip` | [**Download v1.3.7**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.7/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.8**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.8/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable** | Standalone `.zip` | [**Download v1.3.8**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.8/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Install or launch
 

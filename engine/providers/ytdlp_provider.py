@@ -344,15 +344,50 @@ class YtDlpProvider(BaseProvider):
         """
         Groups and deduplicates formats into clean, user-selectable resolutions:
         4K (2160p), 1440p, 1080p, 720p, 480p, 360p, 240p, and Best Available.
-        Only includes qualities that actually exist in the source stream.
+        Prioritizes actual stream file sizes reported by yt-dlp over synthetic formulas,
+        accurately includes audio stream overhead, and matches yt-dlp's codec selection (AV1/VP9).
         """
-        resolutions_found = {} # height -> best format object or spec
+        resolutions_found = {}  # height -> best format dict
         has_any_video = False
+
+        # First calculate the best available audio stream size for merged video+audio estimates
+        best_audio_fs = 0
+        for f in raw_formats:
+            if f.get('vcodec') == 'none' and f.get('acodec') != 'none':
+                fs = f.get('filesize') or f.get('filesize_approx') or 0
+                if fs > best_audio_fs:
+                    best_audio_fs = fs
+        if best_audio_fs == 0 and duration > 0:
+            best_audio_fs = int(128 * 1024 * duration / 8)
+
+        def codec_rank(vc: str) -> int:
+            if not vc or vc == 'none':
+                return 0
+            vc_lower = vc.lower()
+            if 'av01' in vc_lower or 'av1' in vc_lower:
+                return 3
+            if 'vp9' in vc_lower or 'vp09' in vc_lower:
+                return 2
+            if 'avc' in vc_lower or 'h264' in vc_lower:
+                return 1
+            return 0
+
+        # Modern web video bitrate targets (kbps) when filesize is unavailable
+        bitrate_map = {
+            2160: 3500,
+            1440: 1800,
+            1080: 950,
+            720: 550,
+            480: 300,
+            360: 180,
+            240: 120,
+            144: 80
+        }
 
         for f in raw_formats:
             vcodec = f.get('vcodec') or ''
             if vcodec == 'none':
-                continue # audio only
+                continue  # audio only
             has_any_video = True
             h = f.get('height')
             if not h or not isinstance(h, (int, float)):
@@ -361,54 +396,43 @@ class YtDlpProvider(BaseProvider):
             if h <= 0:
                 continue
 
-            filesize = f.get('filesize') or f.get('filesize_approx') or 0
-            tbr = f.get('tbr') or f.get('vbr') or 0
+            raw_fs = f.get('filesize') or f.get('filesize_approx') or 0
+            has_real_fs = (raw_fs > 0)
 
-            # Realistic bitrate ceiling per resolution bucket to prevent outlier VP9 experimental streams from bloating estimates
-            bitrate_cap_map = {
-                2160: 7500,
-                1440: 4500,
-                1080: 3200,
-                720: 1600,
-                480: 800,
-                360: 450,
-                240: 280,
-                144: 160
-            }
-            closest_h = min(bitrate_cap_map.keys(), key=lambda k: abs(k - h))
-            cap = bitrate_cap_map[closest_h]
-            if tbr > cap * 1.5:
-                tbr = cap
+            if has_real_fs:
+                # If format is video-only, yt-dlp downloads best video + best audio
+                total_fs = raw_fs + (best_audio_fs if f.get('acodec') == 'none' else 0)
+            else:
+                closest_h = min(bitrate_map.keys(), key=lambda k: abs(k - h))
+                vbr = f.get('vbr') or f.get('tbr') or bitrate_map[closest_h]
+                if vbr > bitrate_map[closest_h] * 1.5:
+                    vbr = bitrate_map[closest_h]
+                total_fs = int((vbr + 128) * 1024 * duration / 8) if duration > 0 else 0
 
-            if filesize == 0 and duration > 0 and tbr > 0:
-                # Include approximate audio stream overhead (128 kbps) for complete estimate
-                filesize = int((tbr + 128) * 1024 * duration / 8)
-            elif filesize > 0 and duration > 0 and filesize > int((cap * 1.6 + 128) * 1024 * duration / 8):
-                # Clamp extreme outlier format sizes
-                filesize = int((cap + 128) * 1024 * duration / 8)
-
-            ext = f.get('ext', 'mp4')
-            is_preferred_ext = (ext == 'mp4')
             curr = resolutions_found.get(h)
-
+            should_replace = False
             if not curr:
+                should_replace = True
+            else:
+                if has_real_fs and not curr['has_real_fs']:
+                    # Real reported filesize always takes precedence over synthetic estimate
+                    should_replace = True
+                elif has_real_fs and curr['has_real_fs']:
+                    # Both have real stream sizes: prefer higher quality/efficiency codec (AV1 > VP9 > AVC)
+                    if codec_rank(vcodec) > codec_rank(curr.get('vcodec')):
+                        should_replace = True
+                elif not has_real_fs and not curr['has_real_fs']:
+                    if (f.get('ext') == 'mp4' and curr.get('ext') != 'mp4') or (codec_rank(vcodec) > codec_rank(curr.get('vcodec'))):
+                        should_replace = True
+
+            if should_replace:
                 resolutions_found[h] = {
                     'format_id': f.get('format_id'),
                     'height': h,
                     'width': f.get('width', 0),
                     'ext': 'mp4',
-                    'filesize': filesize,
-                    'fps': f.get('fps'),
-                    'vcodec': vcodec,
-                    'acodec': f.get('acodec', ''),
-                }
-            elif (is_preferred_ext and curr.get('ext') != 'mp4') or (filesize > 0 and curr.get('filesize', 0) == 0):
-                resolutions_found[h] = {
-                    'format_id': f.get('format_id'),
-                    'height': h,
-                    'width': f.get('width', 0),
-                    'ext': 'mp4',
-                    'filesize': filesize if filesize > 0 else curr.get('filesize', 0),
+                    'filesize': total_fs,
+                    'has_real_fs': has_real_fs,
                     'fps': f.get('fps'),
                     'vcodec': vcodec,
                     'acodec': f.get('acodec', ''),
@@ -496,7 +520,8 @@ class YtDlpProvider(BaseProvider):
                 filesize_str=video_formats[0].filesize_str,
                 has_video=True,
                 has_audio=True,
-                is_audio_only=False
+                is_audio_only=False,
+                raw_info=video_formats[0].raw_info
             ))
         elif has_any_video:
             video_formats.append(MediaFormat(
@@ -516,7 +541,10 @@ class YtDlpProvider(BaseProvider):
     def _parse_audio_formats(self, raw_formats: List[Dict[str, Any]], duration: int) -> List[MediaFormat]:
         """
         Creates audio download format options: MP3, M4A, WAV, Opus.
-        Computes accurate estimated file sizes from audio stream bitrates and video duration.
+        Computes realistic final file sizes on disk based on codec and duration:
+        - WAV: Uncompressed 16-bit 44.1kHz stereo PCM (~176.4 KB/s)
+        - MP3: High-quality 320 kbps CBR (~40 KB/s)
+        - M4A / Opus: Direct extracted stream from source audio
         """
         # Find best source audio stream bitrate and filesize
         best_audio_fs = 0
@@ -534,15 +562,24 @@ class YtDlpProvider(BaseProvider):
             rate = best_audio_tbr if best_audio_tbr > 0 else 128
             best_audio_fs = int(rate * 1024 * duration / 8)
 
-        # Network stream download size (what yt-dlp fetches over the wire)
+        # Network stream download size (approx source AAC/Opus size)
         net_fs = best_audio_fs if best_audio_fs > 0 else (int(128 * 1024 * duration / 8) if duration > 0 else 0)
-        net_fs_str = format_bytes(net_fs) if net_fs > 0 else "Source Audio"
+
+        # Realistic post-conversion disk file sizes:
+        # WAV is 16-bit 44.1kHz stereo PCM = 44100 * 2 channels * 2 bytes/sample = 176,400 bytes/sec
+        wav_fs = int(176400 * duration) if duration > 0 else (net_fs * 10 if net_fs > 0 else 0)
+        # MP3 re-encoded at 320 kbps CBR = 320,000 bits / 8 = 40,000 bytes/sec
+        mp3_fs = int(40000 * duration) if duration > 0 else (net_fs * 2 if net_fs > 0 else 0)
+        # M4A extracted AAC source stream
+        m4a_fs = net_fs
+        # Opus extracted WebM/Opus source stream
+        opus_fs = net_fs
 
         audio_options = [
-            ("mp3", "MP3 Audio (Universal 320 kbps)", net_fs, f"~{net_fs_str} download • 320 kbps MP3" if net_fs > 0 else "320 kbps Universal"),
-            ("m4a", "M4A Audio (Apple / AAC Quality)", net_fs, f"~{net_fs_str} download • Source AAC" if net_fs > 0 else "Source AAC"),
-            ("wav", "WAV Audio (Uncompressed Lossless)", net_fs, f"~{net_fs_str} download • 1411 kbps PCM" if net_fs > 0 else "Lossless PCM"),
-            ("opus", "Opus Audio (Best Web Codec)", net_fs, f"~{net_fs_str} download • Source Opus" if net_fs > 0 else "Source Opus"),
+            ("mp3", "MP3 Audio (Universal 320 kbps)", mp3_fs, f"{format_bytes(mp3_fs)} • 320 kbps MP3" if mp3_fs > 0 else "320 kbps Universal"),
+            ("m4a", "M4A Audio (Apple / AAC Quality)", m4a_fs, f"{format_bytes(m4a_fs)} • Source AAC" if m4a_fs > 0 else "Source AAC"),
+            ("wav", "WAV Audio (Uncompressed Lossless)", wav_fs, f"{format_bytes(wav_fs)} • 1411 kbps PCM" if wav_fs > 0 else "Lossless PCM"),
+            ("opus", "Opus Audio (Best Web Codec)", opus_fs, f"{format_bytes(opus_fs)} • Source Opus" if opus_fs > 0 else "Source Opus"),
         ]
 
         result = []
