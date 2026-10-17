@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" width="128" alt="Droply Logo">
+<img src="assets/logo.png" width="200" alt="Droply Logo">
 
 ## Your media. Your quality. Your library
 
@@ -90,11 +90,9 @@ Filename sanitization preserves original media titles while removing reserved fi
 </td>
 <td width="50%" valign="top">
 
-### 🎨 A Personal Touch
+### ⚡ Instant Splash & Fast Boot
 
-Choose between three curated themes with glowing accents, smooth micro-animations, theme-adaptive buttons, and a glassmorphic interface.
-
-Droply also features a minimalist cat-outline divider and a sleeping-kitten idle queue graphic.
+Instant ~50ms visual feedback on launch with Droply's glowing cyber-cat mascot splash window (*“🐾 Waking up Droply...”*), paired with engine lazy-loading and non-blocking background prewarming so you jump straight to the download interface.
 
 </td>
 </tr>
@@ -115,6 +113,10 @@ Smart error detection identifies country-level ISP blocks and geo-restrictions, 
 </td>
 </tr>
 </table>
+
+<div align="center">
+  <img src="assets/splash.png" width="520" alt="Droply Cyber-Cat Splash Screen" style="border-radius: 14px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); margin: 18px 0;">
+</div>
 
 ### More built in
 
