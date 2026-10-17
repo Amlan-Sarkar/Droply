@@ -45,53 +45,74 @@ PLATFORM_PATTERNS = [
 
 def humanize_error(raw_err: str) -> Dict[str, str]:
     """
-    Transforms raw yt-dlp error into a friendly message plus technical details.
+    Transforms raw yt-dlp error into a friendly message, actionable suggestion, and technical details.
     """
     err = str(raw_err).lower()
     
     if "requested format is not available" in err:
         return {
             "friendly": "The requested video format or quality is not available from the source.",
+            "suggestion": "Try selecting a different resolution (e.g. 1080p, 720p) or an audio-only format.",
             "technical": str(raw_err)
         }
     if "drm" in err or "protected" in err:
         return {
             "friendly": "This media is protected by DRM (Digital Rights Management) and cannot be downloaded.",
+            "suggestion": "DRM-encrypted media streams cannot be decrypted.",
+            "technical": str(raw_err)
+        }
+    if "confirm you're not a bot" in err or "not a bot" in err or "bot verification" in err:
+        return {
+            "friendly": "YouTube anti-bot verification challenge triggered.",
+            "suggestion": "YouTube is challenging automated requests from this network. Add your browser cookies (cookies.txt) in Droply Settings or place it into ~/.droply/cookies.txt to bypass this check.",
+            "technical": str(raw_err)
+        }
+    if "video is unavailable" in err or "this video is unavailable" in err or "unavailable" in err:
+        return {
+            "friendly": "This media is unavailable.",
+            "suggestion": "Please check the URL for typos (such as digit '0' vs letter 'O') or verify that the video has not been deleted or restricted.",
             "technical": str(raw_err)
         }
     if "private video" in err or "sign in" in err or "login" in err:
         return {
             "friendly": "This media is private or requires account login to view.",
+            "suggestion": "Make sure the URL is accessible and the media is public, or provide session cookies in Settings.",
             "technical": str(raw_err)
         }
     if "403" in err or "forbidden" in err:
         return {
-            "friendly": "Download unavailable. The source server rejected the request.",
+            "friendly": "Download unavailable. The source server rejected the request (403 Forbidden).",
+            "suggestion": "The server temporarily blocked the request or the streaming token expired. Try again in a moment.",
             "technical": str(raw_err)
         }
     if "404" in err or "not found" in err or "deleted" in err:
         return {
             "friendly": "Media not found. The content may have been deleted or the link is incorrect.",
+            "suggestion": "Verify that the URL exists and is publicly accessible in a web browser.",
             "technical": str(raw_err)
         }
     if "geo" in err or "country" in err:
         return {
             "friendly": "This media is geo-restricted and not available in your region.",
+            "suggestion": "This content is blocked in your geographical location. Connect to a VPN (such as Cloudflare WARP, ProtonVPN, or Windscribe) in an unrestricted region.",
             "technical": str(raw_err)
         }
-    if "unreachable" in err or "connection" in err or "timed out" in err:
+    if "unreachable" in err or "connection" in err or "timed out" in err or "refused" in err or "reset by peer" in err:
         return {
-            "friendly": "Network connection error. Please check your internet connection.",
+            "friendly": "Network connection timed out or was blocked by host/ISP.",
+            "suggestion": "If this platform is restricted or banned by your ISP/region (e.g. TikTok, Reddit, or ISP filters), connect to a VPN (such as Cloudflare WARP or ProtonVPN).",
             "technical": str(raw_err)
         }
     if "unsupported url" in err:
         return {
             "friendly": "This URL is not recognized or not currently supported.",
+            "suggestion": "Ensure the URL starts with https:// and points to a supported platform.",
             "technical": str(raw_err)
         }
     
     return {
         "friendly": "An error occurred while accessing the media resource.",
+        "suggestion": "Make sure the URL is accessible and the media is public.",
         "technical": str(raw_err)
     }
 
@@ -183,6 +204,63 @@ class YtDlpProvider(BaseProvider):
             return True
         return False
 
+    def _locate_cookie_file(self) -> Optional[str]:
+        """
+        Locates any available cookies.txt file for yt-dlp authentication and bot bypass.
+        Checks:
+        1. Custom path configured in Droply settings (cookie_file)
+        2. %LOCALAPPDATA%/Droply/cookies.txt
+        3. ~/.droply/cookies.txt
+        4. Application root ./cookies.txt
+        """
+        try:
+            from ..settings_manager import settings_manager
+            custom_path = settings_manager.get("cookie_file")
+            if custom_path and os.path.exists(custom_path) and os.path.getsize(custom_path) > 0:
+                return str(custom_path)
+        except Exception:
+            pass
+
+        localappdata = os.environ.get('LOCALAPPDATA')
+        if localappdata:
+            local_app_cookie = Path(localappdata) / "Droply" / "cookies.txt"
+            if local_app_cookie.exists() and local_app_cookie.stat().st_size > 0:
+                return str(local_app_cookie)
+
+        home_cookie = Path.home() / ".droply" / "cookies.txt"
+        if home_cookie.exists() and home_cookie.stat().st_size > 0:
+            return str(home_cookie)
+
+        app_cookie = Path.cwd() / "cookies.txt"
+        if app_cookie.exists() and app_cookie.stat().st_size > 0:
+            return str(app_cookie)
+
+        return None
+
+    def _get_cookie_browser(self) -> Optional[str]:
+        """
+        Retrieves the configured browser for session cookies, or auto-probes working browsers.
+        """
+        try:
+            from ..settings_manager import settings_manager
+            pref = settings_manager.get("cookie_browser", "none")
+            if not pref or pref == "none":
+                return None
+            if pref != "auto":
+                return str(pref).lower()
+            # Auto-probe mode: find first installed browser that can extract cookies
+            candidates = ['firefox', 'brave', 'vivaldi', 'edge', 'chrome', 'opera']
+            for b in candidates:
+                try:
+                    probe_ydl = yt_dlp.YoutubeDL({'cookiesfrombrowser': (b,), 'quiet': True})
+                    if len(list(probe_ydl.cookiejar)) > 0:
+                        return b
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        return None
+
     def _get_ydl_opts(self, is_playlist: bool = False) -> Dict[str, Any]:
         opts: Dict[str, Any] = {
             'quiet': True,
@@ -204,6 +282,15 @@ class YtDlpProvider(BaseProvider):
             opts['noplaylist'] = True
         if self.ffmpeg_path and os.path.exists(self.ffmpeg_path):
             opts['ffmpeg_location'] = self.ffmpeg_path
+
+        cookie_file = self._locate_cookie_file()
+        if cookie_file:
+            opts['cookiefile'] = cookie_file
+        else:
+            cookie_browser = self._get_cookie_browser()
+            if cookie_browser:
+                opts['cookiesfrombrowser'] = (cookie_browser,)
+
         return opts
 
     def get_metadata(self, url: str) -> MediaMetadata:
@@ -234,10 +321,10 @@ class YtDlpProvider(BaseProvider):
                         info = p_ydl.extract_info(url, download=False)
                 except Exception:
                     err_dict = humanize_error(str(last_error))
-                    raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+                    raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict.get('suggestion', '')}|SPLIT|{err_dict['technical']}")
             else:
                 err_dict = humanize_error(str(last_error))
-                raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+                raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict.get('suggestion', '')}|SPLIT|{err_dict['technical']}")
 
         if not info:
             raise ValueError("No media information could be extracted from this URL.")
@@ -700,6 +787,14 @@ class YtDlpProvider(BaseProvider):
         if sys.platform == 'win32':
             ydl_opts['windowsfilenames'] = True
 
+        cookie_file = self._locate_cookie_file()
+        if cookie_file:
+            ydl_opts['cookiefile'] = cookie_file
+        else:
+            cookie_browser = self._get_cookie_browser()
+            if cookie_browser:
+                ydl_opts['cookiesfrombrowser'] = (cookie_browser,)
+
         has_ffmpeg = bool(self.ffmpeg_path and os.path.exists(self.ffmpeg_path))
         if has_ffmpeg:
             ydl_opts['ffmpeg_location'] = self.ffmpeg_path
@@ -774,7 +869,7 @@ class YtDlpProvider(BaseProvider):
             if cancel_check():
                 raise Exception("Download cancelled by user.")
             err_dict = humanize_error(str(e))
-            raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+            raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict.get('suggestion', '')}|SPLIT|{err_dict['technical']}")
 
         # Determine output file path
         saved_file = None

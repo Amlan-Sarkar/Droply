@@ -239,14 +239,23 @@ async def analyze_url(req: AnalyzeRequest):
     except Exception as e:
         err_str = str(e)
         friendly = "Unable to analyze media at this URL."
+        suggestion = "Make sure the URL is accessible and the media is public."
         technical = err_str
         if "|SPLIT|" in err_str:
             parts = err_str.split("|SPLIT|")
             friendly = parts[0]
-            technical = parts[1]
+            if len(parts) >= 3:
+                suggestion = parts[1]
+                technical = parts[2]
+            else:
+                technical = parts[1]
         elif hasattr(e, "detail"):
             friendly = str(e.detail)
-        return JSONResponse(status_code=422, content={"error_friendly": friendly, "error_technical": technical})
+        return JSONResponse(status_code=422, content={
+            "error_friendly": friendly,
+            "error_suggestion": suggestion,
+            "error_technical": technical
+        })
 
 
 @app.post("/api/download")
@@ -291,12 +300,21 @@ async def extract_playlist_api(req: AnalyzeRequest):
     except Exception as e:
         err_str = str(e)
         friendly = "Unable to extract playlist."
+        suggestion = "Make sure the playlist is public and accessible."
         technical = err_str
         if "|SPLIT|" in err_str:
             parts = err_str.split("|SPLIT|")
             friendly = parts[0]
-            technical = parts[1]
-        return JSONResponse(status_code=422, content={"error_friendly": friendly, "error_technical": technical})
+            if len(parts) >= 3:
+                suggestion = parts[1]
+                technical = parts[2]
+            else:
+                technical = parts[1]
+        return JSONResponse(status_code=422, content={
+            "error_friendly": friendly,
+            "error_suggestion": suggestion,
+            "error_technical": technical
+        })
 
 
 @app.post("/api/batch/parse")
@@ -540,6 +558,121 @@ async def browse_folder():
     return {"folder": None, "updated": False}
 
 
+@app.post("/api/browse-cookie-file")
+async def browse_cookie_file():
+    """
+    Opens native Windows file picker modal to select cookies.txt.
+    """
+    loop = asyncio.get_event_loop()
+    def _picker():
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            initial = str(Path.home() / ".droply")
+            if not os.path.exists(initial):
+                initial = str(Path.home())
+            chosen = filedialog.askopenfilename(
+                initialdir=initial,
+                title="Select cookies.txt for Droply",
+                filetypes=[("Text files (*.txt)", "*.txt"), ("All Files (*.*)", "*.*")]
+            )
+            root.destroy()
+            return chosen if chosen else None
+        except Exception as e:
+            print("Cookie file picker dialog error:", e)
+            return None
+
+    file_path = await loop.run_in_executor(None, _picker)
+    if file_path:
+        settings_manager.update({"cookie_file": file_path})
+        return {"cookie_file": file_path, "updated": True}
+    return {"cookie_file": None, "updated": False}
+
+
+class CookieUploadRequest(BaseModel):
+    content: str
+
+
+@app.get("/api/auth/browsers")
+async def get_available_browsers():
+    """
+    Scans the system for installed web browsers and returns current cookie_browser setting.
+    """
+    loop = asyncio.get_event_loop()
+    def _probe():
+        appdata = os.environ.get('APPDATA', '')
+        localappdata = os.environ.get('LOCALAPPDATA', '')
+        progfiles = os.environ.get('ProgramFiles', '')
+        progfiles86 = os.environ.get('ProgramFiles(x86)', '')
+        
+        path_map = {
+            'chrome': [
+                Path(localappdata) / 'Google/Chrome/User Data',
+                Path(progfiles) / 'Google/Chrome/Application/chrome.exe',
+                Path(progfiles86) / 'Google/Chrome/Application/chrome.exe',
+            ],
+            'edge': [
+                Path(localappdata) / 'Microsoft/Edge/User Data',
+                Path(progfiles86) / 'Microsoft/Edge/Application/msedge.exe',
+                Path(progfiles) / 'Microsoft/Edge/Application/msedge.exe',
+            ],
+            'firefox': [
+                Path(appdata) / 'Mozilla/Firefox/Profiles',
+                Path(progfiles) / 'Mozilla Firefox/firefox.exe',
+                Path(progfiles86) / 'Mozilla Firefox/firefox.exe',
+            ],
+            'brave': [
+                Path(localappdata) / 'BraveSoftware/Brave-Browser/User Data',
+                Path(progfiles) / 'BraveSoftware/Brave-Browser/Application/brave.exe',
+            ],
+            'opera': [
+                Path(appdata) / 'Opera Software/Opera Stable',
+            ],
+            'vivaldi': [
+                Path(localappdata) / 'Vivaldi/User Data',
+            ]
+        }
+        
+        installed = []
+        for b, cands in path_map.items():
+            if any(p.exists() for p in cands):
+                installed.append(b)
+
+        return {
+            "installed": installed,
+            "cookie_browser": settings_manager.get("cookie_browser", "none")
+        }
+
+    return await loop.run_in_executor(None, _probe)
+
+
+@app.post("/api/auth/cookies/upload")
+async def upload_cookie_content(req: CookieUploadRequest):
+    """
+    Saves uploaded Netscape cookies.txt directly to ~/.droply/cookies.txt and activates it.
+    """
+    content = req.content.strip()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty cookie content provided.")
+
+    target_dir = Path.home() / ".droply"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_file = target_dir / "cookies.txt"
+
+    with open(target_file, "w", encoding="utf-8") as f:
+        f.write(content)
+
+    settings_manager.update({"cookie_file": str(target_file)})
+    return {
+        "status": "success",
+        "cookie_file": str(target_file),
+        "size": len(content)
+    }
+
+
 def _load_app_version():
     env_v = os.environ.get("DROPLY_VERSION")
     if env_v:
@@ -562,7 +695,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.8"
+    return "v1.3.9"
 
 
 APP_VERSION = _load_app_version()
@@ -705,13 +838,28 @@ async def system_status():
         except Exception:
             pass
 
+    cookie_path = None
+    custom_c = settings_manager.get("cookie_file")
+    if custom_c and os.path.exists(custom_c) and os.path.getsize(custom_c) > 0:
+        cookie_path = custom_c
+    elif (Path.home() / ".droply" / "cookies.txt").exists() and (Path.home() / ".droply" / "cookies.txt").stat().st_size > 0:
+        cookie_path = str(Path.home() / ".droply" / "cookies.txt")
+    elif (Path.cwd() / "cookies.txt").exists() and (Path.cwd() / "cookies.txt").stat().st_size > 0:
+        cookie_path = str(Path.cwd() / "cookies.txt")
+
+    cookie_browser = settings_manager.get("cookie_browser", "none")
+    cookies_ready = bool(cookie_path or (cookie_browser and cookie_browser != "none"))
+
     return {
         "app_version": APP_VERSION,
         "ffmpeg_ready": bool(ffmpeg_exe and os.path.exists(ffmpeg_exe)),
         "ffmpeg_path": ffmpeg_exe,
         "ytdlp_version": _get_ytdlp_version(),
         "default_dir": settings_manager.get("download_dir", get_default_download_dir()),
-        "python_version": sys.version.split()[0]
+        "python_version": sys.version.split()[0],
+        "cookies_ready": cookies_ready,
+        "cookies_path": cookie_path,
+        "cookie_browser": cookie_browser
     }
 
 

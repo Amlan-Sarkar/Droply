@@ -50,6 +50,7 @@ class DownloadTask:
         self.speed_str = "-- KB/s"
         self.eta_str = "--:--"
         self.error_friendly = None
+        self.error_suggestion = None
         self.error_technical = None
         self.file_path = None
         self.filename = None
@@ -89,6 +90,7 @@ class DownloadTask:
             "speed_str": self.speed_str,
             "eta_str": self.eta_str,
             "error_friendly": self.error_friendly,
+            "error_suggestion": self.error_suggestion,
             "error_technical": self.error_technical,
             "file_path": self.file_path,
             "filename": self.filename,
@@ -212,6 +214,7 @@ class QueueManager:
                 task.percent = 0.0
                 task.downloaded_bytes = 0
                 task.error_friendly = None
+                task.error_suggestion = None
                 task.error_technical = None
                 self._broadcast("task_updated", task)
                 return True
@@ -342,17 +345,23 @@ class QueueManager:
 
             err_str = str(e)
             friendly = "Download failed."
+            suggestion = ""
             technical = err_str
             if "|SPLIT|" in err_str:
                 parts = err_str.split("|SPLIT|")
                 friendly = parts[0]
-                technical = parts[1]
+                if len(parts) >= 3:
+                    suggestion = parts[1]
+                    technical = parts[2]
+                else:
+                    technical = parts[1]
             else:
                 friendly = err_str
 
             self._cleanup_partial_files(task)
             task.status = "failed"
             task.error_friendly = friendly
+            task.error_suggestion = suggestion
             task.error_technical = technical
             self._broadcast("task_failed", task)
 

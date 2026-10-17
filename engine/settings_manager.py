@@ -32,6 +32,8 @@ class SettingsManager:
             "filename_template": "{title}",
             "notifications": True,
             "auto_open_folder_on_finish": False,
+            "cookie_file": "",
+            "cookie_browser": "none",
         }
 
     def _load(self) -> Dict[str, Any]:

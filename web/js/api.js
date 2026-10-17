@@ -660,6 +660,30 @@ class DroplyAPI {
     return this.request('/api/browse-folder', { method: 'POST' });
   }
 
+  async browseCookieFile() {
+    if (this.isNativeMobile()) {
+      return { cookie_file: null, updated: false };
+    }
+    return this.request('/api/browse-cookie-file', { method: 'POST' });
+  }
+
+  async getAvailableBrowsers() {
+    if (this.isNativeMobile()) {
+      return { installed: [], cookie_browser: 'none' };
+    }
+    return this.request('/api/auth/browsers');
+  }
+
+  async uploadCookies(content) {
+    if (this.isNativeMobile()) {
+      return { status: 'error', message: 'Not supported on mobile' };
+    }
+    return this.request('/api/auth/cookies/upload', {
+      method: 'POST',
+      body: JSON.stringify({ content })
+    });
+  }
+
   async openFolder(path = null) {
     if (this.isNativeMobile()) {
       if (typeof window.DroplyAndroid !== 'undefined') {
@@ -725,17 +749,17 @@ class DroplyAPI {
         return new Promise((resolve) => {
           const handler = (e) => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve(e.detail || { app_installed: 'v1.3.8', app_latest: 'v1.3.8', app_up_to_date: true });
+            resolve(e.detail || { app_installed: 'v1.3.9', app_latest: 'v1.3.9', app_up_to_date: true });
           };
           window.addEventListener('droply_update_checked', handler);
           window.DroplyAndroid.checkUpdates();
           setTimeout(() => {
             window.removeEventListener('droply_update_checked', handler);
-            resolve({ app_installed: 'v1.3.8', app_latest: 'v1.3.8', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
+            resolve({ app_installed: 'v1.3.9', app_latest: 'v1.3.9', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true });
           }, 6000);
         });
       }
-      return { app_installed: 'v1.3.8', app_latest: 'v1.3.8', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
+      return { app_installed: 'v1.3.9', app_latest: 'v1.3.9', app_up_to_date: true, ytdlp_installed: 'Embedded', ytdlp_latest: 'Embedded', ytdlp_up_to_date: true };
     }
     return this.request('/api/system/check-updates');
   }

@@ -623,10 +623,28 @@ class DroplyApp {
     document.getElementById('analyze-skeleton').style.display = 'none';
     const errCard = document.getElementById('analyze-error');
     const friendlyEl = document.getElementById('error-friendly-text');
+    const suggestionEl = document.getElementById('error-suggestion');
     const techEl = document.getElementById('error-tech-log');
+    const actionRow = document.getElementById('error-action-row');
 
-    friendlyEl.textContent = (err.data && err.data.error_friendly) ? err.data.error_friendly : err.message;
-    techEl.textContent = (err.data && err.data.error_technical) ? err.data.error_technical : (err.stack || err.message);
+    const friendly = (err.data && err.data.error_friendly) ? err.data.error_friendly : err.message;
+    const suggestion = (err.data && err.data.error_suggestion) 
+      ? err.data.error_suggestion 
+      : 'Make sure the URL is accessible and the media is public.';
+    const technical = (err.data && err.data.error_technical) ? err.data.error_technical : (err.stack || err.message);
+
+    friendlyEl.textContent = friendly;
+    if (suggestionEl) suggestionEl.textContent = suggestion;
+    techEl.textContent = technical;
+
+    if (actionRow) {
+      const combined = (friendly + ' ' + suggestion + ' ' + technical).toLowerCase();
+      if (combined.includes('bot') || combined.includes('cookie') || combined.includes('sign in')) {
+        actionRow.style.display = 'block';
+      } else {
+        actionRow.style.display = 'none';
+      }
+    }
 
     errCard.style.display = 'flex';
     Components.showToast('Unable to extract media from this URL.', 'error');
@@ -977,6 +995,81 @@ class DroplyApp {
       }
     });
 
+    const btnBrowseCookies = document.getElementById('btn-settings-browse-cookies');
+    const btnUploadCookies = document.getElementById('btn-settings-upload-cookies');
+    const fileUploadInput = document.getElementById('setting-cookie-file-upload');
+    const btnClearCookies = document.getElementById('btn-settings-clear-cookies');
+    const cookieInput = document.getElementById('setting-cookie-input');
+
+    if (btnBrowseCookies) {
+      btnBrowseCookies.addEventListener('click', async () => {
+        try {
+          const res = await api.browseCookieFile();
+          if (res.updated && res.cookie_file) {
+            cookieInput.value = res.cookie_file;
+            this.settings.cookie_file = res.cookie_file;
+            Components.showToast(`Selected cookies: ${res.cookie_file}`, 'success');
+            this.loadSystemStatus();
+          }
+        } catch (e) {
+          console.error("Browse cookies error:", e);
+        }
+      });
+    }
+
+    if (btnUploadCookies && fileUploadInput) {
+      btnUploadCookies.addEventListener('click', () => fileUploadInput.click());
+      fileUploadInput.addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        try {
+          const reader = new FileReader();
+          reader.onload = async (evt) => {
+            const text = evt.target.result;
+            const res = await api.uploadCookies(text);
+            if (res.status === 'success') {
+              cookieInput.value = res.cookie_file;
+              this.settings.cookie_file = res.cookie_file;
+              Components.showToast('Uploaded and activated cookies.txt successfully!', 'success');
+              this.loadSystemStatus();
+            }
+          };
+          reader.readAsText(file);
+        } catch (err) {
+          console.error("Upload cookies error:", err);
+          Components.showToast(`Upload failed: ${err.message}`, 'error');
+        }
+      });
+    }
+
+    if (btnClearCookies) {
+      btnClearCookies.addEventListener('click', async () => {
+        cookieInput.value = '';
+        this.settings.cookie_file = '';
+        try {
+          await api.updateSettings({ cookie_file: '' });
+          Components.showToast('Cleared custom cookies file.', 'info');
+          this.loadSystemStatus();
+        } catch (e) {
+          console.error("Clear cookies error:", e);
+        }
+      });
+    }
+
+    const btnErrorCookies = document.getElementById('btn-error-cookie-settings');
+    if (btnErrorCookies) {
+      btnErrorCookies.addEventListener('click', () => {
+        this.switchTab('settings');
+      });
+    }
+
+    const btnQuickCookie = document.getElementById('btn-quick-cookie-settings');
+    if (btnQuickCookie) {
+      btnQuickCookie.addEventListener('click', () => {
+        this.switchTab('settings');
+      });
+    }
+
     btnSave.addEventListener('click', async () => {
       const updates = {
         download_dir: document.getElementById('setting-dir-input').value,
@@ -984,12 +1077,15 @@ class DroplyApp {
         default_audio_format: document.getElementById('setting-audio-codec').value,
         max_concurrent_downloads: parseInt(sliderConcurrent.value, 10),
         notifications: document.getElementById('setting-notifications').checked,
+        cookie_browser: document.getElementById('setting-cookie-browser') ? document.getElementById('setting-cookie-browser').value : 'none',
+        cookie_file: document.getElementById('setting-cookie-input') ? document.getElementById('setting-cookie-input').value.trim() : '',
       };
 
       try {
         this.settings = await api.updateSettings(updates);
         document.getElementById('selected-save-dir').textContent = this.settings.download_dir;
         Components.showToast('Preferences saved successfully!', 'success');
+        this.loadSystemStatus();
       } catch (e) {
         Components.showToast(`Failed to save settings: ${e.message}`, 'error');
       }
@@ -1007,6 +1103,16 @@ class DroplyApp {
       document.getElementById('concurrent-val-badge').textContent = this.settings.max_concurrent_downloads || 3;
       document.getElementById('setting-notifications').checked = this.settings.notifications !== false;
 
+      const cookieInput = document.getElementById('setting-cookie-input');
+      if (cookieInput) {
+        cookieInput.value = this.settings.cookie_file || '';
+      }
+
+      const cookieBrowserSelect = document.getElementById('setting-cookie-browser');
+      if (cookieBrowserSelect) {
+        cookieBrowserSelect.value = this.settings.cookie_browser || 'none';
+      }
+
       if (this.settings.theme) {
         ThemeManager.setTheme(this.settings.theme);
       }
@@ -1018,7 +1124,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.8';
+      const appVer = status.app_version || 'v1.3.9';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -1047,6 +1153,38 @@ class DroplyApp {
 
       const diagPython = document.getElementById('diag-python');
       if (diagPython) diagPython.textContent = `Python ${status.python_version}`;
+
+      const diagCookies = document.getElementById('diag-cookies');
+      if (diagCookies) {
+        if (status.cookies_ready) {
+          diagCookies.textContent = status.cookies_path 
+            ? `Active (${status.cookies_path.split(/[\\/]/).pop()})` 
+            : `Active (${status.cookie_browser})`;
+          diagCookies.className = 'diag-val highlight';
+        } else {
+          diagCookies.textContent = 'None (Optional)';
+          diagCookies.className = 'diag-val';
+        }
+      }
+
+      const mediaAuthBadge = document.getElementById('media-auth-badge');
+      if (mediaAuthBadge) {
+        if (status.cookies_ready) {
+          if (status.cookies_path) {
+            mediaAuthBadge.textContent = '🍪 cookies.txt Active';
+          } else if (status.cookie_browser && status.cookie_browser !== 'none') {
+            mediaAuthBadge.textContent = `🍪 ${status.cookie_browser.toUpperCase()} Active`;
+          } else {
+            mediaAuthBadge.textContent = '🍪 Cookies Active';
+          }
+          mediaAuthBadge.style.background = 'rgba(0, 229, 163, 0.15)';
+          mediaAuthBadge.style.color = '#00e5a3';
+        } else {
+          mediaAuthBadge.textContent = 'None (Public)';
+          mediaAuthBadge.style.background = 'rgba(255, 255, 255, 0.06)';
+          mediaAuthBadge.style.color = 'var(--text-muted, #94a3b8)';
+        }
+      }
 
     } catch (e) {
       console.error("Load system status error:", e);
@@ -1152,7 +1290,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.8';
+      if (curVerEl) curVerEl.textContent = 'v1.3.9';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1161,8 +1299,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.8';
-        const appLatest = info.app_latest || 'v1.3.8';
+        const appInst = info.app_installed || 'v1.3.9';
+        const appLatest = info.app_latest || 'v1.3.9';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;

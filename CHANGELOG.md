@@ -2,6 +2,15 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.3.9]
+
+- **Integrated Authentication & Cookie Manager:** Added full dual-mode authentication support to seamlessly bypass YouTube anti-bot verification challenges ("Sign in to confirm you're not a bot") and access member-only or restricted media.
+- **Browser Profile Session Extraction:** Automatically probes and extracts session cookies directly from installed local browser profiles (Mozilla Firefox, Brave Browser, Vivaldi, Google Chrome, Microsoft Edge, Opera) to authenticate downloads without manual export.
+- **Persistent & Portable `cookies.txt` Import:** Added native file browsing, direct in-app upload, and automatic path detection for Netscape `cookies.txt` files (safely stored locally in `~/.droply/cookies.txt` or `%LOCALAPPDATA%\Droply\cookies.txt`).
+- **Granular Error Humanization & Typo Diagnostics:** Transformed raw yt-dlp error traces into clear, actionable advice. Anti-bot challenges, video typos / unavailable media (e.g. distinguishing digit '0' vs letter 'O' in video IDs), private videos, and DRM restrictions are now accurately distinguished with dedicated quick-action remediation buttons.
+- **Regional Bans & VPN Advisory:** Added intelligent detection for country-level ISP blocks and geo-restrictions (e.g. TikTok, Reddit, or regional ISP filters) with actionable VPN connection guidance (Cloudflare WARP, ProtonVPN, Windscribe) in the UI, Settings, and documentation.
+- **Media Card Authentication Status Badge:** The media preview card and engine diagnostics card now display live authentication status (e.g. `🍪 cookies.txt Active` or `🍪 FIREFOX Session Active`).
+
 ## [1.3.8]
 
 - **Precise Video & Audio Filesize Estimations:** Calibrated format stream size parsing to prioritize exact network stream sizes reported by yt-dlp over synthetic approximations, factoring in codec efficiency (AV1 / VP9 / H.264) and audio stream overhead. Video size estimates now accurately match downloaded file sizes (e.g. 1080p estimated at ~122 MB vs actual 122 MB, instead of 423 MB).

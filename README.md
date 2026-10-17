@@ -8,7 +8,7 @@
 
 *Download Videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites at full quality — with live progress and speed tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.3.8-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.3.9-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -98,6 +98,22 @@ Droply also features a minimalist cat-outline divider and a sleeping-kitten idle
 
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top">
+
+### 🍪 Bot Challenge Bypass
+
+Integrated authentication manager supports browser session extraction (Firefox, Brave, Vivaldi, Chrome, Edge) or importing Netscape `cookies.txt` to bypass YouTube *"Sign in to confirm you're not a bot"* challenges.
+
+</td>
+<td width="50%" valign="top">
+
+### 🌐 Regional Network Resilience
+
+Smart error detection identifies country-level ISP blocks and geo-restrictions, providing actionable guidance for seamless downloads with VPNs like Cloudflare WARP or ProtonVPN.
+
+</td>
+</tr>
 </table>
 
 ### More built in
@@ -120,10 +136,10 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 *The primary Droply experience, powered by the full Windows download engine.*
 
-| Package | Format | Download (v1.3.8) | Latest Mirror |
+| Package | Format | Download (v1.3.9) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.8**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.8/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable** | Standalone `.zip` | [**Download v1.3.8**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.8/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.3.9**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.9/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable** | Standalone `.zip` | [**Download v1.3.9**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.9/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Install or launch
 
@@ -253,6 +269,39 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 
 - Click **Check for Updates** in the application header or Settings.
 - View the latest Droply release information or update the embedded yt-dlp core engine with a single click.
+
+---
+
+<a id="bot-bypass-and-auth"></a>
+
+## 🍪 Bypassing YouTube "Sign In to Confirm You're Not a Bot"
+
+YouTube occasionally challenges anonymous requests from downloaders with bot-verification checks (`Sign in to confirm you're not a bot`). Droply provides two built-in solutions:
+
+### Option 1 (Easiest) — Local Browser Session Extraction
+1. Open **Settings** in Droply.
+2. Under **Browser Session Extraction**, select **Auto-Probe Installed Browsers** or choose your installed browser (e.g., **Firefox**, **Brave**, **Vivaldi**, **Edge**, or **Chrome**).
+3. Droply will automatically use your existing browser session to authenticate requests.
+
+### Option 2 (Persistent & Portable) — cookies.txt Import
+1. In your browser (Chrome, Edge, or Firefox), install the extension **Get cookies.txt LOCALLY**.
+2. Log into YouTube, click the extension icon, and export your cookies as `cookies.txt`.
+3. In Droply **Settings**, click **Browse...** or **Upload...** under **Persistent cookies.txt File** and select your file.
+4. Your cookies are saved securely on your PC in `~/.droply/cookies.txt` (or `%LOCALAPPDATA%\Droply\cookies.txt`) and never transmitted anywhere else.
+
+---
+
+<a id="regional-bans-advisory"></a>
+
+## 🌐 Regional Bans & VPN Advisory
+
+> [!WARNING]
+> **Platform Bans (e.g., TikTok in India, regional geo-blocks):**  
+> If an online platform is banned or restricted by your country's government or Internet Service Providers (ISPs), connection attempts will silently time out (*"Connection timed out or was blocked by host/ISP"*).
+
+To download media from banned or region-locked platforms:
+- **Turn on a VPN** connected to an unrestricted region (e.g. **Cloudflare WARP**, **ProtonVPN**, or **Windscribe**).
+- Or configure a system HTTP/SOCKS5 proxy before launching Droply. Droply will immediately route traffic through the active connection.
 
 ---
 

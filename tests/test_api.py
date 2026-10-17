@@ -72,10 +72,27 @@ class TestAPIEndpoints(unittest.TestCase):
         self.assertTrue(data["ffmpeg_ready"])
         self.assertIsNotNone(data["ffmpeg_path"])
         self.assertIn("ytdlp_version", data)
+        self.assertIn("cookies_ready", data)
+        self.assertIn("cookie_browser", data)
 
     def test_analyze_invalid_url_error(self):
         resp = client.post("/api/analyze", json={"url": "not-a-real-url"})
         self.assertEqual(resp.status_code, 400)
+
+    def test_auth_browsers_endpoint(self):
+        resp = client.get("/api/auth/browsers")
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertIn("installed", data)
+        self.assertIn("cookie_browser", data)
+
+    def test_cookie_upload_endpoint(self):
+        sample_cookies = "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tTRUE\t1750000000\tSID\tsample_cookie_value\n"
+        resp = client.post("/api/auth/cookies/upload", json={"content": sample_cookies})
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("cookies.txt", data["cookie_file"])
 
 
 if __name__ == "__main__":

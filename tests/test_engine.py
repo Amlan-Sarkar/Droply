@@ -104,18 +104,28 @@ class TestOmniFetchCore(unittest.TestCase):
         err_priv = humanize_error("Private video. Sign in to view.")
         self.assertIn("private", err_priv["friendly"].lower())
 
+        err_bot = humanize_error("Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies")
+        self.assertIn("bot", err_bot["friendly"].lower())
+        self.assertIn("cookies", err_bot["suggestion"].lower())
+
+        err_unavail = humanize_error("ERROR: [youtube] 0W3QSijwJOO: This video is unavailable")
+        self.assertIn("unavailable", err_unavail["friendly"].lower())
+        self.assertIn("typo", err_unavail["suggestion"].lower())
+
     def test_settings_persistence(self):
         """Test persistent settings saving and retrieval."""
         cfg_dir = Path(self.temp_dir) / "config"
         sm = SettingsManager(cfg_dir)
         defaults = sm.get_all()
         self.assertIn("download_dir", defaults)
+        self.assertIn("cookie_file", defaults)
         self.assertEqual(defaults["max_concurrent_downloads"], 3)
 
-        sm.update({"max_concurrent_downloads": 4, "theme": "oled"})
+        sm.update({"max_concurrent_downloads": 4, "theme": "oled", "cookie_file": "C:/path/cookies.txt"})
         sm_reloaded = SettingsManager(cfg_dir)
         self.assertEqual(sm_reloaded.get("max_concurrent_downloads"), 4)
         self.assertEqual(sm_reloaded.get("theme"), "oled")
+        self.assertEqual(sm_reloaded.get("cookie_file"), "C:/path/cookies.txt")
 
     def test_history_manager(self):
         """Test download history recording, listing, and deletion."""
