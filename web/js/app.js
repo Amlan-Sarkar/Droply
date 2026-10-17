@@ -17,18 +17,21 @@ class DroplyApp {
   }
 
   async init() {
-    this.setupTabs();
-    this.setupDownloader();
-    this.setupHistory();
-    this.setupSettings();
-    this.setupUpdateSystem();
-    this.setupWebSocketListeners();
+    try { this.setupTabs(); } catch (e) { console.error("Setup tabs error:", e); }
+    try { this.setupDownloader(); } catch (e) { console.error("Setup downloader error:", e); }
+    try { this.setupHistory(); } catch (e) { console.error("Setup history error:", e); }
+    try { this.setupSettings(); } catch (e) { console.error("Setup settings error:", e); }
+    try { this.setupUpdateSystem(); } catch (e) { console.error("Setup update system error:", e); }
+    try { this.setupWebSocketListeners(); } catch (e) { console.error("Setup WebSocket listeners error:", e); }
 
-    // Load initial data
-    await this.loadSettings();
-    await this.loadSystemStatus();
-    await this.loadTasks();
-    await this.loadHistory();
+    // Load initial data safely
+    try { await this.loadSettings(); } catch (e) { console.error("Error loading settings:", e); }
+    try { await this.loadSystemStatus(); } catch (e) { console.error("Error loading system status:", e); }
+    try { await this.loadTasks(); } catch (e) { console.error("Error loading tasks:", e); }
+    try { await this.loadHistory(); } catch (e) { console.error("Error loading history:", e); }
+
+    // Start background polling fallback for resilient download tracking
+    this.startTaskPolling();
   }
 
   // ================= TABS NAVIGATION =================
@@ -273,8 +276,16 @@ class DroplyApp {
 
     // Cancel active single download
     btnCancelSingle.addEventListener('click', async () => {
-      if (this.activeSingleTaskId) {
-        await api.cancelTask(this.activeSingleTaskId);
+      const activeId = this.activeSingleTaskId;
+      if (activeId) {
+        try {
+          await api.cancelTask(activeId);
+        } catch (e) {}
+        const t = (this.tasks || []).find(x => x.id === activeId);
+        if (t) {
+          t.status = 'cancelled';
+          Components.updateQueueItem(t);
+        }
         this.activeSingleTaskId = null;
       }
       // Reset single download progress UI completely
@@ -353,16 +364,36 @@ class DroplyApp {
         }
         await api.openFile(targetPath, id);
       } else if (action === 'cancel') {
-        await api.cancelTask(id);
+        try {
+          await api.cancelTask(id);
+        } catch (e) {}
+        const t = (this.tasks || []).find(x => x.id === id);
+        if (t) {
+          t.status = 'cancelled';
+          Components.updateQueueItem(t);
+        }
+        if (this.activeSingleTaskId === id) {
+          document.getElementById('single-download-card').style.display = 'none';
+          if (this.currentMedia) document.getElementById('media-card').style.display = 'block';
+          this.activeSingleTaskId = null;
+        }
+        Components.showToast('Download cancelled.', 'info');
       } else if (action === 'retry') {
         const errCard = document.getElementById('analyze-error');
         if (errCard) errCard.style.display = 'none';
         await api.retryTask(id);
       } else if (action === 'remove') {
-        await api.removeTask(id);
+        try {
+          await api.removeTask(id);
+        } catch (e) {}
         const card = document.getElementById(`q-task-${id}`);
         if (card) card.remove();
-        this.tasks = this.tasks.filter(t => t.id !== id);
+        this.tasks = (this.tasks || []).filter(t => t.id !== id);
+        if (this.activeSingleTaskId === id) {
+          document.getElementById('single-download-card').style.display = 'none';
+          if (this.currentMedia) document.getElementById('media-card').style.display = 'block';
+          this.activeSingleTaskId = null;
+        }
         this.updateRecentDownloadsHeader();
         if (this.tasks.length === 0) {
           this.renderQueueList();
@@ -693,12 +724,56 @@ class DroplyApp {
     header.style.display = visibleCount > 0 ? 'flex' : 'none';
   }
 
+  startTaskPolling() {
+    if (this._taskPollTimer) return;
+    this._taskPollTimer = setInterval(async () => {
+      const hasActive = (this.tasks || []).some(t =>
+        t.status === 'downloading' || t.status === 'processing' || t.status === 'queued'
+      );
+      if (hasActive || this.activeSingleTaskId) {
+        try {
+          const freshTasks = await api.getTasks();
+          if (Array.isArray(freshTasks)) {
+            this.tasks = freshTasks;
+            this.renderQueueList();
+
+            if (this.activeSingleTaskId) {
+              const single = freshTasks.find(t => t.id === this.activeSingleTaskId);
+              if (single) {
+                if (single.status === 'completed') {
+                  this.handleSingleSuccess(single);
+                } else if (single.status === 'failed') {
+                  document.getElementById('single-download-card').style.display = 'none';
+                  const errCard = document.getElementById('analyze-error');
+                  if (errCard) {
+                    document.getElementById('error-friendly-text').textContent = single.error_friendly || 'Download failed.';
+                    document.getElementById('error-tech-log').textContent = single.error_technical || 'No additional logs.';
+                    errCard.style.display = 'flex';
+                  }
+                } else if (single.status === 'cancelled') {
+                  document.getElementById('single-download-card').style.display = 'none';
+                  if (this.currentMedia) document.getElementById('media-card').style.display = 'block';
+                  this.activeSingleTaskId = null;
+                } else {
+                  this.updateSingleProgress(single);
+                }
+              }
+            }
+          }
+        } catch (e) {
+          // Ignore transient polling errors
+        }
+      }
+    }, 1500);
+  }
+
   // ================= HISTORY =================
   setupHistory() {
     const searchInput = document.getElementById('hist-search-input');
     const btnOpenFolder = document.getElementById('btn-hist-open-folder');
     const btnClearHist = document.getElementById('btn-hist-clear');
     const histStatFolder = document.getElementById('hist-stat-folder');
+    const container = document.getElementById('history-items-container');
 
     if (histStatFolder) {
       histStatFolder.addEventListener('click', async () => {
@@ -706,49 +781,57 @@ class DroplyApp {
       });
     }
 
-    searchInput.addEventListener('input', () => {
-      const query = searchInput.value.toLowerCase().trim();
-      const cards = container.querySelectorAll('.history-card');
-      cards.forEach(card => {
-        const titleEl = card.querySelector('.history-filename');
-        const title = titleEl ? titleEl.textContent.toLowerCase() : '';
-        card.style.display = (!query || title.includes(query)) ? 'grid' : 'none';
+    if (searchInput && container) {
+      searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        const cards = container.querySelectorAll('.history-card');
+        cards.forEach(card => {
+          const titleEl = card.querySelector('.history-filename');
+          const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+          card.style.display = (!query || title.includes(query)) ? 'grid' : 'none';
+        });
       });
-    });
+    }
 
-    btnOpenFolder.addEventListener('click', async () => {
-      await api.openFolder(this.settings.download_dir);
-    });
+    if (btnOpenFolder) {
+      btnOpenFolder.addEventListener('click', async () => {
+        await api.openFolder(this.settings.download_dir);
+      });
+    }
 
-    btnClearHist.addEventListener('click', async () => {
-      if (confirm('Are you sure you want to clear your download history? (Files will remain in your folder)')) {
-        await api.clearHistory();
-        await this.loadHistory();
-        Components.showToast('Download history cleared.', 'info');
-      }
-    });
+    if (btnClearHist) {
+      btnClearHist.addEventListener('click', async () => {
+        if (confirm('Are you sure you want to clear your download history? (Files will remain in your folder)')) {
+          await api.clearHistory();
+          await this.loadHistory();
+          Components.showToast('Download history cleared.', 'info');
+        }
+      });
+    }
 
     // History item card click delegation
-    container.addEventListener('click', async (e) => {
-      const target = e.target.closest('[data-action]');
-      if (!target) return;
+    if (container) {
+      container.addEventListener('click', async (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
 
-      const action = target.getAttribute('data-action');
-      const id = target.getAttribute('data-id');
-      const path = target.getAttribute('data-path');
+        const action = target.getAttribute('data-action');
+        const id = target.getAttribute('data-id');
+        const path = target.getAttribute('data-path');
 
-      if (action === 'open-file' || action === 'play') {
-        await api.openFile(path, id);
-      } else if (action === 'reveal') {
-        await api.revealFile(path, id);
-      } else if (action === 'delete-hist') {
-        await api.deleteHistoryItem(id);
-        const card = document.getElementById(`hist-item-${id}`);
-        if (card) card.remove();
-        await this.loadHistory();
-        Components.showToast('Removed record from history.', 'info');
-      }
-    });
+        if (action === 'open-file' || action === 'play') {
+          await api.openFile(path, id);
+        } else if (action === 'reveal') {
+          await api.revealFile(path, id);
+        } else if (action === 'delete-hist') {
+          await api.deleteHistoryItem(id);
+          const card = document.getElementById(`hist-item-${id}`);
+          if (card) card.remove();
+          await this.loadHistory();
+          Components.showToast('Removed record from history.', 'info');
+        }
+      });
+    }
   }
 
   async loadHistory() {
@@ -866,7 +949,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.5';
+      const appVer = status.app_version || 'v1.3.7';
       const ytdlpVer = status.ytdlp_version || '2026.08.19';
 
       const verPill = document.getElementById('header-version-pill');
@@ -1000,7 +1083,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.5';
+      if (curVerEl) curVerEl.textContent = 'v1.3.7';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1009,8 +1092,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.5';
-        const appLatest = info.app_latest || 'v1.3.5';
+        const appInst = info.app_installed || 'v1.3.7';
+        const appLatest = info.app_latest || 'v1.3.7';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1044,8 +1127,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        curVerEl.textContent = 'v1.3.5';
-        newVerEl.textContent = 'v1.3.5';
+        curVerEl.textContent = 'v1.3.7';
+        newVerEl.textContent = 'v1.3.7';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'Verified online. You can check the embedded yt-dlp core engine.';
         changelogEl.innerHTML = renderChangelog('');
@@ -1079,7 +1162,7 @@ class DroplyApp {
     // Primary action button handler (Download -> Restart & Install / Core Update)
     btnPrimary.addEventListener('click', async () => {
       if (downloadState === 'can-download') {
-        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.5'}/Droply-Setup.exe`;
+        const url = currentUpdateInfo?.installer_url || `https://github.com/Amlan-Sarkar/Droply/releases/download/${currentUpdateInfo?.app_latest || 'v1.3.7'}/Droply-Setup.exe`;
         const size = currentUpdateInfo?.installer_size || 0;
 
         downloadState = 'downloading';

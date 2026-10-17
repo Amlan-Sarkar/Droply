@@ -279,6 +279,9 @@ class QueueManager:
                     # Proceed with url if metadata probe fails
                     pass
 
+            last_progress_emit = [0.0]
+            last_percent = [-1.0]
+
             def progress_callback(info: Dict[str, Any]):
                 task.status = info.get("status", "downloading")
                 task.percent = info.get("percent", task.percent)
@@ -286,7 +289,13 @@ class QueueManager:
                 task.total_bytes = info.get("total_bytes", task.total_bytes)
                 task.speed_str = info.get("speed_str", task.speed_str)
                 task.eta_str = info.get("eta_str", task.eta_str)
-                self._broadcast("task_progress", task)
+
+                now = time.time()
+                pct = task.percent
+                if (now - last_progress_emit[0] >= 0.1) or (abs(pct - last_percent[0]) >= 0.5) or pct >= 100.0:
+                    last_progress_emit[0] = now
+                    last_percent[0] = pct
+                    self._broadcast("task_progress", task)
 
             res = provider.download(
                 url=task.url,

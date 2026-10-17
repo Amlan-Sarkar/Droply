@@ -2,6 +2,15 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.3.7]
+
+- **WebSocket Broadcast Serialization & Live Progress Sync:** Fixed the WebSocket concurrency race condition caused by unsynchronized ASGI send calls across worker threads during yt-dlp download hooks. Download progress, speed, ETA, and completion states now stream live to the UI without freezing at 0.0% ("Starting...").
+- **Resolved App Startup Reference Error:** Fixed an unhandled `ReferenceError: container is not defined` in `setupHistory()` that halted frontend initialization, which previously prevented the "Check for Updates" modal, WebSocket listeners, system status pill, and dynamic version detection from activating.
+- **Fail-Safe Background Polling Fallback:** Added resilient background task polling every 1.5s during active downloads, ensuring download progress and status transitions reliably complete in the UI even across network changes, socket drops, or local firewall interventions.
+- **Instant Cancel & Remove Action Responsiveness:** Queue item and active card "Cancel" and "Remove" (X) buttons now immediately update local UI state, dismiss the active progress card, and clear cancelled tasks from the queue list.
+- **Version Alignment & Dynamic Header Badging:** Updated all static version indicators, modal fallbacks, and API version loaders to `v1.3.7`.
+- **Intelligent yt-dlp Version Normalization:** Normalized PyPI version comparisons (e.g. `2026.08.19` vs `2026.8.19`) using numerical component tuples so up-to-date core engines are accurately reported.
+
 ## [1.3.6]
 
 - **Multi-Quality Re-download Isolation:** Resolved the issue where downloading the same media at a higher/different resolution (e.g., 144p followed by 1080p FHD) completed in 1 second by reusing the previous lower-quality file. Droply now enforces unique target filenames and enables download execution so distinct qualities download to disk independently without collisions.

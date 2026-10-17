@@ -59,6 +59,7 @@ from engine.file_manager import (
 # Active WebSocket connections
 active_connections: List[WebSocket] = []
 loop: Optional[asyncio.AbstractEventLoop] = None
+_ws_lock = asyncio.Lock()
 
 
 @asynccontextmanager
@@ -68,7 +69,7 @@ async def lifespan(app: FastAPI):
 
     # Forward queue manager events to WebSocket clients
     def on_queue_event(data: Dict[str, Any]):
-        if active_connections and loop:
+        if active_connections and loop and loop.is_running():
             asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
 
     queue_manager.add_listener(on_queue_event)
@@ -87,36 +88,45 @@ app.add_middleware(
 
 
 async def broadcast_ws(message: Dict[str, Any]):
-    dead = []
-    for ws in active_connections:
-        try:
-            await ws.send_json(message)
-        except Exception:
-            dead.append(ws)
-    for ws in dead:
-        if ws in active_connections:
-            active_connections.remove(ws)
+    async with _ws_lock:
+        dead = []
+        for ws in list(active_connections):
+            try:
+                await asyncio.wait_for(ws.send_json(message), timeout=2.0)
+            except Exception:
+                dead.append(ws)
+                try:
+                    await ws.close()
+                except Exception:
+                    pass
+        for ws in dead:
+            if ws in active_connections:
+                active_connections.remove(ws)
 
 
 @app.websocket("/ws/events")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    active_connections.append(websocket)
+    async with _ws_lock:
+        active_connections.append(websocket)
     try:
         # Send initial snapshot of all active tasks
-        await websocket.send_json({
-            "event": "initial_state",
-            "tasks": queue_manager.get_all_tasks()
-        })
+        async with _ws_lock:
+            await websocket.send_json({
+                "event": "initial_state",
+                "tasks": queue_manager.get_all_tasks()
+            })
         while True:
             # Keep connection alive
             await websocket.receive_text()
     except WebSocketDisconnect:
-        if websocket in active_connections:
-            active_connections.remove(websocket)
+        pass
     except Exception:
-        if websocket in active_connections:
-            active_connections.remove(websocket)
+        pass
+    finally:
+        async with _ws_lock:
+            if websocket in active_connections:
+                active_connections.remove(websocket)
 
 
 # ---------------- API REQUEST MODELS ----------------
@@ -552,7 +562,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.5"
+    return "v1.3.7"
 
 
 APP_VERSION = _load_app_version()
@@ -828,9 +838,14 @@ async def check_updates_endpoint():
                 data = json.loads(resp.read().decode('utf-8'))
                 ver = data.get("info", {}).get("version")
                 if ver:
-                    clean_ver = str(ver).strip().lstrip('v')
-                    clean_curr = current_ytdlp_version.strip().lstrip('v')
-                    return ver, (clean_ver == clean_curr)
+                    def _ver_tuple(v_str):
+                        try:
+                            return tuple(int(x) for x in re.findall(r'\d+', str(v_str)))
+                        except Exception:
+                            return (0,)
+                    clean_ver = _ver_tuple(ver)
+                    clean_curr = _ver_tuple(current_ytdlp_version)
+                    return ver, (clean_ver <= clean_curr)
         except Exception:
             pass
         return current_ytdlp_version, True
