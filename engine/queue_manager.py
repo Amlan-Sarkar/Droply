@@ -296,7 +296,8 @@ class QueueManager:
                 is_audio=task.is_audio,
                 audio_format=task.audio_format,
                 on_progress=progress_callback,
-                cancel_check=task.is_cancelled
+                cancel_check=task.is_cancelled,
+                title=task.title
             )
 
             task.status = "completed"

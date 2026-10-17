@@ -6,7 +6,7 @@
 
 #define MyAppName "Droply"
 #ifndef MyAppVersion
-#define MyAppVersion "1.3.5"
+#define MyAppVersion "1.3.6"
 #endif
 #define MyAppPublisher "Amlan Sarkar"
 #define MyAppURL "https://github.com/Amlan-Sarkar/Droply"

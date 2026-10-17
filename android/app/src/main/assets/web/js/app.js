@@ -107,7 +107,6 @@ class DroplyApp {
     const btnCancelSingle = document.getElementById('btn-cancel-single');
     const btnSuccessOpenFolder = document.getElementById('btn-success-open-folder');
     const btnSuccessPlay = document.getElementById('btn-success-play');
-    const btnDownloadAnother = document.getElementById('btn-download-another');
     const btnCloseError = document.getElementById('btn-close-error');
     const btnCopyTitle = document.getElementById('btn-copy-title');
 
@@ -250,14 +249,6 @@ class DroplyApp {
     btnSuccessPlay.addEventListener('click', async () => {
       const path = btnSuccessPlay.getAttribute('data-path');
       await api.openFile(path);
-    });
-
-    btnDownloadAnother.addEventListener('click', () => {
-      urlInput.value = '';
-      btnClear.style.display = 'none';
-      this.hideDetectedBadge();
-      this.resetSingleView();
-      urlInput.focus();
     });
 
     // Close error card

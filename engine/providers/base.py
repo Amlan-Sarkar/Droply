@@ -91,7 +91,8 @@ class BaseProvider(ABC):
         is_audio: bool,
         audio_format: str,
         on_progress: Callable[[Dict[str, Any]], None],
-        cancel_check: Callable[[], bool]
+        cancel_check: Callable[[], bool],
+        title: str = ""
     ) -> Dict[str, Any]:
         """
         Execute local download.

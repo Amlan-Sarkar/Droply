@@ -307,13 +307,17 @@ class DroplyAPI {
   }
 
   // ---------------- REST & NATIVE APIS ----------------
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, retries = 1) {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
     let resp;
     try {
       resp = await fetch(url, { ...options, headers });
     } catch (netErr) {
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 350));
+        return this.request(endpoint, options, retries - 1);
+      }
       const err = new Error(`Cannot connect to Droply backend engine at ${this.baseUrl}`);
       err.data = {
         error_friendly: 'Cannot connect to Droply backend server.',
@@ -669,7 +673,7 @@ class DroplyAPI {
     });
   }
 
-  async revealFile(filePath) {
+  async revealFile(filePath, taskId = null) {
     if (this.isNativeMobile()) {
       if (typeof window.DroplyAndroid !== 'undefined') {
         window.DroplyAndroid.openDownloadFolder();
@@ -678,11 +682,11 @@ class DroplyAPI {
     }
     return this.request('/api/reveal-file', {
       method: 'POST',
-      body: JSON.stringify({ file_path: filePath })
+      body: JSON.stringify({ file_path: filePath || '', task_id: taskId || null })
     });
   }
 
-  async openFile(filePath) {
+  async openFile(filePath, taskId = null) {
     if (this.isNativeMobile()) {
       if (typeof window.DroplyAndroid !== 'undefined') {
         if (typeof window.DroplyAndroid.openFile === 'function') {
@@ -696,7 +700,7 @@ class DroplyAPI {
     }
     return this.request('/api/open-file', {
       method: 'POST',
-      body: JSON.stringify({ file_path: filePath })
+      body: JSON.stringify({ file_path: filePath || '', task_id: taskId || null })
     });
   }
 

@@ -4,6 +4,27 @@
 
 const Components = {
   
+  // HTML and Attribute escaping helpers
+  escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  escapeAttr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  },
+
   // Platform Icons & Badges
   getPlatformIcon(platform = '') {
     const p = platform.toLowerCase();
@@ -163,24 +184,28 @@ const Components = {
       const isAudio = Boolean(task.is_audio);
       const tagType = isAudio ? 'AUDIO' : 'VIDEO';
       const tagText = isAudio ? 'Music • Tap to play' : 'Movies • Tap to watch';
+      const safePath = this.escapeAttr(task.file_path || '');
+      const safeId = this.escapeAttr(task.id || '');
+      const safeTitleAttr = this.escapeAttr(task.title || 'Downloaded Media');
+      const safeTitle = this.escapeHtml(task.title || 'Downloaded Media');
 
       card.innerHTML = `
-        <button class="omni-play-badge" data-action="open-file" data-path="${task.file_path || ''}" title="Tap to play">
+        <button class="omni-play-badge" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Tap to play">
           <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
         </button>
-        <div class="omni-recent-info" data-action="open-file" data-path="${task.file_path || ''}">
-          <div class="omni-recent-title" title="${task.title || 'Downloaded Media'}">${task.title || 'Downloaded Media'}</div>
+        <div class="omni-recent-info" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
+          <div class="omni-recent-title" title="${safeTitleAttr}">${safeTitle}</div>
           <div class="omni-recent-sub">
             <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${tagType}</span>
             <span class="omni-tag-text">${tagText}</span>
           </div>
         </div>
         <div class="omni-recent-actions">
-          <button class="btn-omni-open" data-action="open-file" data-path="${task.file_path || ''}">
+          <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             <span>Open</span>
           </button>
-          <button class="icon-btn-trash" data-action="remove" data-id="${task.id}" title="Remove">
+          <button class="icon-btn-trash" data-action="remove" data-id="${safeId}" title="Remove">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
@@ -247,12 +272,14 @@ const Components = {
         </button>
       `;
     } else if (task.status === 'completed') {
+      const safePath = this.escapeAttr(task.file_path || '');
+      const safeId = this.escapeAttr(task.id || '');
       return `
-        <button class="btn-omni-open" data-action="open-file" data-path="${task.file_path || ''}">
+        <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           <span>Open</span>
         </button>
-        <button class="icon-btn-trash" data-action="remove" data-id="${task.id}" title="Remove">
+        <button class="icon-btn-trash" data-action="remove" data-id="${safeId}" title="Remove">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
         </button>
       `;
@@ -351,37 +378,51 @@ const Components = {
   renderHistoryItem(item) {
     const card = document.createElement('div');
     card.className = 'history-card';
-    card.id = `hist-item-${item.id}`;
+    card.id = `hist-item-${item.id || 'entry'}`;
 
-    const platform = (item.platform && item.platform !== 'undefined') ? item.platform : 'YouTube';
+    const platform = (item.platform && item.platform !== 'undefined') ? String(item.platform) : 'YouTube';
     const icon = this.getPlatformIcon(platform);
-    const thumbSrc = item.thumbnail || '';
-    const isAudio = Boolean(item.is_audio || (item.format_label && item.format_label.toLowerCase().includes('audio')));
-    const formatLabel = (item.format_label && item.format_label !== 'undefined') ? item.format_label : (isAudio ? 'Audio' : 'Video');
+    const thumbSrc = item.thumbnail ? String(item.thumbnail) : '';
+    const fmtStr = String(item.format_label || '');
+    const isAudio = Boolean(item.is_audio || fmtStr.toLowerCase().includes('audio'));
+    const formatLabel = (fmtStr && fmtStr !== 'undefined') ? fmtStr : (isAudio ? 'Audio' : 'Video');
     const sizeStr = item.file_size_str || (item.file_size ? this.formatBytes(item.file_size) : (item.downloaded_bytes ? this.formatBytes(item.downloaded_bytes) : ''));
+    const title = String(item.filename || item.title || 'Downloaded Media');
+    const filePath = item.file_path ? String(item.file_path) : '';
+    const itemId = String(item.id || '');
+
+    const safeThumb = this.escapeAttr(thumbSrc);
+    const safeTitle = this.escapeHtml(title);
+    const safeTitleAttr = this.escapeAttr(title);
+    const safePlatform = this.escapeHtml(platform);
+    const safeFormat = this.escapeHtml(formatLabel);
+    const safeSize = this.escapeHtml(sizeStr);
+    const safeDate = this.escapeHtml(item.created_at_str || '');
+    const safePath = this.escapeAttr(filePath);
+    const safeId = this.escapeAttr(itemId);
 
     card.innerHTML = `
       <div class="history-thumb-box">
-        ${thumbSrc ? `<img class="history-thumb" src="${thumbSrc}" alt="thumb" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'history-thumb-fallback\\'>${icon}</div>';" />` : `<div class="history-thumb-fallback">${icon}</div>`}
+        ${thumbSrc ? `<img class="history-thumb" src="${safeThumb}" alt="thumb" onerror="this.style.display='none';const fb=this.parentElement.querySelector('.history-thumb-fallback');if(fb)fb.style.display='flex';" /><div class="history-thumb-fallback" style="display:none;">${icon}</div>` : `<div class="history-thumb-fallback">${icon}</div>`}
       </div>
       <div class="history-info">
-        <div class="history-filename" title="${item.filename || item.title}">${item.filename || item.title}</div>
+        <div class="history-filename" title="${safeTitleAttr}">${safeTitle}</div>
         <div class="history-meta-sub">
-          <span class="history-platform-badge">${platform}</span>
+          <span class="history-platform-badge">${safePlatform}</span>
           <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
-          ${sizeStr ? `<span>${sizeStr}</span>` : ''}
-          ${formatLabel ? `<span class="history-format-pill">${formatLabel}</span>` : ''}
-          ${item.created_at_str ? `<span>${item.created_at_str}</span>` : ''}
+          ${sizeStr ? `<span>${safeSize}</span>` : ''}
+          ${formatLabel ? `<span class="history-format-pill">${safeFormat}</span>` : ''}
+          ${safeDate ? `<span>${safeDate}</span>` : ''}
         </div>
       </div>
       <div class="history-actions">
-        ${item.file_path ? `
-          <button class="btn-omni-open" data-action="open-file" data-path="${item.file_path}" title="Open with compatible app">
+        ${filePath ? `
+          <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Open with compatible app">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             <span>Open</span>
           </button>
         ` : ''}
-        <button class="icon-btn-trash" data-action="delete-hist" data-id="${item.id}" title="Remove record">
+        <button class="icon-btn-trash" data-action="delete-hist" data-id="${safeId}" title="Remove record">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>

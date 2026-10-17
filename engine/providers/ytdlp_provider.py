@@ -7,6 +7,7 @@ merge video/audio streams, and convert audio formats across hundreds of platform
 import os
 import re
 import sys
+import time
 import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Callable, Optional
@@ -188,6 +189,11 @@ class YtDlpProvider(BaseProvider):
             'no_warnings': True,
             'extract_flat': 'in_playlist' if is_playlist else False,
             'skip_download': True,
+            'socket_timeout': 15,
+            'retries': 5,
+            'fragment_retries': 5,
+            'extractor_retries': 5,
+            'file_access_retries': 3,
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
             }
@@ -203,22 +209,35 @@ class YtDlpProvider(BaseProvider):
     def get_metadata(self, url: str) -> MediaMetadata:
         is_playlist = self.is_playlist_url(url)
         opts = self._get_ydl_opts(is_playlist=is_playlist)
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        info = None
+        last_error = None
+
+        # Robust extraction with automatic 1-second retry on transient 403 or handshake stalls
+        for attempt in range(2):
             try:
-                info = ydl.extract_info(url, download=False)
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    info = ydl.extract_info(url, download=False)
+                if info:
+                    break
             except Exception as e:
-                # If single video extraction failed on a playlist URL, try playlist extraction fallback
-                if not is_playlist and ("list=" in url or "playlist" in url):
-                    try:
-                        p_opts = self._get_ydl_opts(is_playlist=True)
-                        with yt_dlp.YoutubeDL(p_opts) as p_ydl:
-                            info = p_ydl.extract_info(url, download=False)
-                    except Exception:
-                        err_dict = humanize_error(str(e))
-                        raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
-                else:
-                    err_dict = humanize_error(str(e))
+                last_error = e
+                if attempt == 0:
+                    time.sleep(0.6)
+                    continue
+
+        if not info and last_error:
+            # If single video extraction failed on a playlist URL, try playlist extraction fallback
+            if not is_playlist and ("list=" in url or "playlist" in url):
+                try:
+                    p_opts = self._get_ydl_opts(is_playlist=True)
+                    with yt_dlp.YoutubeDL(p_opts) as p_ydl:
+                        info = p_ydl.extract_info(url, download=False)
+                except Exception:
+                    err_dict = humanize_error(str(last_error))
                     raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
+            else:
+                err_dict = humanize_error(str(last_error))
+                raise ValueError(f"{err_dict['friendly']}|SPLIT|{err_dict['technical']}")
 
         if not info:
             raise ValueError("No media information could be extracted from this URL.")
@@ -554,7 +573,8 @@ class YtDlpProvider(BaseProvider):
         is_audio: bool,
         audio_format: str,
         on_progress: Callable[[Dict[str, Any]], None],
-        cancel_check: Callable[[], bool]
+        cancel_check: Callable[[], bool],
+        title: str = ""
     ) -> Dict[str, Any]:
         os.makedirs(output_dir, exist_ok=True)
         final_file_info = {}
@@ -604,8 +624,21 @@ class YtDlpProvider(BaseProvider):
                 if fn and os.path.exists(fn):
                     final_file_info['final_path'] = fn
 
+        # Determine target extension and unique filename to prevent yt-dlp skipping duplicate downloads
+        target_ext = f".{audio_format.lower() if audio_format else 'mp3'}" if is_audio else ".mp4"
+        clean_title = sanitize_filename(title.strip() if title else "", max_length=150) if title else ""
+        chosen_stem = ""
+        if clean_title and clean_title.lower() not in ("analyzing...", "web media", "unknown"):
+            candidate = f"{clean_title}{target_ext}"
+            unique_name = get_unique_filename(output_dir, candidate)
+            chosen_stem = Path(unique_name).stem
+
+        if chosen_stem:
+            outtmpl = os.path.join(output_dir, f"{chosen_stem}.%(ext)s")
+        else:
+            outtmpl = os.path.join(output_dir, '%(title).150s.%(ext)s')
+
         # Base YDL options
-        outtmpl = os.path.join(output_dir, '%(title).150s.%(ext)s')
         ydl_opts: Dict[str, Any] = {
             'outtmpl': outtmpl,
             'quiet': True,
@@ -614,6 +647,9 @@ class YtDlpProvider(BaseProvider):
             'socket_timeout': 15,
             'retries': 5,
             'fragment_retries': 5,
+            'extractor_retries': 5,
+            'file_access_retries': 3,
+            'overwrites': True,        # CRITICAL: Always overwrite target stem so yt-dlp never skips download
             'continuedl': False,
             'progress_hooks': [ytdl_hook],
             'postprocessor_hooks': [ytdl_postprocessor_hook],
@@ -705,11 +741,16 @@ class YtDlpProvider(BaseProvider):
 
         # Determine output file path
         saved_file = None
-        if 'final_path' in final_file_info and os.path.exists(final_file_info['final_path']):
+        if chosen_stem:
+            target_cand = os.path.join(output_dir, f"{chosen_stem}{target_ext}")
+            if os.path.exists(target_cand):
+                saved_file = target_cand
+
+        if not saved_file and 'final_path' in final_file_info and os.path.exists(final_file_info['final_path']):
             saved_file = final_file_info['final_path']
-        elif 'finished_path' in final_file_info and os.path.exists(final_file_info['finished_path']):
+        elif not saved_file and 'finished_path' in final_file_info and os.path.exists(final_file_info['finished_path']):
             saved_file = final_file_info['finished_path']
-        elif info:
+        elif not saved_file and info:
             # Check requested_downloads or default prepared filename
             if 'requested_downloads' in info and len(info['requested_downloads']) > 0:
                 saved_file = info['requested_downloads'][0].get('filepath')

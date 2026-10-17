@@ -150,7 +150,8 @@ class PathRequest(BaseModel):
     path: Optional[str] = None
 
 class FileRequest(BaseModel):
-    file_path: str
+    file_path: Optional[str] = ""
+    task_id: Optional[str] = None
 
 class SettingsUpdateRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = None
@@ -440,16 +441,61 @@ async def api_open_folder(req: PathRequest):
     return {"success": success, "path": folder}
 
 
+def _resolve_request_file(file_path: Optional[str], task_id: Optional[str] = None) -> Optional[str]:
+    target = (file_path or "").strip()
+    if target:
+        resolved = resolve_existing_path(target)
+        if resolved:
+            return resolved
+
+    # Fallback to task_id lookup in queue_manager
+    if task_id:
+        task = queue_manager.get_task(task_id)
+        if task and task.file_path:
+            resolved = resolve_existing_path(task.file_path)
+            if resolved:
+                return resolved
+
+    # Fallback to history lookup if task_id matches a record
+    if task_id:
+        for item in history_manager.get_all():
+            if item.get("id") == task_id and item.get("file_path"):
+                resolved = resolve_existing_path(item.get("file_path"))
+                if resolved:
+                    return resolved
+
+    # Fallback: check download directory for basename of target
+    if target:
+        base = os.path.basename(target)
+        download_dir = settings_manager.get("download_dir", get_default_download_dir())
+        cand = os.path.join(download_dir, base)
+        resolved = resolve_existing_path(cand)
+        if resolved:
+            return resolved
+
+    return target if (target and os.path.exists(target)) else None
+
+
 @app.post("/api/reveal-file")
 async def api_reveal_file(req: FileRequest):
-    success = open_in_folder(req.file_path)
+    resolved = _resolve_request_file(req.file_path, req.task_id)
+    if resolved:
+        success = open_in_folder(resolved)
+        return {"success": success}
+    folder = settings_manager.get("download_dir", get_default_download_dir())
+    success = open_folder(folder)
     return {"success": success}
 
 
 @app.post("/api/open-file")
 async def api_open_file(req: FileRequest):
-    success = open_file(req.file_path)
-    return {"success": success}
+    resolved = _resolve_request_file(req.file_path, req.task_id)
+    if resolved:
+        success = open_file(resolved)
+        if not success:
+            success = open_in_folder(resolved)
+        return {"success": success}
+    return {"success": False, "error": "File not found"}
 
 
 @app.post("/api/browse-folder")

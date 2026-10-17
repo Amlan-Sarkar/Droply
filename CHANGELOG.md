@@ -2,6 +2,15 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.3.6]
+
+- **Multi-Quality Re-download Isolation:** Resolved the issue where downloading the same media at a higher/different resolution (e.g., 144p followed by 1080p FHD) completed in 1 second by reusing the previous lower-quality file. Droply now enforces unique target filenames and enables download execution so distinct qualities download to disk independently without collisions.
+- **Auto-Dismissal of Failed Download Error Cards:** The "Download unavailable" error card is now automatically dismissed whenever a retry is triggered, when a task transitions to downloading, or when a download finishes.
+- **Resilient Open File & Multi-Level Path Resolution:** Escaped and sanitized all HTML attributes for media titles containing quotes or special characters. Added task ID and download folder fallback resolution to ensure "Open" and "Play" buttons in Recent Downloads and History reliably launch the file.
+- **Reliable Library & History Rendering:** Added fault-tolerant item rendering in the History & Library tab, safeguarding against non-string format labels and unescaped thumbnail error handlers so every finished download renders cleanly in the list.
+- **Transient Handshake & 403 Auto-Retry:** Added automatic retry guards in media metadata extraction and API fetch requests to eliminate transient "source server rejected the request" and connection warnings on initial interaction.
+- **Streamlined Completion Interface:** Removed the redundant "Download Another" action button from the download completion card.
+
 ## [1.3.5]
 
 - **Accurate Media Size Estimations:** Implemented realistic bitrate caps for high-framerate, VP9, and AV1 video streams (preventing inflated 24+ Mbps estimations) and calibrated audio calculations so format chips display genuine, realistic sizes.

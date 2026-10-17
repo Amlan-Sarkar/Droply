@@ -107,7 +107,6 @@ class DroplyApp {
     const btnCancelSingle = document.getElementById('btn-cancel-single');
     const btnSuccessOpenFolder = document.getElementById('btn-success-open-folder');
     const btnSuccessPlay = document.getElementById('btn-success-play');
-    const btnDownloadAnother = document.getElementById('btn-download-another');
     const btnCloseError = document.getElementById('btn-close-error');
     const btnCopyTitle = document.getElementById('btn-copy-title');
 
@@ -295,20 +294,14 @@ class DroplyApp {
     // Success actions
     btnSuccessOpenFolder.addEventListener('click', async () => {
       const path = btnSuccessOpenFolder.getAttribute('data-path');
-      await api.revealFile(path);
+      const id = btnSuccessOpenFolder.getAttribute('data-id');
+      await api.revealFile(path, id);
     });
 
     btnSuccessPlay.addEventListener('click', async () => {
       const path = btnSuccessPlay.getAttribute('data-path');
-      await api.openFile(path);
-    });
-
-    btnDownloadAnother.addEventListener('click', () => {
-      urlInput.value = '';
-      btnClear.style.display = 'none';
-      this.hideDetectedBadge();
-      this.resetSingleView();
-      urlInput.focus();
+      const id = btnSuccessPlay.getAttribute('data-id');
+      await api.openFile(path, id);
     });
 
     // Close error card
@@ -353,11 +346,17 @@ class DroplyApp {
       const path = target.getAttribute('data-path');
 
       if (action === 'open-file') {
-        // Priority 1: Opens compatible app (Gallery, VLC, MX Player, etc.)
-        await api.openFile(path);
+        let targetPath = path;
+        if (!targetPath && id) {
+          const t = (this.tasks || []).find(x => x.id === id);
+          if (t && t.file_path) targetPath = t.file_path;
+        }
+        await api.openFile(targetPath, id);
       } else if (action === 'cancel') {
         await api.cancelTask(id);
       } else if (action === 'retry') {
+        const errCard = document.getElementById('analyze-error');
+        if (errCard) errCard.style.display = 'none';
         await api.retryTask(id);
       } else if (action === 'remove') {
         await api.removeTask(id);
@@ -709,10 +708,11 @@ class DroplyApp {
 
     searchInput.addEventListener('input', () => {
       const query = searchInput.value.toLowerCase().trim();
-      const cards = document.querySelectorAll('.history-card');
+      const cards = container.querySelectorAll('.history-card');
       cards.forEach(card => {
-        const title = card.querySelector('.history-filename').textContent.toLowerCase();
-        card.style.display = title.includes(query) ? 'flex' : 'none';
+        const titleEl = card.querySelector('.history-filename');
+        const title = titleEl ? titleEl.textContent.toLowerCase() : '';
+        card.style.display = (!query || title.includes(query)) ? 'grid' : 'none';
       });
     });
 
@@ -729,7 +729,6 @@ class DroplyApp {
     });
 
     // History item card click delegation
-    const container = document.getElementById('history-items-container');
     container.addEventListener('click', async (e) => {
       const target = e.target.closest('[data-action]');
       if (!target) return;
@@ -739,13 +738,14 @@ class DroplyApp {
       const path = target.getAttribute('data-path');
 
       if (action === 'open-file' || action === 'play') {
-        await api.openFile(path);
+        await api.openFile(path, id);
       } else if (action === 'reveal') {
-        await api.revealFile(path);
+        await api.revealFile(path, id);
       } else if (action === 'delete-hist') {
         await api.deleteHistoryItem(id);
         const card = document.getElementById(`hist-item-${id}`);
         if (card) card.remove();
+        await this.loadHistory();
         Components.showToast('Removed record from history.', 'info');
       }
     });
@@ -785,8 +785,12 @@ class DroplyApp {
       container.innerHTML = '';
 
       validItems.forEach(it => {
-        const card = Components.renderHistoryItem(it);
-        container.appendChild(card);
+        try {
+          const card = Components.renderHistoryItem(it);
+          if (card) container.appendChild(card);
+        } catch (cardErr) {
+          console.error("Error rendering history item card:", cardErr, it);
+        }
       });
 
     } catch (e) {
@@ -1301,6 +1305,10 @@ class DroplyApp {
       const task = payload.task;
       const idx = this.tasks.findIndex(t => t.id === task.id);
       if (idx >= 0) this.tasks[idx] = task;
+      if (this.activeSingleTaskId === task.id && (task.status === 'queued' || task.status === 'downloading')) {
+        const errCard = document.getElementById('analyze-error');
+        if (errCard) errCard.style.display = 'none';
+      }
       this.renderQueueList();
     });
 
@@ -1328,13 +1336,18 @@ class DroplyApp {
 
   handleSingleSuccess(task) {
     document.getElementById('single-download-card').style.display = 'none';
+    const errCard = document.getElementById('analyze-error');
+    if (errCard) errCard.style.display = 'none';
+
     const successCard = document.getElementById('single-success-card');
     document.getElementById('success-filename').textContent = task.filename || task.title;
 
     const btnFolder = document.getElementById('btn-success-open-folder');
     const btnPlay = document.getElementById('btn-success-play');
-    btnFolder.setAttribute('data-path', task.file_path);
-    btnPlay.setAttribute('data-path', task.file_path);
+    btnFolder.setAttribute('data-path', task.file_path || '');
+    btnFolder.setAttribute('data-id', task.id || '');
+    btnPlay.setAttribute('data-path', task.file_path || '');
+    btnPlay.setAttribute('data-id', task.id || '');
 
     successCard.style.display = 'flex';
     Components.showToast('Download completed successfully!', 'success');
