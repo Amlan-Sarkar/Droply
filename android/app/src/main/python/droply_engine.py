@@ -701,7 +701,11 @@ def check_updates(installed_app_version: str = "v1.2.9") -> str:
     if not current_app_version.startswith("v"):
         current_app_version = f"v{current_app_version}"
 
-    current_ytdlp_version = getattr(yt_dlp, "__version__", "unknown")
+    current_ytdlp_version = (
+        getattr(yt_dlp, "__version__", None) or
+        getattr(getattr(yt_dlp, "version", None), "__version__", None) or
+        "unknown"
+    )
 
     latest_app_version = current_app_version
     app_up_to_date = True

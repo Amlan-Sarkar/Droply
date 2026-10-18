@@ -1,5 +1,5 @@
 """
-OmniFetch - Provider Registry
+Droply - Provider Registry
 Manages registered providers and handles instant platform detection.
 """
 

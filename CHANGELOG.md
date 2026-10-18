@@ -2,6 +2,16 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.4.0]
+
+- **Engine Version Normalization:** Resolved a cosmetic issue where the status indicator showed `Engine vinstalled` instead of the genuine yt-dlp core version. The engine now inspects package metadata, module version attributes, and `yt_dlp.version.__version__` for robust version resolution.
+- **Bilibili Thumbnail Hotlink Proxy:** Fixed thumbnail loading for Bilibili links caused by CDN hotlinking restrictions (HTTP 403 Forbidden). Added `no-referrer` policies and a backend streaming proxy (`/api/proxy/thumbnail`) with Bilibili referer headers.
+- **Opus & M4A Format Disambiguation:** Rewrote audio stream parsing to independently extract native AAC/M4A streams vs Opus/WebM streams, displaying true format-specific bitrates and download footprints (~128 kbps vs ~160 kbps) rather than identical sizes.
+- **Transparent Audio Download UI:** The active download card and queue now display stream transfer metrics alongside expected encoded target sizes (e.g. `44.2 MB (Stream • Target ~105.6 MB)`) with a dedicated `Encoding MP3...` badge and status indicator during FFmpeg post-processing.
+- **Splash Screen Overhaul & Flash Elimination:** Eliminated the multi-stage visual glitch on launch. Fixed the bright white WebView2 canvas flash by initializing windows with dark mode background brushes, dismissed external Tkinter splashes, and implemented a smooth in-app CSS shimmer warmup card.
+- **Codebase Sanitization & Legacy Cleanup:** Purged redundant icon boilerplate files (`apple-touch-icon.png`, `icon-192.png`, `icon-512.png`), removed dead non-Windows platform branches, eliminated unused `aiofiles` dependency, added ProGuard configuration for Android, and unified all internal identifiers and thread naming to Droply.
+- **Platform Scope Formalization:** Cleaned all legacy Apple/iOS webclip meta tags and non-Windows file helpers to strictly align Droply with Windows (Desktop) and Android (Mobile).
+
 ## [1.3.9]
 
 - **Integrated Authentication & Cookie Manager:** Added full dual-mode authentication support to seamlessly bypass YouTube anti-bot verification challenges ("Sign in to confirm you're not a bot") and access member-only or restricted media.

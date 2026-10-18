@@ -1,5 +1,5 @@
 /**
- * OmniFetch UI Component Renderers & Helpers
+ * Droply UI Component Renderers & Helpers
  */
 
 const Components = {

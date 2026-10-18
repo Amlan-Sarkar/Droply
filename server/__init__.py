@@ -1,5 +1,5 @@
 """
-OmniFetch Server Package
+Droply Server Package
 """
 from .api import app
 

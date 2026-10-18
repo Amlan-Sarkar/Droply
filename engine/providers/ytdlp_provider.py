@@ -1,5 +1,5 @@
 """
-OmniFetch - Universal yt-dlp Provider
+Droply - Universal yt-dlp Provider
 Harnesses yt-dlp and local FFmpeg to extract metadata, detect qualities,
 merge video/audio streams, and convert audio formats across hundreds of platforms.
 """
@@ -141,7 +141,7 @@ class YtDlpProvider(BaseProvider):
         return {}
 
     def _locate_ffmpeg(self) -> Optional[str]:
-        binary_name = "ffmpeg.exe" if sys.platform == "win32" else "ffmpeg"
+        binary_name = "ffmpeg.exe"
         candidates = []
 
         # 1. Next to executable (PyInstaller onedir root and subfolders)
@@ -356,6 +356,8 @@ class YtDlpProvider(BaseProvider):
                 e_dur = int(entry.get('duration') or 0)
                 total_duration += e_dur
                 e_thumb = entry.get('thumbnail') or ""
+                if e_thumb.startswith("//"):
+                    e_thumb = f"https:{e_thumb}"
                 entries.append({
                     "id": eid,
                     "title": e_title,
@@ -367,6 +369,8 @@ class YtDlpProvider(BaseProvider):
                 })
 
             playlist_thumb = info.get('thumbnail') or (entries[0]['thumbnail'] if entries else "")
+            if playlist_thumb.startswith("//"):
+                playlist_thumb = f"https:{playlist_thumb}"
             title = info.get('title') or "Untitled Playlist"
             uploader = info.get('uploader') or info.get('channel') or info.get('creator') or "Unknown Creator"
 
@@ -409,6 +413,8 @@ class YtDlpProvider(BaseProvider):
         duration = int(info.get('duration') or 0)
         duration_str = format_seconds(duration)
         thumbnail = info.get('thumbnail') or ""
+        if thumbnail.startswith("//"):
+            thumbnail = f"https:{thumbnail}"
         description = info.get('description') or ""
         if len(description) > 300:
             description = description[:300] + "..."
@@ -642,42 +648,88 @@ class YtDlpProvider(BaseProvider):
         Computes realistic final file sizes on disk based on codec and duration:
         - WAV: Uncompressed 16-bit 44.1kHz stereo PCM (~176.4 KB/s)
         - MP3: High-quality 320 kbps CBR (~40 KB/s)
-        - M4A / Opus: Direct extracted stream from source audio
+        - M4A: Source AAC audio stream (typically 128 kbps)
+        - Opus: Source Opus audio stream (typically 160 kbps)
         """
-        # Find best source audio stream bitrate and filesize
+        # Best source audio stream overall
         best_audio_fs = 0
         best_audio_tbr = 0
+
+        # Specific search for native M4A / AAC streams
+        best_m4a_fs = 0
+        best_m4a_tbr = 0
+
+        # Specific search for native Opus / WebM streams
+        best_opus_fs = 0
+        best_opus_tbr = 0
+
         for f in raw_formats:
             if f.get('vcodec') == 'none' and f.get('acodec') != 'none':
                 fs = f.get('filesize') or f.get('filesize_approx') or 0
                 tbr = f.get('abr') or f.get('tbr') or 0
+                ext = (f.get('ext') or '').lower()
+                acodec = (f.get('acodec') or '').lower()
+
                 if fs > best_audio_fs:
                     best_audio_fs = fs
                 if tbr > best_audio_tbr:
                     best_audio_tbr = tbr
 
+                # Check if AAC / M4A stream
+                if ext == 'm4a' or 'mp4a' in acodec or 'aac' in acodec:
+                    if fs > best_m4a_fs:
+                        best_m4a_fs = fs
+                    if tbr > best_m4a_tbr:
+                        best_m4a_tbr = tbr
+
+                # Check if Opus / WebM stream
+                if 'opus' in acodec or ext in ('webm', 'opus'):
+                    if fs > best_opus_fs:
+                        best_opus_fs = fs
+                    if tbr > best_opus_tbr:
+                        best_opus_tbr = tbr
+
         if best_audio_fs == 0 and duration > 0:
             rate = best_audio_tbr if best_audio_tbr > 0 else 128
             best_audio_fs = int(rate * 1024 * duration / 8)
 
-        # Network stream download size (approx source AAC/Opus size)
+        # Baseline network stream download size
         net_fs = best_audio_fs if best_audio_fs > 0 else (int(128 * 1024 * duration / 8) if duration > 0 else 0)
+
+        # Distinct M4A stream size:
+        if best_m4a_fs > 0:
+            m4a_fs = best_m4a_fs
+        elif best_m4a_tbr > 0 and duration > 0:
+            m4a_fs = int(best_m4a_tbr * 1024 * duration / 8)
+        elif duration > 0:
+            m4a_fs = int(128 * 1024 * duration / 8)
+        else:
+            m4a_fs = net_fs
+
+        # Distinct Opus stream size:
+        if best_opus_fs > 0:
+            opus_fs = best_opus_fs
+        elif best_opus_tbr > 0 and duration > 0:
+            opus_fs = int(best_opus_tbr * 1024 * duration / 8)
+        elif duration > 0:
+            opus_fs = int(160 * 1024 * duration / 8)
+        else:
+            opus_fs = net_fs
 
         # Realistic post-conversion disk file sizes:
         # WAV is 16-bit 44.1kHz stereo PCM = 44100 * 2 channels * 2 bytes/sample = 176,400 bytes/sec
         wav_fs = int(176400 * duration) if duration > 0 else (net_fs * 10 if net_fs > 0 else 0)
         # MP3 re-encoded at 320 kbps CBR = 320,000 bits / 8 = 40,000 bytes/sec
         mp3_fs = int(40000 * duration) if duration > 0 else (net_fs * 2 if net_fs > 0 else 0)
-        # M4A extracted AAC source stream
-        m4a_fs = net_fs
-        # Opus extracted WebM/Opus source stream
-        opus_fs = net_fs
+
+        m4a_kbps = round(best_m4a_tbr) if best_m4a_tbr > 0 else 128
+        opus_kbps = round(best_opus_tbr) if best_opus_tbr > 0 else 160
 
         audio_options = [
             ("mp3", "MP3 Audio (Universal 320 kbps)", mp3_fs, f"{format_bytes(mp3_fs)} • 320 kbps MP3" if mp3_fs > 0 else "320 kbps Universal"),
-            ("m4a", "M4A Audio (Apple / AAC Quality)", m4a_fs, f"{format_bytes(m4a_fs)} • Source AAC" if m4a_fs > 0 else "Source AAC"),
+            ("m4a", "M4A Audio (Apple / AAC Quality)", m4a_fs, f"{format_bytes(m4a_fs)} • Source AAC ({m4a_kbps} kbps)" if m4a_fs > 0 else "Source AAC"),
             ("wav", "WAV Audio (Uncompressed Lossless)", wav_fs, f"{format_bytes(wav_fs)} • 1411 kbps PCM" if wav_fs > 0 else "Lossless PCM"),
-            ("opus", "Opus Audio (Best Web Codec)", opus_fs, f"{format_bytes(opus_fs)} • Source Opus" if opus_fs > 0 else "Source Opus"),
+            ("opus", "Opus Audio (Best Web Codec)", opus_fs, f"{format_bytes(opus_fs)} • Source Opus ({opus_kbps} kbps)" if opus_fs > 0 else "Source Opus"),
         ]
 
         result = []
@@ -713,6 +765,7 @@ class YtDlpProvider(BaseProvider):
     ) -> Dict[str, Any]:
         os.makedirs(output_dir, exist_ok=True)
         final_file_info = {}
+        target_codec = audio_format.lower() if audio_format else "mp3"
 
         def ytdl_hook(d):
             if cancel_check():
@@ -749,7 +802,7 @@ class YtDlpProvider(BaseProvider):
                     "percent": 99.0,
                     "downloaded_bytes": d.get('total_bytes', 0),
                     "total_bytes": d.get('total_bytes', 0),
-                    "speed_str": "Merging / Finalizing",
+                    "speed_str": f"Encoding {target_codec.upper()}..." if is_audio else "Merging / Finalizing",
                     "eta_str": "A few seconds"
                 })
 
@@ -812,8 +865,13 @@ class YtDlpProvider(BaseProvider):
 
         if is_audio:
             target_codec = audio_format.lower() if audio_format else "mp3"
-            # Prioritize genuine audio-only streams so full videos are not downloaded unnecessarily
-            ydl_opts['format'] = 'bestaudio/bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best'
+            # Prioritize genuine audio-only streams matching target codec to minimize transcoding loss
+            if target_codec == 'm4a':
+                ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/best'
+            elif target_codec == 'opus':
+                ydl_opts['format'] = 'bestaudio[ext=webm]/bestaudio/best'
+            else:
+                ydl_opts['format'] = 'bestaudio/bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best'
             if has_ffmpeg:
                 ydl_opts['postprocessors'] = [{
                     'key': 'FFmpegExtractAudio',

@@ -1,5 +1,5 @@
 /* ===================================================================
-   OmniFetch Design System & Desktop UI Stylesheet
+   Droply Design System & Desktop UI Stylesheet
    =================================================================== */
 
 :root {
@@ -4028,6 +4028,172 @@ input:checked + .toggle-slider:before {
   opacity: 0.65;
   cursor: not-allowed;
   transform: none;
+}
+
+/* ===================================================================
+   IN-APP DESKTOP SPLASH SCREEN (Seamless Warmup Overlay)
+   =================================================================== */
+
+.app-splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: radial-gradient(circle at 50% 38%, rgba(20, 27, 45, 0.98) 0%, #0a0d14 75%);
+  backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1), transform 0.38s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.38s ease;
+}
+
+.app-splash-overlay.fade-out {
+  opacity: 0;
+  transform: scale(1.03);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+  padding: 40px;
+  animation: splashCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes splashCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.splash-logo-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 22px;
+}
+
+.splash-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 25px rgba(99, 102, 241, 0.6));
+  animation: splashLogoPulse 2.4s ease-in-out infinite;
+}
+
+.splash-logo-glow {
+  position: absolute;
+  inset: -15px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.45) 0%, rgba(168, 85, 247, 0.25) 45%, transparent 70%);
+  border-radius: 50%;
+  z-index: 1;
+  filter: blur(14px);
+  animation: splashAura 2.4s ease-in-out infinite;
+}
+
+@keyframes splashLogoPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes splashAura {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.splash-brand-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.splash-paw {
+  font-size: 24px;
+  display: inline-block;
+  transform: rotate(12deg);
+}
+
+.splash-tagline {
+  font-size: 13.5px;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  margin: 0 0 32px 0;
+}
+
+.splash-loader-container {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.splash-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.splash-progress-shimmer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(90deg, #6366f1 0%, #a855f7 50%, #38bdf8 100%);
+  border-radius: 9999px;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.85);
+  animation: splashShimmer 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes splashShimmer {
+  0% {
+    left: -45%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.splash-status-text {
+  font-size: 12px;
+  color: #64748b;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.3px;
+  transition: color 0.2s ease;
 }
 
 

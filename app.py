@@ -236,6 +236,10 @@ def main():
             print("\nShutting down Droply.")
             sys.exit(0)
 
+    # Dismiss any PyInstaller bootloader splash before creating the native window
+    # This prevents the splash from lingering and hovering over the opening desktop window
+    close_splash()
+
     # Attempt native desktop window via pywebview
     try:
         import webview
@@ -251,20 +255,8 @@ def main():
             height=820,
             min_size=(920, 640),
             text_select=True,
+            background_color='#0a0d14'
         )
-
-        # Transition from splash to main interface as soon as essential UI components are ready
-        def on_window_loaded():
-            close_splash()
-
-        window.events.loaded += on_window_loaded
-
-        # Fallback safety timer: ensure splash screen never lingers if window load event is delayed
-        def splash_safety_timer():
-            time.sleep(2.0)
-            close_splash()
-
-        threading.Thread(target=splash_safety_timer, daemon=True, name="SplashSafetyTimer").start()
 
         def set_win32_window_icon():
             """Ensures the Droply icon is set on the Win32 window handle and taskbar."""

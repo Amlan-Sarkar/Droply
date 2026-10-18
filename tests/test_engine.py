@@ -1,5 +1,5 @@
 """
-OmniFetch - Automated Comprehensive Engine & API Test Suite
+Droply - Automated Comprehensive Engine & API Test Suite
 Validates core providers, platform detection, file manager, queue, settings, history, and REST API.
 """
 
@@ -15,14 +15,14 @@ root_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(root_dir))
 
 from engine.providers.registry import registry
-from engine.providers.ytdlp_provider import humanize_error
+from engine.providers.ytdlp_provider import humanize_error, YtDlpProvider
 from engine.file_manager import sanitize_filename, get_unique_filename, format_bytes, format_seconds
 from engine.settings_manager import SettingsManager
 from engine.history_manager import HistoryManager
 from engine.queue_manager import QueueManager, DownloadTask
 
 
-class TestOmniFetchCore(unittest.TestCase):
+class TestDroplyCore(unittest.TestCase):
 
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
@@ -92,6 +92,20 @@ class TestOmniFetchCore(unittest.TestCase):
         self.assertEqual(format_seconds(45), "00:45")
         self.assertEqual(format_seconds(125), "02:05")
         self.assertEqual(format_seconds(3665), "01:01:05")
+
+    def test_audio_format_distinct_sizes(self):
+        """Test that distinct AAC and Opus streams yield distinct estimated sizes."""
+        provider = YtDlpProvider()
+        raw_formats = [
+            {"vcodec": "none", "acodec": "mp4a.40.2", "ext": "m4a", "abr": 128, "filesize": 35000000},
+            {"vcodec": "none", "acodec": "opus", "ext": "webm", "abr": 160, "filesize": 44200000},
+        ]
+        audio_fmts = provider._parse_audio_formats(raw_formats, duration=2000)
+        sizes = {f.ext: f.filesize_approx for f in audio_fmts}
+        self.assertEqual(sizes["m4a"], 35000000)
+        self.assertEqual(sizes["opus"], 44200000)
+        self.assertNotEqual(sizes["m4a"], sizes["opus"])
+        self.assertGreater(sizes["wav"], sizes["mp3"])
 
     def test_humanize_errors(self):
         """Test friendly user error translation."""

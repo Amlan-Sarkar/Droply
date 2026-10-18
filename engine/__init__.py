@@ -1,5 +1,5 @@
 """
-OmniFetch Core Engine
+Droply Core Engine
 """
 from .providers.registry import registry
 from .settings_manager import settings_manager

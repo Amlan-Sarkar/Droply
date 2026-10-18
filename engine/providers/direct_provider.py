@@ -1,5 +1,5 @@
 """
-OmniFetch - Direct Media Provider
+Droply - Direct Media Provider
 Handles direct HTTP/HTTPS media URLs (mp4, webm, mp3, m4a, wav, mkv, flac, etc.)
 """
 

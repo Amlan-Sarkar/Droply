@@ -1,5 +1,5 @@
 """
-OmniFetch - API Integration Tests
+Droply - API Integration Tests
 Tests all FastAPI REST endpoints.
 """
 
@@ -122,6 +122,10 @@ class TestAPIEndpoints(unittest.TestCase):
         data = resp.json()
         self.assertEqual(data["status"], "success")
         self.assertIn("cookies.txt", data["cookie_file"])
+
+    def test_proxy_thumbnail_invalid_url(self):
+        resp = client.get("/api/proxy/thumbnail?url=invalid")
+        self.assertEqual(resp.status_code, 400)
 
 
 if __name__ == "__main__":

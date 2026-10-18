@@ -14,6 +14,7 @@ class DroplyApp {
     this.settings = {};
 
     this.init();
+    setTimeout(() => this.dismissSplash(), 2000);
   }
 
   async init() {
@@ -25,10 +26,34 @@ class DroplyApp {
     this.setupWebSocketListeners();
 
     // Load initial data
-    await this.loadSettings();
-    await this.loadSystemStatus();
-    await this.loadTasks();
-    await this.loadHistory();
+    try {
+      await this.loadSettings();
+      await this.loadSystemStatus();
+      await this.loadTasks();
+      await this.loadHistory();
+    } catch (e) {
+      console.error("Init load error:", e);
+    }
+
+    this.dismissSplash();
+  }
+
+  dismissSplash() {
+    const splash = document.getElementById('app-splash');
+    if (!splash) return;
+    const statusLabel = document.getElementById('splash-status-label');
+    if (statusLabel) {
+      statusLabel.textContent = 'Services Online';
+      statusLabel.style.color = '#34d399';
+    }
+    setTimeout(() => {
+      splash.classList.add('fade-out');
+      setTimeout(() => {
+        if (splash && splash.parentElement) {
+          splash.parentElement.removeChild(splash);
+        }
+      }, 420);
+    }, 250);
   }
 
   // ================= TABS NAVIGATION =================
@@ -430,7 +455,9 @@ class DroplyApp {
 
       const thumbImg = document.getElementById('media-thumb-img');
       if (data.thumbnail) {
-        thumbImg.src = data.thumbnail;
+        let thumbUrl = data.thumbnail;
+        if (thumbUrl.startsWith('//')) thumbUrl = 'https:' + thumbUrl;
+        thumbImg.src = thumbUrl;
         thumbImg.style.display = 'block';
       } else {
         thumbImg.style.display = 'none';
@@ -785,7 +812,16 @@ class DroplyApp {
         }
       }
 
-      document.getElementById('diag-ytdlp').textContent = `yt-dlp v${status.ytdlp_version}`;
+      const rawYtdlp = status.ytdlp_version;
+      const diagYtdlp = document.getElementById('diag-ytdlp');
+      if (diagYtdlp) {
+        if (rawYtdlp && rawYtdlp !== 'unknown' && rawYtdlp !== 'installed') {
+          const cleanVer = rawYtdlp.startsWith('v') ? rawYtdlp.slice(1) : rawYtdlp;
+          diagYtdlp.textContent = `yt-dlp v${cleanVer}`;
+        } else {
+          diagYtdlp.textContent = 'yt-dlp (Embedded Engine)';
+        }
+      }
       document.getElementById('diag-ffmpeg').textContent = status.ffmpeg_ready ? 'Bundled v7.1 (Active)' : 'Not Available';
       document.getElementById('diag-python').textContent = `Python ${status.python_version}`;
 

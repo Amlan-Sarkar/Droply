@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0a0d14">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Droply</title>
   <meta name="description" content="High-performance, private, local media downloader and stream extractor.">
+  <meta name="referrer" content="no-referrer">
   <!-- Modern Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +14,29 @@
   <!-- Favicon and App Icons -->
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" href="assets/icon.png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <!-- Main Stylesheet -->
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-theme="dark">
+  <!-- IN-APP NATIVE SPLASH OVERLAY (Instant Dark Mode Warmup) -->
+  <div id="app-splash" class="app-splash-overlay">
+    <div class="splash-card">
+      <div class="splash-logo-wrap">
+        <img src="assets/icon.png" alt="Droply" class="splash-logo-img">
+        <div class="splash-logo-glow"></div>
+      </div>
+      <h1 class="splash-brand-title">Drop<span class="gradient-text">ly</span><span class="splash-paw">🐾</span></h1>
+      <p class="splash-tagline">Universal Local Media Downloader</p>
+
+      <div class="splash-loader-container">
+        <div class="splash-progress-track">
+          <div class="splash-progress-shimmer"></div>
+        </div>
+        <div class="splash-status-text" id="splash-status-label">Starting engine...</div>
+      </div>
+    </div>
+  </div>
+
   <div class="app-layout">
     
     <!-- TOP NAVIGATION HEADER (DROPLY DESKTOP) -->
@@ -32,7 +49,7 @@
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
-        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.3.9</span>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.4.0</span>
         <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
@@ -251,7 +268,7 @@
               
               <!-- LEFT: THUMBNAIL & BADGES -->
               <div class="media-thumb-container">
-                <img id="media-thumb-img" class="media-thumb-img" src="" alt="Thumbnail preview" />
+                <img id="media-thumb-img" class="media-thumb-img" referrerpolicy="no-referrer" src="" alt="Thumbnail preview" />
                 <div class="thumb-duration-badge" id="media-duration">00:00</div>
                 <div class="thumb-platform-tag" id="media-platform-tag">YouTube</div>
               </div>
@@ -788,7 +805,7 @@
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.3.9</span>
+              <span class="ver-value" id="update-cur-ver">v1.4.0</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">

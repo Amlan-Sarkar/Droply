@@ -1,5 +1,5 @@
 /**
- * OmniFetch UI Component Renderers & Helpers
+ * Droply UI Component Renderers & Helpers
  */
 
 const Components = {
@@ -215,12 +215,16 @@ const Components = {
 
     // Active downloading or pending / failed card
     card.className = 'queue-item-card';
-    const thumbSrc = task.thumbnail || '';
+    let thumbSrc = task.thumbnail || '';
+    if (thumbSrc.startsWith('//')) thumbSrc = 'https:' + thumbSrc;
+    if (thumbSrc.includes('hdslb.com') || thumbSrc.includes('bilibili.com')) {
+      thumbSrc = `/api/proxy/thumbnail?url=${encodeURIComponent(thumbSrc)}`;
+    }
     const platformIcon = this.getPlatformIcon(task.platform);
 
     let statusClass = task.status || 'queued';
     let statusLabel = task.status || 'Queued';
-    if (task.status === 'processing') statusLabel = 'Merging';
+    if (task.status === 'processing') statusLabel = task.is_audio ? 'Encoding' : 'Merging';
     if (task.status === 'downloading') statusLabel = 'Downloading';
     if (task.status === 'cancelled') statusLabel = 'Cancelled';
     if (task.status === 'failed') statusLabel = 'Failed';
@@ -230,7 +234,7 @@ const Components = {
 
     card.innerHTML = `
       <div style="position: relative;">
-        ${thumbSrc ? `<img class="queue-item-thumb" src="${thumbSrc}" alt="thumb" />` : `<div class="queue-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${platformIcon}</div>`}
+        ${thumbSrc ? `<img class="queue-item-thumb" referrerpolicy="no-referrer" src="${thumbSrc}" alt="thumb" onerror="if(!this.src.includes('/api/proxy/thumbnail') && '${this.escapeAttr(task.thumbnail || '')}'){this.src='/api/proxy/thumbnail?url=' + encodeURIComponent('${this.escapeAttr(task.thumbnail || '')}');}else{this.style.display='none';}" />` : `<div class="queue-item-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px;">${platformIcon}</div>`}
       </div>
       <div class="queue-item-info">
         <div class="queue-item-title-row">
@@ -312,10 +316,27 @@ const Components = {
         <span style="color: #a5b4fc;">${task.format_label || ''}</span>
       `;
     }
+    if (task.status === 'processing') {
+      const isAudio = Boolean(task.is_audio);
+      const audioFmt = (task.audio_format || 'audio').toUpperCase();
+      const encLabel = isAudio ? `Encoding ${audioFmt}` : 'Merging Streams';
+      const targetStr = task.expected_size_str ? ` (~${task.expected_size_str.split('•')[0].trim()})` : '';
+      return `
+        <span style="color: #60a5fa; font-weight: 600;">${encLabel}${targetStr}</span>
+        <span>${task.speed_str || 'Finalizing...'}</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    const isAudio = Boolean(task.is_audio);
+    const audioFmt = (task.audio_format || 'audio').toUpperCase();
+    const targetSizeClean = (task.expected_size_str || '').split('•')[0].trim();
+    const targetHint = (isAudio && targetSizeClean && ['MP3', 'WAV'].includes(audioFmt))
+      ? ` • Target: ~${targetSizeClean}`
+      : '';
     return `
       <span>${task.percent ? task.percent.toFixed(1) : '0.0'}%</span>
       <span>${task.speed_str || '-- KB/s'}</span>
-      <span>${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}</span>
+      <span>${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}${targetHint}</span>
       <span>ETA: ${task.eta_str || '--:--'}</span>
       <span style="color: #a5b4fc;">${task.format_label || ''}</span>
     `;
@@ -381,8 +402,11 @@ const Components = {
     card.id = `hist-item-${item.id || 'entry'}`;
 
     const platform = (item.platform && item.platform !== 'undefined') ? String(item.platform) : 'YouTube';
-    const icon = this.getPlatformIcon(platform);
-    const thumbSrc = item.thumbnail ? String(item.thumbnail) : '';
+    let thumbSrc = item.thumbnail ? String(item.thumbnail) : '';
+    if (thumbSrc.startsWith('//')) thumbSrc = 'https:' + thumbSrc;
+    if (thumbSrc.includes('hdslb.com') || thumbSrc.includes('bilibili.com')) {
+      thumbSrc = `/api/proxy/thumbnail?url=${encodeURIComponent(thumbSrc)}`;
+    }
     const fmtStr = String(item.format_label || '');
     const isAudio = Boolean(item.is_audio || fmtStr.toLowerCase().includes('audio'));
     const formatLabel = (fmtStr && fmtStr !== 'undefined') ? fmtStr : (isAudio ? 'Audio' : 'Video');
@@ -403,7 +427,7 @@ const Components = {
 
     card.innerHTML = `
       <div class="history-thumb-box">
-        ${thumbSrc ? `<img class="history-thumb" src="${safeThumb}" alt="thumb" onerror="this.style.display='none';const fb=this.parentElement.querySelector('.history-thumb-fallback');if(fb)fb.style.display='flex';" /><div class="history-thumb-fallback" style="display:none;">${icon}</div>` : `<div class="history-thumb-fallback">${icon}</div>`}
+        ${thumbSrc ? `<img class="history-thumb" referrerpolicy="no-referrer" src="${safeThumb}" alt="thumb" onerror="if(!this.src.includes('/api/proxy/thumbnail') && '${this.escapeAttr(item.thumbnail || '')}'){this.src='/api/proxy/thumbnail?url=' + encodeURIComponent('${this.escapeAttr(item.thumbnail || '')}');}else{this.style.display='none';const fb=this.parentElement.querySelector('.history-thumb-fallback');if(fb)fb.style.display='flex';}" /><div class="history-thumb-fallback" style="display:none;">${icon}</div>` : `<div class="history-thumb-fallback">${icon}</div>`}
       </div>
       <div class="history-info">
         <div class="history-filename" title="${safeTitleAttr}">${safeTitle}</div>

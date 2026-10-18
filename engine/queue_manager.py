@@ -1,5 +1,5 @@
 """
-OmniFetch - Queue & Download Manager
+Droply - Queue & Download Manager
 Coordinates concurrent download jobs, batch queues, status tracking,
 cancellation, retries, and WebSocket event broadcasts.
 """
@@ -30,7 +30,9 @@ class DownloadTask:
         is_audio: bool = False,
         audio_format: str = "mp3",
         output_dir: str = "",
-        task_id: str = None
+        task_id: str = None,
+        expected_size_str: str = "",
+        expected_bytes: int = 0
     ):
         self.id = task_id or str(uuid.uuid4())
         self.url = url
@@ -42,6 +44,8 @@ class DownloadTask:
         self.is_audio = is_audio
         self.audio_format = audio_format
         self.output_dir = output_dir or settings_manager.get("download_dir", get_default_download_dir())
+        self.expected_size_str = expected_size_str
+        self.expected_bytes = expected_bytes
 
         self.status = "queued" # queued, downloading, processing, completed, failed, cancelled, paused
         self.percent = 0.0
@@ -87,6 +91,8 @@ class DownloadTask:
             "downloaded_str": format_bytes(self.downloaded_bytes),
             "total_bytes": self.total_bytes,
             "total_str": format_bytes(self.total_bytes) if self.total_bytes > 0 else "Unknown",
+            "expected_size_str": self.expected_size_str,
+            "expected_bytes": self.expected_bytes,
             "speed_str": self.speed_str,
             "eta_str": self.eta_str,
             "error_friendly": self.error_friendly,
@@ -105,7 +111,7 @@ class QueueManager:
         self.tasks: Dict[str, DownloadTask] = {}
         self.task_order: List[str] = []
         self._lock = threading.Lock()
-        self._executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="omni_worker")
+        self._executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="droply_worker")
         self._listeners: List[Callable[[Dict[str, Any]], None]] = []
         self._running = True
 
@@ -152,7 +158,9 @@ class QueueManager:
         format_label: str = "Best Quality",
         is_audio: bool = False,
         audio_format: str = "mp3",
-        output_dir: str = ""
+        output_dir: str = "",
+        expected_size_str: str = "",
+        expected_bytes: int = 0
     ) -> DownloadTask:
         with self._lock:
             if not platform:
@@ -169,7 +177,9 @@ class QueueManager:
                 format_label=format_label,
                 is_audio=is_audio,
                 audio_format=audio_format,
-                output_dir=output_dir
+                output_dir=output_dir,
+                expected_size_str=expected_size_str,
+                expected_bytes=expected_bytes
             )
             self.tasks[task.id] = task
             self.task_order.insert(0, task.id)

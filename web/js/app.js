@@ -14,6 +14,8 @@ class DroplyApp {
     this.settings = {};
 
     this.init();
+    // Safety fallback: ensure splash always dismisses even on slow network
+    setTimeout(() => this.dismissSplash(), 2000);
   }
 
   async init() {
@@ -32,6 +34,27 @@ class DroplyApp {
 
     // Start background polling fallback for resilient download tracking
     this.startTaskPolling();
+
+    // Smoothly dismiss in-app splash screen once initial setup completes
+    this.dismissSplash();
+  }
+
+  dismissSplash() {
+    const splash = document.getElementById('app-splash');
+    if (!splash) return;
+    const statusLabel = document.getElementById('splash-status-label');
+    if (statusLabel) {
+      statusLabel.textContent = 'Services Online';
+      statusLabel.style.color = '#34d399';
+    }
+    setTimeout(() => {
+      splash.classList.add('fade-out');
+      setTimeout(() => {
+        if (splash && splash.parentElement) {
+          splash.parentElement.removeChild(splash);
+        }
+      }, 420);
+    }, 250);
   }
 
   // ================= TABS NAVIGATION =================
@@ -576,7 +599,24 @@ class DroplyApp {
 
       const thumbImg = document.getElementById('media-thumb-img');
       if (data.thumbnail) {
-        thumbImg.src = data.thumbnail;
+        let thumbUrl = data.thumbnail;
+        if (thumbUrl.startsWith('//')) thumbUrl = 'https:' + thumbUrl;
+
+        // Bilibili / hdslb images strictly require Referer: https://www.bilibili.com/
+        const isBilibili = thumbUrl.includes('hdslb.com') || thumbUrl.includes('bilibili.com');
+        if (isBilibili) {
+          thumbImg.src = `/api/proxy/thumbnail?url=${encodeURIComponent(thumbUrl)}`;
+        } else {
+          thumbImg.src = thumbUrl;
+        }
+
+        thumbImg.onerror = () => {
+          if (!thumbImg.src.includes('/api/proxy/thumbnail') && thumbUrl) {
+            thumbImg.src = `/api/proxy/thumbnail?url=${encodeURIComponent(thumbUrl)}`;
+          } else {
+            thumbImg.style.display = 'none';
+          }
+        };
         thumbImg.style.display = 'block';
       } else {
         thumbImg.style.display = 'none';
@@ -669,7 +709,9 @@ class DroplyApp {
         audio_format: audioCodec,
         output_dir: outDir,
         title: this.currentMedia.title,
-        thumbnail: this.currentMedia.thumbnail
+        thumbnail: this.currentMedia.thumbnail,
+        expected_size_str: this.selectedFormat ? (this.selectedFormat.filesize_str || '') : '',
+        expected_bytes: this.selectedFormat ? (this.selectedFormat.filesize_approx || 0) : 0
       });
 
       this.activeSingleTaskId = task.id;
@@ -1124,14 +1166,21 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.3.9';
-      const ytdlpVer = status.ytdlp_version || '2026.08.19';
+      const appVer = status.app_version || 'v1.4.0';
+      const rawYtdlp = status.ytdlp_version;
 
       const verPill = document.getElementById('header-version-pill');
       if (verPill) verPill.textContent = appVer;
 
       const enginePill = document.getElementById('header-engine-pill');
-      if (enginePill) enginePill.textContent = `Engine v${ytdlpVer}`;
+      if (enginePill) {
+        if (rawYtdlp && rawYtdlp !== 'unknown' && rawYtdlp !== 'installed') {
+          const cleanVer = rawYtdlp.startsWith('v') ? rawYtdlp.slice(1) : rawYtdlp;
+          enginePill.textContent = `Engine v${cleanVer}`;
+        } else {
+          enginePill.textContent = 'Engine Active';
+        }
+      }
 
       const trustVer = document.getElementById('trust-version');
       if (trustVer) trustVer.textContent = appVer;
@@ -1146,7 +1195,14 @@ class DroplyApp {
       }
 
       const diagYtdlp = document.getElementById('diag-ytdlp');
-      if (diagYtdlp) diagYtdlp.textContent = `yt-dlp v${ytdlpVer}`;
+      if (diagYtdlp) {
+        if (rawYtdlp && rawYtdlp !== 'unknown' && rawYtdlp !== 'installed') {
+          const cleanVer = rawYtdlp.startsWith('v') ? rawYtdlp.slice(1) : rawYtdlp;
+          diagYtdlp.textContent = `yt-dlp v${cleanVer}`;
+        } else {
+          diagYtdlp.textContent = 'yt-dlp (Active Engine)';
+        }
+      }
 
       const diagFfmpeg = document.getElementById('diag-ffmpeg');
       if (diagFfmpeg) diagFfmpeg.textContent = status.ffmpeg_ready ? 'Bundled v7.1 (Active)' : 'Not Available';
@@ -1290,7 +1346,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.3.9';
+      if (curVerEl) curVerEl.textContent = 'v1.4.0';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1299,8 +1355,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.3.9';
-        const appLatest = info.app_latest || 'v1.3.9';
+        const appInst = info.app_installed || 'v1.4.0';
+        const appLatest = info.app_latest || 'v1.4.0';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;
@@ -1619,11 +1675,35 @@ class DroplyApp {
 
     const pct = typeof task.percent !== 'undefined' ? task.percent : (task.progress_percent || 0);
     fill.style.width = `${Math.min(100, Math.max(0, pct))}%`;
-    badge.textContent = pct >= 100 ? 'Completed' : (task.status === 'processing' ? 'Finalizing' : 'Downloading');
+
+    const isProcessing = (task.status === 'processing');
+    const isAudio = Boolean(task.is_audio);
+    const audioFmt = (task.audio_format || 'audio').toUpperCase();
+    const targetSizeClean = (task.expected_size_str || '').split('•')[0].trim();
+
+    if (pct >= 100) {
+      badge.textContent = 'Completed';
+    } else if (isProcessing) {
+      badge.textContent = isAudio ? `Encoding ${audioFmt}` : 'Finalizing';
+    } else {
+      badge.textContent = 'Downloading';
+    }
+
     metricPercent.textContent = `${pct.toFixed(1)}%`;
-    metricSize.textContent = `${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}`;
-    metricSpeed.textContent = task.speed_str || '-- KB/s';
-    metricEta.textContent = task.eta_str || '--:--';
+
+    if (isProcessing) {
+      metricSize.textContent = `Encoding ${audioFmt}${targetSizeClean ? ` (~${targetSizeClean})` : ''}`;
+      metricSpeed.textContent = task.speed_str || 'Post-processing';
+      metricEta.textContent = task.eta_str || 'A few seconds';
+    } else {
+      if (isAudio && targetSizeClean && ['MP3', 'WAV'].includes(audioFmt)) {
+        metricSize.textContent = `${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'} (Stream • Est: ${targetSizeClean})`;
+      } else {
+        metricSize.textContent = `${task.downloaded_str || '0 B'} / ${task.total_str || '0 B'}`;
+      }
+      metricSpeed.textContent = task.speed_str || '-- KB/s';
+      metricEta.textContent = task.eta_str || '--:--';
+    }
   }
 
   handleSingleSuccess(task) {

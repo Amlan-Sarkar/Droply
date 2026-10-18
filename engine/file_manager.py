@@ -121,7 +121,7 @@ def resolve_existing_path(file_path: str) -> Optional[str]:
 
 
 def open_folder(directory_path: str) -> bool:
-    """Open folder in Windows Explorer or default file manager."""
+    """Open folder in Windows Explorer."""
     try:
         path = os.path.abspath(directory_path)
         if not os.path.exists(path):
@@ -129,10 +129,6 @@ def open_folder(directory_path: str) -> bool:
 
         if sys.platform == "win32":
             os.startfile(path)
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", path])
-        else:
-            subprocess.Popen(["xdg-open", path])
         return True
     except Exception as e:
         print(f"Failed to open folder: {e}")
@@ -146,12 +142,6 @@ def open_in_folder(file_path: str) -> bool:
         if real_path:
             if sys.platform == "win32":
                 subprocess.Popen(["explorer.exe", f"/select,{real_path}"], shell=False)
-                return True
-            elif sys.platform == "darwin":
-                subprocess.Popen(["open", "-R", real_path], shell=False)
-                return True
-            else:
-                subprocess.Popen(["xdg-open", os.path.dirname(real_path)], shell=False)
                 return True
 
         # Fallback to containing folder
@@ -173,10 +163,6 @@ def open_file(file_path: str) -> bool:
 
         if sys.platform == "win32":
             os.startfile(real_path)
-        elif sys.platform == "darwin":
-            subprocess.Popen(["open", real_path])
-        else:
-            subprocess.Popen(["xdg-open", real_path])
         return True
     except Exception as e:
         print(f"Failed to open file: {e}")
@@ -191,13 +177,4 @@ def get_default_download_dir() -> str:
     return str(default_dir)
 
 
-def get_disk_free_space(dir_path: str) -> int:
-    """Return free disk space in bytes for given directory."""
-    try:
-        p = os.path.abspath(dir_path)
-        if not os.path.exists(p):
-            p = os.path.dirname(p)
-        total, used, free = shutil.disk_usage(p)
-        return free
-    except Exception:
-        return 0
+

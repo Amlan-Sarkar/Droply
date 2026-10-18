@@ -19,7 +19,7 @@ from typing import Dict, Any, List, Optional
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
@@ -36,12 +36,46 @@ except ImportError:
 
 
 def _get_ytdlp_version() -> str:
+    # 1. Try yt_dlp.version directly
+    try:
+        from yt_dlp.version import __version__
+        if __version__ and str(__version__).lower() != "installed":
+            return str(__version__)
+    except Exception:
+        pass
+
+    # 2. Try get_yt_dlp() provider
     try:
         from engine.providers.ytdlp_provider import get_yt_dlp
         yt_mod = get_yt_dlp()
-        return getattr(yt_mod, "__version__", "installed")
+        v = getattr(yt_mod, "__version__", None)
+        if v and str(v).lower() != "installed":
+            return str(v)
+        v = getattr(getattr(yt_mod, "version", None), "__version__", None)
+        if v and str(v).lower() != "installed":
+            return str(v)
     except Exception:
-        return "installed"
+        pass
+
+    # 3. Try importlib.metadata
+    try:
+        import importlib.metadata
+        v = importlib.metadata.version("yt-dlp")
+        if v:
+            return str(v)
+    except Exception:
+        pass
+
+    # 4. Try pkg_resources
+    try:
+        import pkg_resources
+        v = pkg_resources.get_distribution("yt-dlp").version
+        if v:
+            return str(v)
+    except Exception:
+        pass
+
+    return "unknown"
 
 from engine.providers.registry import registry
 from engine.providers.ytdlp_provider import humanize_error
@@ -211,6 +245,8 @@ class DownloadRequest(BaseModel):
     output_dir: Optional[str] = Field(None, max_length=1000)
     title: Optional[str] = Field(None, max_length=500)
     thumbnail: Optional[str] = Field(None, max_length=2048)
+    expected_size_str: Optional[str] = Field(None, max_length=100)
+    expected_bytes: Optional[int] = Field(None)
 
 class BatchParseRequest(BaseModel):
     text: str = Field(..., max_length=50000)
@@ -244,6 +280,55 @@ async def detect_platform(req: DetectRequest):
     valid = registry.is_valid_url(url)
     platform = registry.detect_platform(url) if valid else "Unknown"
     return {"valid": valid, "platform": platform}
+
+
+@app.get("/api/proxy/thumbnail")
+async def proxy_thumbnail(url: str):
+    """
+    Safely proxies media thumbnails (especially for platforms with anti-hotlinking like Bilibili / hdslb)
+    with proper Origin, Referer, and User-Agent headers.
+    """
+    clean_url = (url or "").strip()
+    if clean_url.startswith("//"):
+        clean_url = f"https:{clean_url}"
+    if not clean_url or not (clean_url.startswith("http://") or clean_url.startswith("https://")):
+        raise HTTPException(status_code=400, detail="Invalid thumbnail URL.")
+
+    def _fetch():
+        import urllib.request
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        }
+        url_lower = clean_url.lower()
+        if "bilibili" in url_lower or "hdslb" in url_lower:
+            headers["Referer"] = "https://www.bilibili.com/"
+        elif "instagram" in url_lower or "cdninstagram" in url_lower:
+            headers["Referer"] = "https://www.instagram.com/"
+        elif "tiktok" in url_lower or "tiktokcdn" in url_lower:
+            headers["Referer"] = "https://www.tiktok.com/"
+        else:
+            headers["Referer"] = clean_url
+
+        req = urllib.request.Request(clean_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content = resp.read()
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+            return content, content_type
+
+    try:
+        loop = asyncio.get_event_loop()
+        content, content_type = await loop.run_in_executor(None, _fetch)
+        return Response(
+            content=content,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=604800, immutable",
+                "Access-Control-Allow-Origin": "*"
+            }
+        )
+    except Exception:
+        raise HTTPException(status_code=404, detail="Thumbnail preview could not be loaded.")
 
 
 @app.post("/api/analyze")
@@ -338,7 +423,9 @@ async def start_download(req: DownloadRequest):
         format_label=req.format_label,
         is_audio=req.is_audio,
         audio_format=req.audio_format,
-        output_dir=out_dir
+        output_dir=out_dir,
+        expected_size_str=req.expected_size_str or "",
+        expected_bytes=req.expected_bytes or 0
     )
     return task.to_dict()
 
@@ -810,7 +897,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.3.9"
+    return "v1.4.0"
 
 
 APP_VERSION = _load_app_version()
