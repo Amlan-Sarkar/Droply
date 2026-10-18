@@ -268,24 +268,48 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 #### 4. Settings Persistence
 - All preferences (theme, default format, notifications) persist across reloads and tab switches via native Android `SharedPreferences`.
 
+#### 5. Bypassing YouTube Bot Verification
+- Droply on Android features **zero-configuration cookie auto-detection**.
+- If YouTube challenges requests with *"Sign in to confirm you're not a bot"*, simply place a `cookies.txt` file into your phone's `Download/` or `Download/Droply/` folder. Droply detects and applies it automatically. [See step-by-step instructions below →](#bot-bypass-android)
+
 ---
 
 <a id="bot-bypass-and-auth"></a>
 
 ## 🍪 Bypassing YouTube "Sign In to Confirm You're Not a Bot"
 
-YouTube occasionally challenges anonymous requests from downloaders with bot-verification checks (`Sign in to confirm you're not a bot`). Droply provides two built-in solutions:
+YouTube occasionally challenges anonymous requests from downloaders with anti-bot verification checks (`Sign in to confirm you're not a bot`). Droply provides built-in solutions for both Windows and Android:
 
-### Option 1 (Easiest) — Local Browser Session Extraction
+### 🪟 Windows Desktop Setup
+
+#### Option 1 (Easiest) — Local Browser Session Extraction
 1. Open **Settings** in Droply.
 2. Under **Browser Session Extraction**, select **Auto-Probe Installed Browsers** or choose your installed browser (e.g., **Firefox**, **Brave**, **Vivaldi**, **Edge**, or **Chrome**).
 3. Droply will automatically use your existing browser session to authenticate requests.
 
-### Option 2 (Persistent & Portable) — cookies.txt Import
+#### Option 2 (Persistent & Portable) — cookies.txt Import
 1. In your browser (Chrome, Edge, or Firefox), install the extension **Get cookies.txt LOCALLY**.
 2. Log into YouTube, click the extension icon, and export your cookies as `cookies.txt`.
 3. In Droply **Settings**, click **Browse...** or **Upload...** under **Persistent cookies.txt File** and select your file.
 4. Your cookies are saved securely on your PC in `~/.droply/cookies.txt` (or `%LOCALAPPDATA%\Droply\cookies.txt`) and never transmitted anywhere else.
+
+---
+
+<a id="bot-bypass-android"></a>
+
+### 🤖 Android Setup (Zero-Config cookies.txt Auto-Detection)
+
+On Android, Droply automatically detects and authenticates using standard Netscape `cookies.txt` files placed on your device:
+
+1. **Export cookies:** 
+   - **From Desktop:** In Chrome, Edge, or Firefox, install the extension **Get cookies.txt LOCALLY**, log into YouTube, and export your cookies as `cookies.txt`.
+   - **From Mobile:** Use a mobile browser that supports extensions (such as **Kiwi Browser** or **Firefox for Android**), install **Get cookies.txt LOCALLY**, log into YouTube, and export `cookies.txt`.
+2. **Place in Download Folder:** 
+   Move or save the exported `cookies.txt` into either of these locations on your device:
+   - `/storage/emulated/0/Download/Droply/cookies.txt` *(Recommended)*
+   - `/storage/emulated/0/Download/cookies.txt`
+3. **Automatic Detection (Zero Configuration):** 
+   Launch Droply. The embedded download engine automatically locates and reads the `cookies.txt` file, seamlessly bypassing bot-verification challenges, age gates, and member-only restrictions without any manual configuration!
 
 ---
 
