@@ -2,6 +2,29 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.4.2]
+
+- **Android Download Engine Queue & Completion Fix:** Resolved an indentation defect in `droply_engine.py` where download completion logic and callbacks were trapped inside an exception handling block. Downloads on Android now properly emit completion events, unblocking consecutive downloads, playlists, and batch queue tasks.
+- **Android Native Media Player & Direct Download Folder Navigation:**
+  - Restricted `openFile()` MIME types specifically to audio and video (`video/*`, `audio/*`), opening the system chooser with "Play Media With" and preventing non-media apps (Maps, Calendar, LinkedIn, etc.) from intercepting playback.
+  - Re-routed `openDownloadFolder()` directly to the Droply downloads directory (`Download/Droply`) using `DocumentsContract` and `DownloadManager.ACTION_VIEW_DOWNLOADS`, avoiding generic file pickers.
+- **Android Bot Verification & Cookie Authentication:** Added automated discovery and parsing for Netscape `cookies.txt` on Android storage (`Download/Droply/cookies.txt` and `Download/cookies.txt`), passing it to the embedded engine to bypass YouTube bot-verification and age-restricted challenges.
+- **Playlist Quality Presets & Mixed-Resolution Ceiling Behavior:**
+  - Added `2160p (4K UHD)` and `1440p (2K QHD)` preset options to playlist and batch download quality selectors.
+  - Calibrated playlist bitrate and size estimations (fixing the inverted Best Auto ~5.5 Mbps estimation so 4K > 2K > 1080p).
+  - Clarified and verified yt-dlp format ceiling logic (`bestvideo[height<=2160]+bestaudio/.../best`): in playlists containing mixed resolutions (some 4K, some 1080p, some 720p), the selected quality acts as a maximum ceiling. Videos offering 4K download in 4K, while videos topping out at lower resolutions automatically and gracefully download at their highest available stream without errors.
+- **Persistent Mobile Preferences:** Added native Android `SharedPreferences` bridge (`saveSetting` and `getSetting`) to preserve user settings, active tab, and quality preferences across app reboots.
+- **Android Mobile UI Polish:**
+  - Updated primary action button labels for mobile clarity: "Fetch Details" -> "Analyze", "Download to Phone" -> "Download".
+  - Cleaned up subtitle font to a modern sans-serif.
+  - Added dedicated mobile bottom navigation bar (`Downloader`, `History`, `Settings`) for thumb-friendly mobile navigation.
+  - Scoped hover effects under `@media (hover: hover)` to eliminate sticky touch highlight states on mobile buttons.
+  - Normalized Instagram Reels duration display from `00:00` to `"Clip"` / `"Format: Media Clip"`.
+- **Windows Startup Delay & Splash Screen Polish:**
+  - Added `--splash assets/icon.png` in PyInstaller build workflow.
+  - Deferred splash closing until the WebView2 window is painted (`on_window_ready`), eliminating the black window flash on Windows startup.
+  - Ensured smooth in-app warmup transitions with guaranteed minimum display timing.
+
 ## [1.4.1]
 
 - **Android APK Build Pipeline Fix:** Resolved the Chaquopy build failure on Ubuntu CI runners by removing the rigid `buildPython "python3"` fallback that was executing Python 3.12 instead of the required Python 3.11 environment.

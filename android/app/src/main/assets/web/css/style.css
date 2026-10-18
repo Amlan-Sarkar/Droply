@@ -185,11 +185,11 @@ body {
 }
 
 .brand-tagline {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
   color: var(--text-dim);
+  font-family: var(--font-sans);
 }
 
 /* Navigation Tabs */
@@ -332,19 +332,25 @@ body {
   display: block;
 }
 
-.header-action-btn:hover {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: #00e5a3;
-  transform: translateY(-1px);
+@media (hover: hover) {
+  .header-action-btn:hover {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--accent-primary);
+    transform: translateY(-1px);
+  }
+}
+
+.header-action-btn:focus {
+  outline: none !important;
 }
 
 .header-action-btn.active {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  color: #00e5a3;
+  color: var(--accent-primary);
 }
 
 .header-action-btn:active {
@@ -3437,6 +3443,69 @@ input:checked + .toggle-slider:before {
   transition: color 0.2s ease;
 }
 
+/* ================= MOBILE BOTTOM NAVIGATION (Android Native) ================= */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10, 13, 20, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-subtle);
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 16px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 1000;
+}
 
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  min-width: 72px;
+}
 
+.mobile-nav-icon {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.2s ease;
+}
+
+.mobile-nav-btn.active {
+  color: #ffffff;
+}
+
+.mobile-nav-btn.active .mobile-nav-icon {
+  color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
+.mobile-nav-btn:active {
+  transform: scale(0.92);
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+  }
+  .app-main {
+    padding-bottom: 80px !important;
+  }
+}
 

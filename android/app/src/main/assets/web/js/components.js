@@ -402,6 +402,10 @@ const Components = {
         bytesPerSec = (320 * 1024) / 8; // 320 kbps
       } else if (selectedQuality === 'audio_m4a') {
         bytesPerSec = (192 * 1024) / 8; // 192 kbps
+      } else if (selectedQuality === '2160p') {
+        bytesPerSec = (8000 * 1024) / 8; // ~8.0 Mbps 4K UHD
+      } else if (selectedQuality === '1440p') {
+        bytesPerSec = (5500 * 1024) / 8; // ~5.5 Mbps 2K QHD
       } else if (selectedQuality === '1080p') {
         bytesPerSec = (3500 * 1024) / 8; // ~3.5 Mbps FHD
       } else if (selectedQuality === '720p') {
@@ -409,8 +413,8 @@ const Components = {
       } else if (selectedQuality === '480p') {
         bytesPerSec = (900 * 1024) / 8;  // ~900 kbps SD
       } else {
-        // best
-        bytesPerSec = (2800 * 1024) / 8; // ~2.8 Mbps
+        // best: Adaptive highest available quality, always >= 1080p
+        bytesPerSec = (5500 * 1024) / 8; // ~5.5 Mbps
       }
       return dur * bytesPerSec;
     };
@@ -465,21 +469,29 @@ const Components = {
       <div class="omni-playlist-quality-wrap">
         <label class="omni-sublabel">Select Download Quality:</label>
         <div class="omni-quality-chips-grid">
-          <button class="omni-q-chip" data-quality="480p">
-            <span class="q-label">Standard 480p</span>
-            <span class="q-est">~SD</span>
+          <button class="omni-q-chip" data-quality="2160p">
+            <span class="q-label">4K UHD</span>
+            <span class="q-est">~2160p</span>
           </button>
-          <button class="omni-q-chip" data-quality="720p">
-            <span class="q-label">HD 720p</span>
-            <span class="q-est">~Standard</span>
+          <button class="omni-q-chip" data-quality="1440p">
+            <span class="q-label">2K QHD</span>
+            <span class="q-est">~1440p</span>
           </button>
           <button class="omni-q-chip" data-quality="1080p">
             <span class="q-label">Full HD 1080p</span>
             <span class="q-est">~FHD</span>
           </button>
+          <button class="omni-q-chip" data-quality="720p">
+            <span class="q-label">HD 720p</span>
+            <span class="q-est">~Standard</span>
+          </button>
+          <button class="omni-q-chip" data-quality="480p">
+            <span class="q-label">Standard 480p</span>
+            <span class="q-est">~SD</span>
+          </button>
           <button class="omni-q-chip active" data-quality="best">
             <span class="q-label">Best Auto</span>
-            <span class="q-est">~Adaptive</span>
+            <span class="q-est">~Top Quality</span>
           </button>
           <button class="omni-q-chip" data-quality="audio_mp3">
             <span class="q-label">Audio Only (MP3)</span>
@@ -660,17 +672,29 @@ const Components = {
       <div class="omni-playlist-quality-wrap">
         <label class="omni-sublabel">Select Download Quality Preset:</label>
         <div class="omni-quality-chips-grid">
-          <button class="omni-q-chip" data-quality="720p">
-            <span class="q-label">HD 720p</span>
+          <button class="omni-q-chip" data-quality="2160p">
+            <span class="q-label">4K 2160p</span>
+          </button>
+          <button class="omni-q-chip" data-quality="1440p">
+            <span class="q-label">2K 1440p</span>
           </button>
           <button class="omni-q-chip" data-quality="1080p">
             <span class="q-label">Full HD 1080p</span>
+          </button>
+          <button class="omni-q-chip" data-quality="720p">
+            <span class="q-label">HD 720p</span>
+          </button>
+          <button class="omni-q-chip" data-quality="480p">
+            <span class="q-label">Standard 480p</span>
           </button>
           <button class="omni-q-chip active" data-quality="best">
             <span class="q-label">Best Auto</span>
           </button>
           <button class="omni-q-chip" data-quality="audio_mp3">
             <span class="q-label">Audio Only (MP3)</span>
+          </button>
+          <button class="omni-q-chip" data-quality="audio_m4a">
+            <span class="q-label">Audio Only (M4A)</span>
           </button>
         </div>
       </div>

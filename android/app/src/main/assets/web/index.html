@@ -151,7 +151,7 @@
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
-                <span class="btn-text">Fetch Details</span>
+                <span class="btn-text">Analyze</span>
               </button>
             </div>
           </div>
@@ -300,7 +300,7 @@
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
                     </svg>
-                    <span id="btn-start-download-text">Download to Phone</span>
+                    <span id="btn-start-download-text">Download</span>
                   </button>
                 </div>
 
@@ -643,9 +643,9 @@
 
         <div class="update-modal-body">
           <div class="update-version-row">
-            <span class="update-ver-label">Installed: <strong id="update-ver-installed">v1.2.9</strong></span>
+            <span class="update-ver-label">Installed: <strong id="update-ver-installed">v1.4.2</strong></span>
             <span class="update-ver-dot">•</span>
-            <span class="update-ver-label">Latest: <strong id="update-ver-latest">v1.2.9</strong></span>
+            <span class="update-ver-label">Latest: <strong id="update-ver-latest">v1.4.2</strong></span>
           </div>
           <p class="update-modal-desc" id="update-modal-desc">
             You are running the newest release of Droply. You can also update the embedded yt-dlp core engine for latest platform fixes.
@@ -666,6 +666,33 @@
         </div>
       </div>
     </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION (Native Android Experience) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <button class="mobile-nav-btn active" data-tab="single" id="mobile-nav-single">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span class="mobile-nav-label">Downloader</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="history" id="mobile-nav-history">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v5h5"></path>
+          <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+          <path d="M12 7v5l4 2"></path>
+        </svg>
+        <span class="mobile-nav-label">History</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="settings" id="mobile-nav-settings">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span class="mobile-nav-label">Settings</span>
+      </button>
+    </nav>
 
   </div>
 

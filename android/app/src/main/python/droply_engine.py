@@ -60,6 +60,22 @@ def has_ffmpeg() -> bool:
     return get_ffmpeg_path() is not None
 
 
+def locate_cookie_file() -> Optional[str]:
+    """Finds cookies.txt on Android in public Download folder or app storage."""
+    candidates = [
+        "/storage/emulated/0/Download/Droply/cookies.txt",
+        "/storage/emulated/0/Download/cookies.txt",
+        os.path.expanduser("~/Download/Droply/cookies.txt"),
+        os.path.expanduser("~/Download/cookies.txt"),
+        "/data/data/com.droply.app/files/cookies.txt",
+        "/data/user/0/com.droply.app/files/cookies.txt"
+    ]
+    for c in candidates:
+        if c and os.path.isfile(c) and os.path.getsize(c) > 0:
+            return c
+    return None
+
+
 def sanitize_filename(name: str) -> str:
     cleaned = re.sub(r'[\\/*?:"<>|]', "", name).strip()
     return cleaned[:180] if len(cleaned) > 180 else cleaned
@@ -80,7 +96,7 @@ def format_bytes(b: Optional[Union[int, float]]) -> str:
 
 def format_seconds(s: Optional[Union[int, float]]) -> str:
     if not s or s <= 0:
-        return "00:00"
+        return "Clip"
     m, sec = divmod(int(round(s)), 60)
     h, m = divmod(m, 60)
     return f"{h:02d}:{m:02d}:{sec:02d}" if h > 0 else f"{m:02d}:{sec:02d}"
@@ -203,6 +219,10 @@ def analyze_url(url: str) -> str:
     else:
         ydl_opts['noplaylist'] = True
 
+    cookie_file = locate_cookie_file()
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             try:
@@ -263,6 +283,17 @@ def analyze_url(url: str) -> str:
                         "has_audio": True
                     },
                     {
+                        "format_id": "1440p",
+                        "height": 1440,
+                        "ext": "mp4",
+                        "resolution": "1440p",
+                        "label": "1440p 2K QHD",
+                        "filesize_approx": 0,
+                        "filesize_str": "2K Ultra HD",
+                        "has_video": True,
+                        "has_audio": True
+                    },
+                    {
                         "format_id": "1080p",
                         "height": 1080,
                         "ext": "mp4",
@@ -281,6 +312,17 @@ def analyze_url(url: str) -> str:
                         "label": "720p HD",
                         "filesize_approx": 0,
                         "filesize_str": "Standard HD",
+                        "has_video": True,
+                        "has_audio": True
+                    },
+                    {
+                        "format_id": "480p",
+                        "height": 480,
+                        "ext": "mp4",
+                        "resolution": "480p",
+                        "label": "480p SD",
+                        "filesize_approx": 0,
+                        "filesize_str": "Standard Definition",
                         "has_video": True,
                         "has_audio": True
                     }
@@ -583,6 +625,10 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
     if ff_path:
         ydl_opts['ffmpeg_location'] = ff_path
 
+    cookie_file = locate_cookie_file()
+    if cookie_file:
+        ydl_opts['cookiefile'] = cookie_file
+
     if is_audio:
         # STRICT PURE AUDIO: NEVER fall back to /best which downloads a 360p video!
         audio_codec = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
@@ -638,48 +684,48 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                     raise dl_err
             else:
                 raise dl_err
-            
-            final_path = downloaded_filepath
-            if is_audio and final_path:
-                base, _ = os.path.splitext(final_path)
-                target_ext = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
-                for ext in [target_ext, 'm4a', 'mp3', 'opus', 'wav']:
-                    if os.path.exists(f"{base}.{ext}"):
-                        final_path = f"{base}.{ext}"
-                        break
-            
-            if not final_path or not os.path.exists(final_path):
-                try:
-                    candidates = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
-                    if candidates:
-                        candidates.sort(key=os.path.getmtime, reverse=True)
-                        final_path = candidates[0]
-                except Exception:
-                    pass
 
-            if not final_path:
-                final_path = output_dir
+        final_path = downloaded_filepath
+        if is_audio and final_path:
+            base, _ = os.path.splitext(final_path)
+            target_ext = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
+            for ext in [target_ext, 'm4a', 'mp3', 'opus', 'wav']:
+                if os.path.exists(f"{base}.{ext}"):
+                    final_path = f"{base}.{ext}"
+                    break
 
-            file_size_bytes = 0
-            if final_path and os.path.isfile(final_path):
-                try:
-                    file_size_bytes = os.path.getsize(final_path)
-                except Exception:
-                    pass
+        if not final_path or not os.path.exists(final_path):
+            try:
+                candidates = [os.path.join(output_dir, f) for f in os.listdir(output_dir) if os.path.isfile(os.path.join(output_dir, f))]
+                if candidates:
+                    candidates.sort(key=os.path.getmtime, reverse=True)
+                    final_path = candidates[0]
+            except Exception:
+                pass
 
-            if callback_obj:
-                callback_obj.onComplete(json.dumps({
-                    "status": "completed",
-                    "code": res,
-                    "title": title or (os.path.basename(final_path) if final_path != output_dir else "Downloaded Media"),
-                    "file_path": final_path,
-                    "file_size": file_size_bytes,
-                    "file_size_str": format_bytes(file_size_bytes),
-                    "is_audio": is_audio,
-                    "percent": 100.0,
-                    "progress_percent": 100.0
-                }))
-            return json.dumps({"status": "completed", "code": res, "file_path": final_path, "file_size": file_size_bytes})
+        if not final_path:
+            final_path = output_dir
+
+        file_size_bytes = 0
+        if final_path and os.path.isfile(final_path):
+            try:
+                file_size_bytes = os.path.getsize(final_path)
+            except Exception:
+                pass
+
+        if callback_obj:
+            callback_obj.onComplete(json.dumps({
+                "status": "completed",
+                "code": res,
+                "title": title or (os.path.basename(final_path) if final_path != output_dir else "Downloaded Media"),
+                "file_path": final_path,
+                "file_size": file_size_bytes,
+                "file_size_str": format_bytes(file_size_bytes),
+                "is_audio": is_audio,
+                "percent": 100.0,
+                "progress_percent": 100.0
+            }))
+        return json.dumps({"status": "completed", "code": res, "file_path": final_path, "file_size": file_size_bytes})
     except Exception as e:
         err_msg = str(e)
         if "cancelled" in err_msg.lower():
@@ -693,11 +739,11 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         return json.dumps({"status": "error", "error": err_msg})
 
 
-def check_updates(installed_app_version: str = "v1.2.9") -> str:
+def check_updates(installed_app_version: str = "v1.4.2") -> str:
     """
     Checks for updates for Droply and yt-dlp core.
     """
-    current_app_version = installed_app_version or "v1.2.9"
+    current_app_version = installed_app_version or "v1.4.2"
     if not current_app_version.startswith("v"):
         current_app_version = f"v{current_app_version}"
 

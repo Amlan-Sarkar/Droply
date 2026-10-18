@@ -96,12 +96,23 @@ class DroplyApp {
         }
       });
     }
+
+    // Mobile bottom navigation bar items
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        this.switchTab(target);
+      });
+    });
   }
 
   switchTab(tabName) {
     this.currentTab = tabName;
     document.querySelectorAll('.nav-tab').forEach(t => {
       t.classList.toggle('active', t.getAttribute('data-tab') === tabName);
+    });
+    document.querySelectorAll('.mobile-nav-btn').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-tab') === tabName);
     });
     document.querySelectorAll('.tab-pane').forEach(p => {
       p.classList.toggle('active', p.id === `pane-${tabName}`);
@@ -319,14 +330,28 @@ class DroplyApp {
         await api.openFile(path);
       } else if (action === 'cancel') {
         await api.cancelTask(id);
+        const t = (this.tasks || []).find(x => x.id === id);
+        if (t) {
+          t.status = 'cancelled';
+          Components.updateQueueItem(t);
+        }
+        Components.showToast('Download cancelled.', 'info');
       } else if (action === 'retry') {
         await api.retryTask(id);
+        const t = (this.tasks || []).find(x => x.id === id);
+        if (t) {
+          t.status = 'pending';
+          t.percent = 0;
+          Components.updateQueueItem(t);
+        }
+        Components.showToast('Retrying download...', 'info');
       } else if (action === 'remove') {
         await api.removeTask(id);
         const card = document.getElementById(`q-task-${id}`);
         if (card) card.remove();
-        this.tasks = this.tasks.filter(t => t.id !== id);
+        this.tasks = (this.tasks || []).filter(t => t.id !== id);
         this.updateRecentDownloadsHeader();
+        Components.showToast('Task removed.', 'info');
       }
     });
   }
@@ -448,8 +473,18 @@ class DroplyApp {
       // Single Media Preview Card
       document.getElementById('media-title').textContent = data.title;
       document.getElementById('media-uploader').textContent = data.uploader;
-      document.getElementById('media-duration').textContent = data.duration_str || '--:--';
-      document.getElementById('media-duration-text').textContent = `Duration: ${data.duration_str || 'Unknown'}`;
+
+      const durStr = data.duration_str;
+      const isClip = !durStr || durStr === '00:00' || durStr === 'Clip' || !data.duration || data.duration <= 0;
+      const durBadge = document.getElementById('media-duration');
+      const durText = document.getElementById('media-duration-text');
+      if (isClip) {
+        durBadge.textContent = 'Clip';
+        durText.textContent = 'Format: Media Clip';
+      } else {
+        durBadge.textContent = durStr;
+        durText.textContent = `Duration: ${durStr}`;
+      }
       document.getElementById('media-platform-tag').textContent = data.platform;
       document.getElementById('media-desc').textContent = data.description || 'No description available for this resource.';
 
@@ -852,8 +887,8 @@ class DroplyApp {
 
       try {
         const info = await api.checkUpdates();
-        const appInst = info.app_installed || 'v1.2.9';
-        const appLatest = info.app_latest || 'v1.2.9';
+        const appInst = info.app_installed || 'v1.4.2';
+        const appLatest = info.app_latest || 'v1.4.2';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         instVer.textContent = appInst;
@@ -867,8 +902,8 @@ class DroplyApp {
           descEl.textContent = `A new release (${appLatest}) is available. You can download the latest installer from GitHub or update the embedded core engine below.`;
         }
       } catch (e) {
-        instVer.textContent = 'v1.2.9';
-        latestVer.textContent = 'v1.2.9';
+        instVer.textContent = 'v1.4.2';
+        latestVer.textContent = 'v1.4.2';
         titleEl.textContent = 'Droply Core Engine';
         descEl.textContent = 'You can update the embedded yt-dlp core engine for latest platform fixes.';
       }

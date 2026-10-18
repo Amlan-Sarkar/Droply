@@ -236,10 +236,6 @@ def main():
             print("\nShutting down Droply.")
             sys.exit(0)
 
-    # Dismiss any PyInstaller bootloader splash before creating the native window
-    # This prevents the splash from lingering and hovering over the opening desktop window
-    close_splash()
-
     # Attempt native desktop window via pywebview
     try:
         import webview
@@ -290,10 +286,15 @@ def main():
 
         threading.Thread(target=set_win32_window_icon, daemon=True).start()
 
+        def on_window_ready():
+            """Dismiss bootloader splash once the browser window is painted."""
+            time.sleep(0.4)
+            close_splash()
+
         try:
-            webview.start(gui="edgechromium", icon=icon_path)
+            webview.start(on_window_ready, gui="edgechromium", icon=icon_path)
         except Exception:
-            webview.start(icon=icon_path)
+            webview.start(on_window_ready, icon=icon_path)
         close_splash()
         print("Desktop application window closed.")
     except Exception as e:

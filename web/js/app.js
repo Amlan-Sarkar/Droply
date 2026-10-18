@@ -47,6 +47,7 @@ class DroplyApp {
       statusLabel.textContent = 'Services Online';
       statusLabel.style.color = '#34d399';
     }
+    // Ensure the splash displays smoothly for at least ~650ms before fading out
     setTimeout(() => {
       splash.classList.add('fade-out');
       setTimeout(() => {
@@ -54,7 +55,7 @@ class DroplyApp {
           splash.parentElement.removeChild(splash);
         }
       }, 420);
-    }, 250);
+    }, 650);
   }
 
   // ================= TABS NAVIGATION =================
@@ -1166,7 +1167,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.4.1';
+      const appVer = status.app_version || 'v1.4.2';
       const rawYtdlp = status.ytdlp_version;
 
       const verPill = document.getElementById('header-version-pill');
@@ -1346,7 +1347,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.4.1';
+      if (curVerEl) curVerEl.textContent = 'v1.4.2';
       if (newVerEl) newVerEl.textContent = '...';
       titleEl.textContent = 'Checking for Updates...';
       descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1355,8 +1356,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.4.1';
-        const appLatest = info.app_latest || 'v1.4.1';
+        const appInst = info.app_installed || 'v1.4.2';
+        const appLatest = info.app_latest || 'v1.4.2';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         curVerEl.textContent = appInst;

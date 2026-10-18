@@ -321,65 +321,79 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @JavascriptInterface
+        public void saveSetting(String key, String value) {
+            try {
+                getSharedPreferences("droply_prefs", MODE_PRIVATE).edit().putString(key, value).apply();
+            } catch (Exception ignored) {}
+        }
+
+        @JavascriptInterface
+        public String getSetting(String key, String defaultValue) {
+            try {
+                return getSharedPreferences("droply_prefs", MODE_PRIVATE).getString(key, defaultValue);
+            } catch (Exception e) {
+                return defaultValue;
+            }
+        }
+
+        @JavascriptInterface
         public void openFile(String filePath) {
             mainHandler.post(() -> {
                 try {
-                    if (filePath == null || filePath.trim().isEmpty()) {
-                        openDownloadFolder();
-                        return;
+                    File file = null;
+                    if (filePath != null && !filePath.trim().isEmpty()) {
+                        file = new File(filePath);
                     }
-                    File file = new File(filePath);
-                    if (!file.exists()) {
-                        File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
-                        File candidate = new File(downloadDir, file.getName());
-                        if (candidate.exists()) {
-                            file = candidate;
+                    File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
+                    if (file == null || !file.exists()) {
+                        if (file != null) {
+                            File candidate = new File(downloadDir, file.getName());
+                            if (candidate.exists()) {
+                                file = candidate;
+                            }
                         }
                     }
-                    if (file.isDirectory() || !file.exists()) {
-                        openDownloadFolder();
+                    if (file == null || !file.exists() || file.isDirectory()) {
+                        // Find the most recent media file in Droply download folder
+                        if (downloadDir.exists()) {
+                            File[] candidates = downloadDir.listFiles(f -> f.isFile() && !f.getName().startsWith("."));
+                            if (candidates != null && candidates.length > 0) {
+                                java.util.Arrays.sort(candidates, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+                                file = candidates[0];
+                            }
+                        }
+                    }
+
+                    if (file == null || !file.exists() || file.isDirectory()) {
+                        Toast.makeText(MainActivity.this, "No downloaded media found in Download/Droply", Toast.LENGTH_SHORT).show();
                         return;
+                    }
+
+                    String name = file.getName();
+                    String extension = "";
+                    int dot = name.lastIndexOf('.');
+                    if (dot >= 0) {
+                        extension = name.substring(dot + 1).toLowerCase();
+                    }
+
+                    String mimeType;
+                    if (extension.matches("mp3|m4a|wav|aac|flac|ogg|opus|wma")) {
+                        mimeType = "audio/*";
+                    } else {
+                        mimeType = "video/*";
                     }
 
                     Uri fileUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
-                    String extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(file).toString());
-                    if (extension == null || extension.isEmpty()) {
-                        String name = file.getName();
-                        int dot = name.lastIndexOf('.');
-                        if (dot >= 0) {
-                            extension = name.substring(dot + 1);
-                        }
-                    }
-
-                    String mimeType = null;
-                    if (extension != null) {
-                        mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase());
-                    }
-                    if (mimeType == null) {
-                        String extLower = extension != null ? extension.toLowerCase() : "";
-                        if (extLower.matches("mp4|mkv|webm|avi|mov|3gp|flv|m4v")) {
-                            mimeType = "video/*";
-                        } else if (extLower.matches("mp3|m4a|wav|aac|flac|ogg|opus|wma")) {
-                            mimeType = "audio/*";
-                        } else {
-                            mimeType = "*/*";
-                        }
-                    }
-
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(fileUri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                    Intent chooser = Intent.createChooser(intent, "Open with");
+                    Intent chooser = Intent.createChooser(intent, mimeType.startsWith("audio") ? "Play Audio With" : "Play Video With");
                     chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(chooser);
                 } catch (Exception e) {
-                    try {
-                        openDownloadFolder();
-                    } catch (Exception ignored) {
-                        Toast.makeText(MainActivity.this, "Could not open media: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
+                    Toast.makeText(MainActivity.this, "Could not open media: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -388,7 +402,7 @@ public class MainActivity extends AppCompatActivity {
         public void checkUpdates() {
             executor.execute(() -> {
                 try {
-                    String versionName = "v1.2.8";
+                    String versionName = "v1.4.2";
                     try {
                         versionName = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                     } catch (Exception ignored) {}
@@ -436,21 +450,41 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface
         public void openDownloadFolder() {
             mainHandler.post(() -> {
+                File droplyDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
+                if (!droplyDir.exists()) {
+                    droplyDir.mkdirs();
+                }
+
+                // 1. Try modern Android DocumentsUI to open Download/Droply directory directly
+                try {
+                    Uri folderUri = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload%2FDroply");
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(folderUri, "vnd.android.document/directory");
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(intent);
+                    return;
+                } catch (Exception ignored) {}
+
+                // 2. Try DownloadManager native downloads UI
                 try {
                     Intent intent = new Intent(DownloadManager.ACTION_VIEW_DOWNLOADS);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
-                } catch (Exception e1) {
-                    try {
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        Uri uri = Uri.parse(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath() + "/Droply");
-                        intent.setDataAndType(uri, "*/*");
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(Intent.createChooser(intent, "Open Droply Downloads"));
-                    } catch (Exception e2) {
-                        Toast.makeText(MainActivity.this, "Downloads folder: Download/Droply", Toast.LENGTH_SHORT).show();
-                    }
-                }
+                    return;
+                } catch (Exception ignored) {}
+
+                // 3. Try FileProvider directory view
+                try {
+                    Uri dirUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", droplyDir);
+                    Intent fpIntent = new Intent(Intent.ACTION_VIEW);
+                    fpIntent.setDataAndType(dirUri, "resource/folder");
+                    fpIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivity(fpIntent);
+                    return;
+                } catch (Exception ignored) {}
+
+                // 4. Safe informative fallback
+                Toast.makeText(MainActivity.this, "Downloads folder: Download/Droply", Toast.LENGTH_LONG).show();
             });
         }
     }

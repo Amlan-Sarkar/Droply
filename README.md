@@ -8,7 +8,7 @@
 
 *Download Videos, Reels, Shorts, playlists, albums, and audio from YouTube, Instagram, TikTok, Facebook, Reddit, X, Bilibili, and 1,000+ supported media sites at full quality — with live progress and speed tracking.*
 
-[![Latest Release](https://img.shields.io/badge/Release-v1.4.1-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
+[![Latest Release](https://img.shields.io/badge/Release-v1.4.2-6366f1.svg?style=flat-square)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-00d2ff.svg?style=flat-square)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Windows-10%20%7C%2011%20(Stable)-0078d4.svg?style=flat-square&logo=windows)](https://github.com/Amlan-Sarkar/Droply/releases)
 [![Platform: Android](https://img.shields.io/badge/Android-Experimental-f59e0b.svg?style=flat-square&logo=android)](https://github.com/Amlan-Sarkar/Droply/releases)
@@ -138,10 +138,10 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 *The primary Droply experience, powered by the full Windows download engine.*
 
-| Package | Format | Download (v1.4.1) | Latest Mirror |
+| Package | Format | Download (v1.4.2) | Latest Mirror |
 | :--- | :--- | :--- | :--- |
-| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.4.1**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.1/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
-| **Droply Portable** | Standalone `.zip` | [**Download v1.4.1**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.1/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
+| **Droply Setup** *(Recommended)* | `.exe` Modern Installer | [**Download v1.4.2**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.2/Droply-Setup.exe) | [Latest Installer Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Setup.exe) |
+| **Droply Portable** | Standalone `.zip` | [**Download v1.4.2**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.2/Droply-Windows-x64.zip) | [Latest ZIP Mirror](https://github.com/Amlan-Sarkar/Droply/releases/latest/download/Droply-Windows-x64.zip) |
 
 #### Install or launch
 
@@ -177,7 +177,7 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 
 | Package | Supported Architectures | Direct Package | Releases |
 | :--- | :--- | :--- | :--- |
-| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download APK (v1.4.1)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.1/Droply-Android.apk) | [All Releases](https://github.com/Amlan-Sarkar/Droply/releases) |
+| **Droply for Android** | `arm64-v8a`, `armeabi-v7a`, `x86_64` | [**Download APK (v1.4.2)**](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.4.2/Droply-Android.apk) | [All Releases](https://github.com/Amlan-Sarkar/Droply/releases) |
 
 #### Installation
 
@@ -192,15 +192,16 @@ Droply provides pre-compiled packages for Windows and Android. Development tools
 | :--- | :--- |
 | **Minimum operating system** | Android 7.0 Nougat, API 24+ |
 | **Architectures** | `arm64-v8a`, `armeabi-v7a`, `x86_64` |
-| **Interface dependency** | Android System WebView |
-| **Media engine** | Embedded Python 3.11 with yt-dlp |
-| **Current capabilities** | Best available progressive streams (up to 720p HD) and audio |
-| **Status** | Experimental; under validation |
+| **Interface dependency** | Android System WebView with native modern navigation |
+| **Media engine** | Embedded Python 3.11 with yt-dlp core |
+| **Current capabilities** | Adaptive resolutions (up to 4K / 1440p / 1080p where available) and standalone audio extraction |
+| **Storage location** | Public `Download/Droply` directory (accessible to Gallery and all media players) |
+| **Preferences storage** | Persistent native Android `SharedPreferences` |
+| **Status** | Active development; fully functional local downloads |
 
-> [!WARNING]
-> **Android is not yet a fully validated release.**
-> Core download operations, folder navigation, batch queue behavior, and file-storage locations are undergoing active debugging and validation. Occasional instability is possible while mobile engine issues are being addressed.
-> Downloaded files may be located through your device's media player or in the public `Download/Droply` directory.
+> [!NOTE]
+> **Android Storage & Playback:**
+> Downloads are saved directly into your device's public `Download/Droply` folder. Tapping **Play / Open File** directly invokes your installed video or audio players (such as VLC, MX Player, or Google Photos), while **Open Containing Folder** navigates directly to your Droply download directory.
 
 ---
 
@@ -229,48 +230,43 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 
 ## 🎯 Using Droply
 
-### A. Download a single video or audio track
+### 🪟 Windows Desktop Guide
 
-1. **Copy a link:** Copy a video, Reel, post, or audio URL from a browser or mobile app.
-2. **Paste it:** Paste the URL into the input field, or click **Paste**.
-3. **Analyze it:** Click **Analyze** (or press **Enter**) to preview title, uploader, thumbnail, and duration.
-4. **Choose a format:**
-   - **Video Mode:** Choose *Best Available*, *4K/2160p*, *2K/1440p*, *1080p*, *720p*, or another available resolution.
-   - **Audio Mode:** Select *MP3 (320 kbps HQ)*, *M4A*, or *WAV*.
-5. **Start the download:** Click **Download Media** and follow live progress, speed, downloaded size, and ETA.
-6. **Open the result:** Click **Play File** to play immediately, or **Open Containing Folder** to reveal the file.
+#### 1. Single Media Download
+1. **Copy a link:** Copy any media URL (YouTube, Instagram, TikTok, Reddit, X, Facebook, etc.).
+2. **Paste & Analyze:** Paste into the input field or click **Paste**, then click **Analyze** (or press Enter).
+3. **Select Quality:**
+   - **Video Mode:** Select *Best Available (Auto)*, *4K UHD (2160p)*, *2K QHD (1440p)*, *Full HD (1080p)*, or *HD (720p)*.
+   - **Audio Mode:** Choose *MP3 (320 kbps HQ)*, *M4A (Apple AAC)*, or *WAV (Lossless PCM)*.
+4. **Download:** Click **Download** to monitor real-time speed (MB/s), downloaded bytes, and dynamic ETA.
+5. **Access Media:** Click **Play File** to launch in your default media player, or **Open Containing Folder** to reveal the file in Windows Explorer.
 
-### B. Download playlists and albums
+#### 2. Playlists, Albums & Series
+1. Paste a playlist or series link. Droply parses all tracks and displays total duration and item count.
+2. Choose your quality preset (4K, 2K, 1080p, 720p, 480p, Best Auto, or Audio). Estimated sizes accurately reflect combined stream bitrates.
+3. Droply automatically creates a dedicated subfolder named after the playlist in your download directory.
 
-1. Paste a supported YouTube playlist, album, or series URL into the input field.
-2. Droply detects the playlist and displays its item count.
-3. Start the download: Droply automatically creates a dedicated subfolder named after the playlist inside your selected download directory.
+#### 3. Batch Downloads & Queue Management
+1. Switch to the Downloader view and paste multiple URLs (one per line).
+2. Apply a global quality preset and click download to process the queue.
 
-### C. Queue multiple links
+---
 
-1. Open the **Batch Downloader** tab.
-2. Paste multiple URLs (one per line or separated by commas).
-3. Click **Add URLs to Queue**. Droply parses valid URLs, queues them, and processes downloads with live progress.
-4. Click **Clear Completed** when you want to remove finished tasks and refresh the queue counter.
+### 🤖 Android Mobile Guide
 
-### D. Browse your download history
+#### 1. Quick Download & System Share Menu
+- **Option A (In-App):** Open Droply on Android, paste any link, and tap **Analyze**. Choose your quality tier and tap **Download**.
+- **Option B (System Share):** In YouTube, Instagram, Twitter/X, or TikTok, tap **Share** and select **Droply**. Droply opens, auto-analyzes the media, and lets you download with a single tap.
 
-- Open **Library & History** to review previous downloads.
-- Open files directly, reveal their exact folder location, or clear download history with one click.
+#### 2. Dedicated Mobile Navigation
+- Seamlessly switch between **Downloader**, **History**, and **Settings** using the modern Android bottom navigation bar.
 
-### E. Customize your experience
+#### 3. Media Player Launching & File Access
+- **Play / Open File:** Exclusively queries installed media players (VLC, MX Player, Google Photos, BSPlayer).
+- **Open Containing Folder:** Directly opens `Download/Droply` in your device's file manager.
 
-- Open **Settings** to choose between 3 curated themes:
-  - 🌌 **Neon Midnight** (Default dark palette with indigo and violet accents)
-  - 🖤 **OLED Pure Black** (Pure black designed for AMOLED displays)
-  - ⚡ **Cyberpunk Cyan** (High-energy cyan and neon accents)
-- Customize default download directory, quality presets, and concurrent connections.
-- Click **Save Preferences** to apply your changes.
-
-### F. Check for updates
-
-- Click **Check for Updates** in the application header or Settings.
-- View the latest Droply release information or update the embedded yt-dlp core engine with a single click.
+#### 4. Settings Persistence
+- All preferences (theme, default format, notifications) persist across reloads and tab switches via native Android `SharedPreferences`.
 
 ---
 
