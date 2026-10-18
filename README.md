@@ -233,6 +233,7 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 ### 🪟 Windows Desktop Guide
 
 #### 1. Single Media Download
+
 1. **Copy a link:** Copy any media URL (YouTube, Instagram, TikTok, Reddit, X, Facebook, etc.).
 2. **Paste & Analyze:** Paste into the input field or click **Paste**, then click **Analyze** (or press Enter).
 3. **Select Quality:**
@@ -242,11 +243,13 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 5. **Access Media:** Click **Play File** to launch in your default media player, or **Open Containing Folder** to reveal the file in Windows Explorer.
 
 #### 2. Playlists, Albums & Series
+
 1. Paste a playlist or series link. Droply parses all tracks and displays total duration and item count.
 2. Choose your quality preset (4K, 2K, 1080p, 720p, 480p, Best Auto, or Audio). Estimated sizes accurately reflect combined stream bitrates.
 3. Droply automatically creates a dedicated subfolder named after the playlist in your download directory.
 
 #### 3. Batch Downloads & Queue Management
+
 1. Switch to the Downloader view and paste multiple URLs (one per line).
 2. Apply a global quality preset and click download to process the queue.
 
@@ -255,20 +258,25 @@ Droply uses yt-dlp to extract supported media across 1,000+ sites. Actual compat
 ### 🤖 Android Mobile Guide
 
 #### 1. Quick Download & System Share Menu
+
 - **Option A (In-App):** Open Droply on Android, paste any link, and tap **Analyze**. Choose your quality tier and tap **Download**.
 - **Option B (System Share):** In YouTube, Instagram, Twitter/X, or TikTok, tap **Share** and select **Droply**. Droply opens, auto-analyzes the media, and lets you download with a single tap.
 
 #### 2. Dedicated Mobile Navigation
+
 - Seamlessly switch between **Downloader**, **History**, and **Settings** using the modern Android bottom navigation bar.
 
 #### 3. Media Player Launching & File Access
+
 - **Play / Open File:** Exclusively queries installed media players (VLC, MX Player, Google Photos, BSPlayer).
 - **Open Containing Folder:** Directly opens `Download/Droply` in your device's file manager.
 
 #### 4. Settings Persistence
+
 - All preferences (theme, default format, notifications) persist across reloads and tab switches via native Android `SharedPreferences`.
 
 #### 5. Bypassing YouTube Bot Verification
+
 - Droply on Android features **zero-configuration cookie auto-detection**.
 - If YouTube challenges requests with *"Sign in to confirm you're not a bot"*, simply place a `cookies.txt` file into your phone's `Download/` or `Download/Droply/` folder. Droply detects and applies it automatically. [See step-by-step instructions below →](#bot-bypass-android)
 
@@ -283,11 +291,13 @@ YouTube occasionally challenges anonymous requests from downloaders with anti-bo
 ### 🪟 Windows Desktop Setup
 
 #### Option 1 (Easiest) — Local Browser Session Extraction
+
 1. Open **Settings** in Droply.
 2. Under **Browser Session Extraction**, select **Auto-Probe Installed Browsers** or choose your installed browser (e.g., **Firefox**, **Brave**, **Vivaldi**, **Edge**, or **Chrome**).
 3. Droply will automatically use your existing browser session to authenticate requests.
 
 #### Option 2 (Persistent & Portable) — cookies.txt Import
+
 1. In your browser (Chrome, Edge, or Firefox), install the extension **Get cookies.txt LOCALLY**.
 2. Log into YouTube, click the extension icon, and export your cookies as `cookies.txt`.
 3. In Droply **Settings**, click **Browse...** or **Upload...** under **Persistent cookies.txt File** and select your file.
@@ -301,14 +311,14 @@ YouTube occasionally challenges anonymous requests from downloaders with anti-bo
 
 On Android, Droply automatically detects and authenticates using standard Netscape `cookies.txt` files placed on your device:
 
-1. **Export cookies:** 
+1. **Export cookies:**
    - **From Desktop:** In Chrome, Edge, or Firefox, install the extension **Get cookies.txt LOCALLY**, log into YouTube, and export your cookies as `cookies.txt`.
    - **From Mobile:** Use a mobile browser that supports extensions (such as **Kiwi Browser** or **Firefox for Android**), install **Get cookies.txt LOCALLY**, log into YouTube, and export `cookies.txt`.
-2. **Place in Download Folder:** 
+2. **Place in Download Folder:**
    Move or save the exported `cookies.txt` into either of these locations on your device:
    - `/storage/emulated/0/Download/Droply/cookies.txt` *(Recommended)*
    - `/storage/emulated/0/Download/cookies.txt`
-3. **Automatic Detection (Zero Configuration):** 
+3. **Automatic Detection (Zero Configuration):**
    Launch Droply. The embedded download engine automatically locates and reads the `cookies.txt` file, seamlessly bypassing bot-verification challenges, age gates, and member-only restrictions without any manual configuration!
 
 ---
@@ -322,6 +332,7 @@ On Android, Droply automatically detects and authenticates using standard Netsca
 > If an online platform is banned or restricted by your country's government or Internet Service Providers (ISPs), connection attempts will silently time out (*"Connection timed out or was blocked by host/ISP"*).
 
 To download media from banned or region-locked platforms:
+
 - **Turn on a VPN** connected to an unrestricted region (e.g. **Cloudflare WARP**, **ProtonVPN**, or **Windscribe**).
 - Or configure a system HTTP/SOCKS5 proxy before launching Droply. Droply will immediately route traffic through the active connection.
 
