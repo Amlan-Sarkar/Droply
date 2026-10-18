@@ -122,7 +122,9 @@ jobs:
           PYTHON_BINARY_PATH: ${{ steps.setup-python.outputs.python-path }}
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          PY_BIN="${{ steps.setup-python.outputs.python-path }}"
+          echo "Using Python binary for Chaquopy: $PY_BIN"
+          ./gradlew assembleRelease -PpythonBinary="$PY_BIN" --no-daemon --stacktrace
           cd ..
           APK_FILE=$(find android/app/build/outputs/apk -name "*.apk" | head -n 1)
           if [ -z "$APK_FILE" ]; then

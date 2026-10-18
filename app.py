@@ -35,6 +35,37 @@ class SafeStream:
         return False
 
 
+class MirrorStream:
+    """Mirrors stream writes to both original output and log file."""
+    def __init__(self, orig, log):
+        self.orig = orig
+        self.log = log
+
+    def write(self, data):
+        try:
+            self.orig.write(data)
+        except Exception:
+            pass
+        try:
+            self.log.write(str(data))
+            self.log.flush()
+        except Exception:
+            pass
+
+    def flush(self):
+        try:
+            self.orig.flush()
+        except Exception:
+            pass
+        try:
+            self.log.flush()
+        except Exception:
+            pass
+
+    def isatty(self):
+        return getattr(self.orig, "isatty", lambda: False)()
+
+
 _log_file = None
 if sys.platform == "win32":
     try:
@@ -47,32 +78,6 @@ if sys.platform == "win32":
 if sys.stdout is None:
     sys.stdout = SafeStream(_log_file)
 elif getattr(sys, "frozen", False) and _log_file:
-    # In frozen mode, mirror stdout to droply.log for diagnostics
-    class MirrorStream:
-        def __init__(self, orig, log):
-            self.orig = orig
-            self.log = log
-        def write(self, data):
-            try:
-                self.orig.write(data)
-            except Exception:
-                pass
-            try:
-                self.log.write(str(data))
-                self.log.flush()
-            except Exception:
-                pass
-        def flush(self):
-            try:
-                self.orig.flush()
-            except Exception:
-                pass
-            try:
-                self.log.flush()
-            except Exception:
-                pass
-        def isatty(self):
-            return getattr(self.orig, "isatty", lambda: False)()
     sys.stdout = MirrorStream(sys.stdout, _log_file)
 
 if sys.stderr is None:

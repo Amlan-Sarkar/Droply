@@ -22,12 +22,26 @@ android {
 
         python {
             version "3.11"
-            def pythonEnv = System.getenv("PYTHON_BINARY_PATH") ?: (System.getenv("pythonLocation") ? "${System.getenv('pythonLocation')}/bin/python3" : null)
-            def localPy = file("C:/Users/Amlon/AppData/Local/Programs/Python/Python311/python.exe")
-            if (pythonEnv != null && file(pythonEnv).exists()) {
-                buildPython pythonEnv.replace('\\', '/')
-            } else if (localPy.exists()) {
-                buildPython localPy.absolutePath.replace('\\', '/')
+            def pyEnv = (project.findProperty("pythonBinary") ?: System.getenv("PYTHON_BINARY_PATH") ?: (System.getenv("pythonLocation") ? "${System.getenv('pythonLocation')}/bin/python3" : null))?.toString()
+            def isWindows = System.getProperty("os.name", "").toLowerCase().contains("win")
+
+            if (pyEnv != null && new File(pyEnv).exists()) {
+                buildPython pyEnv.replace('\\', '/')
+            } else if (isWindows) {
+                def localAppData = System.getenv("LOCALAPPDATA") ?: ""
+                def winCandidates = [
+                    localAppData ? "${localAppData}/Programs/Python/Python311/python.exe" : null,
+                    "C:/Program Files/Python311/python.exe",
+                    "C:/Python311/python.exe"
+                ]
+                def foundPy = winCandidates.find { it != null && new File(it).exists() }
+                if (foundPy != null) {
+                    buildPython foundPy.replace('\\', '/')
+                } else {
+                    buildPython "py", "-3.11"
+                }
+            } else if (System.getenv("CI") == "true") {
+                buildPython "python3"
             }
             // If neither exists, Chaquopy auto-detects matching Python 3.11 from PATH
             pip {
