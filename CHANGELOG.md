@@ -2,6 +2,13 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.4.1]
+
+- **Android APK Build Pipeline Fix:** Resolved the Chaquopy build failure on Ubuntu CI runners by removing the rigid `buildPython "python3"` fallback that was executing Python 3.12 instead of the required Python 3.11 environment.
+- **Persistent Release Keystore & In-Place Updates:** Configured a dedicated, persistent release signing keystore with both v1 (JAR) and v2 (Full APK Signature) schemes enabled. This ensures that every future release maintains signature continuity across builds, eliminating the "App not installed as package appears to be invalid" / update conflict error.
+- **Dynamic Release Notes & Mirror Resiliency:** Updated release notes generator to dynamically inspect compiled assets, preventing broken 404 download links on releases if an artifact is missing. Updated README links accordingly.
+- **Code Cleanliness & Warning Elimination:** Removed redundant `str()` calls in `server/api.py` version probing.
+
 ## [1.4.0]
 
 - **Engine Version Normalization:** Resolved a cosmetic issue where the status indicator showed `Engine vinstalled` instead of the genuine yt-dlp core version. The engine now inspects package metadata, module version attributes, and `yt_dlp.version.__version__` for robust version resolution.

@@ -11,8 +11,8 @@ android {
         applicationId "com.droply.app"
         minSdk 24
         targetSdk 34
-        versionCode 11
-        versionName "1.4.0"
+        versionCode 12
+        versionName "1.4.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -28,12 +28,27 @@ android {
                 buildPython pythonEnv.replace('\\', '/')
             } else if (localPy.exists()) {
                 buildPython localPy.absolutePath.replace('\\', '/')
-            } else {
-                buildPython "python3"
             }
+            // If neither exists, Chaquopy auto-detects matching Python 3.11 from PATH
             pip {
                 install "yt-dlp>=2024.8.6"
                 install "requests>=2.31.0"
+            }
+        }
+    }
+
+    signingConfigs {
+        release {
+            def ks = file("release.keystore")
+            if (ks.exists()) {
+                storeFile ks
+                storePassword "droplyapp"
+                keyAlias "droply"
+                keyPassword "droplyapp"
+                v1SigningEnabled true
+                v2SigningEnabled true
+            } else {
+                initWith(signingConfigs.debug)
             }
         }
     }
@@ -42,7 +57,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
         debug {
             debuggable true

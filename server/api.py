@@ -39,8 +39,8 @@ def _get_ytdlp_version() -> str:
     # 1. Try yt_dlp.version directly
     try:
         from yt_dlp.version import __version__
-        if __version__ and str(__version__).lower() != "installed":
-            return str(__version__)
+        if __version__ and __version__.lower() != "installed":
+            return __version__
     except Exception:
         pass
 
@@ -62,7 +62,7 @@ def _get_ytdlp_version() -> str:
         import importlib.metadata
         v = importlib.metadata.version("yt-dlp")
         if v:
-            return str(v)
+            return v
     except Exception:
         pass
 
@@ -897,7 +897,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.4.0"
+    return "v1.4.1"
 
 
 APP_VERSION = _load_app_version()

@@ -3,7 +3,7 @@ import os
 import re
 
 def main():
-    tag = sys.argv[1] if len(sys.argv) > 1 else "v1.4.0"
+    tag = sys.argv[1] if len(sys.argv) > 1 else "v1.4.1"
     ver = tag.lstrip("v")
     
     notes = ""
@@ -25,6 +25,17 @@ def main():
     if not notes:
         notes = "- **Maintenance & Polish:** Engine and UI stability enhancements."
 
+    # Verify if Droply-Android.apk was compiled and is present in release assets
+    has_apk = (
+        os.path.exists("Droply-Android.apk")
+        or os.path.exists(os.path.join("release-assets", "Droply-Android.apk"))
+    )
+
+    if has_apk:
+        android_link = f"[Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/{tag}/Droply-Android.apk)"
+    else:
+        android_link = "⚠️ *Not generated in this build.* [Download validated APK (v1.3.5)](https://github.com/Amlan-Sarkar/Droply/releases/download/v1.3.5/Droply-Android.apk) · [All Releases](https://github.com/Amlan-Sarkar/Droply/releases)"
+
     body = f"""### 🚀 What's New in this Release:
 {notes}
 
@@ -45,7 +56,7 @@ def main():
 
 | Platform | Package | Direct Link |
 | :--- | :--- | :--- |
-| 🤖 **Android (7.0+)** | Standalone APK | [Download Droply-Android.apk](https://github.com/Amlan-Sarkar/Droply/releases/download/{tag}/Droply-Android.apk) |
+| 🤖 **Android (7.0+)** | Standalone APK | {android_link} |
 
 > [!WARNING]
 > **Android is currently experimental:** The Android APK is provided for testing and community validation. Core download flows, storage paths, and UI interactions are under active development and may behave unexpectedly while mobile issues are being resolved.
