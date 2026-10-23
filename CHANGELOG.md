@@ -2,6 +2,31 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.4.3]
+
+- **Cross-Platform Pause & Resume (Windows & Android):**
+  - Instant pause and resume capabilities for active downloads and queued items.
+  - Keeps partial `.part` download files intact on pause, enabling byte-level resumption via HTTP Range requests without re-downloading from scratch.
+  - Added dedicated toggle button (⏸ Pause / ▶ Resume) in single active download card and queue list.
+- **Android Settings & Preference Persistence Fix:**
+  - Resolved an unhandled null-reference error where missing desktop DOM elements crashed settings saving on mobile.
+  - Preferences (theme, concurrent downloads, audio format, notifications) now save reliably to `SharedPreferences` and persist across restarts.
+  - Expanded concurrent downloads slider up to 5 simultaneous streams and boosted Android thread pool to 8 workers.
+- **Android Download Engine Recovery & Progressive Streams:**
+  - Added fallback to progressive single-file MP4 containers (`best[ext=mp4]/best`) and native M4A audio when FFmpeg is not bundled on the device, eliminating post-processing merge failures.
+  - Corrected error event routing so download exceptions display immediately in the UI rather than remaining stuck on "Starting...".
+- **Android UI & Text Tailoring:**
+  - Dropped "Universal Media Downloader" header tagline on Android for a cleaner, compact title bar.
+  - Cleaned link input labels to "Paste Media Link" and placeholder to "Paste video or audio link (supports playlists & batches)".
+  - Dropped Nordic Slate theme across desktop and Android, defaulting cleanly to Neon Midnight.
+  - Replaced generic orange YouTube detected badge icon with a clean, text-only source badge.
+  - Updated settings wording from "Desktop Notifications" to "Download Notifications" and "desktop aesthetic" to "appearance".
+  - Replaced triangular accents with a breathing **Resting Cat silhouette** (`.resting-cat-accent`).
+- **Update System Modal Synchronization:**
+  - Fixed non-functional "Check for updates" icon on Android by syncing modern update modal markup and adding full null-safety to update dialog handlers.
+- **Real-Time SSE Telemetry Stream:**
+  - Desktop UI now connects to a unified Server-Sent Events stream (`/api/events/stream`) with heartbeat monitoring and state synchronization.
+
 ## [1.4.2]
 
 - **Android Download Engine Queue & Completion Fix:** Resolved an indentation defect in `droply_engine.py` where download completion logic and callbacks were trapped inside an exception handling block. Downloads on Android now properly emit completion events, unblocking consecutive downloads, playlists, and batch queue tasks.

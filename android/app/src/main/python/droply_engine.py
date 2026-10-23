@@ -14,14 +14,31 @@ import importlib
 from typing import Dict, Any, Callable, Optional, List, Union
 import yt_dlp
 
-# Global cancellation flag for active Android download
+# Global cancellation and pause flags for active Android download
 _is_cancelled = False
+_is_paused = False
 _ffmpeg_binary_path = None
 
 
+class DownloadPausedException(Exception):
+    pass
+
+
 def cancel_active_download():
-    global _is_cancelled
+    global _is_cancelled, _is_paused
     _is_cancelled = True
+    _is_paused = False
+
+
+def pause_active_download():
+    global _is_paused
+    _is_paused = True
+
+
+def resume_active_download():
+    global _is_paused, _is_cancelled
+    _is_paused = False
+    _is_cancelled = False
 
 
 def set_ffmpeg_path(path: str):
@@ -563,7 +580,11 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
 
     def hook(d):
         nonlocal downloaded_filepath
-        global _is_cancelled
+        global _is_cancelled, _is_paused
+        if _is_paused:
+            # DO NOT delete partial files! Keep .part file intact for resume
+            raise DownloadPausedException("Download paused by user.")
+
         if _is_cancelled:
             # Clean up partial files immediately on cancel
             fn = d.get('filename')
@@ -632,14 +653,18 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
     if is_audio:
         # STRICT PURE AUDIO: NEVER fall back to /best which downloads a 360p video!
         audio_codec = audio_format or ('mp3' if 'mp3' in f_norm else 'm4a')
-        ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/bestaudio*'
-        ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s.{audio_codec}')
         if ffmpeg_available:
+            ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/bestaudio*'
+            ydl_opts['outtmpl'] = os.path.join(output_dir, f'%(title)s.{audio_codec}')
             ydl_opts['postprocessors'] = [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': audio_codec,
                 'preferredquality': '320',
             }]
+        else:
+            # Standalone Android without ffmpeg: extract direct M4A stream cleanly
+            ydl_opts['format'] = 'bestaudio[ext=m4a]/bestaudio/best'
+            ydl_opts['outtmpl'] = os.path.join(output_dir, '%(title)s.%(ext)s')
     else:
         ydl_opts['outtmpl'] = os.path.join(output_dir, '%(title)s.%(ext)s')
         if not f_norm or f_norm in ('best', 'auto', 'default'):
@@ -647,30 +672,42 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                 ydl_opts['format'] = 'bestvideo+bestaudio/best'
                 ydl_opts['merge_output_format'] = 'mp4'
             else:
-                ydl_opts['format'] = 'bestvideo*+bestaudio/best[ext=mp4]/best'
+                ydl_opts['format'] = 'best[ext=mp4]/best'
         elif f_norm.endswith('p') and f_norm[:-1].isdigit():
             target_h = int(f_norm[:-1])
             if ffmpeg_available:
                 ydl_opts['format'] = f"bestvideo[height<={target_h}]+bestaudio/best[height<={target_h}]/best"
                 ydl_opts['merge_output_format'] = 'mp4'
             else:
-                ydl_opts['format'] = f"bestvideo*[height<={target_h}]+bestaudio/best[height<={target_h}][ext=mp4]/best[height<={target_h}]/best"
+                ydl_opts['format'] = f"best[height<={target_h}][ext=mp4]/best[height<={target_h}]/best[ext=mp4]/best"
         elif '+' in format_id or 'bestvideo' in format_id or 'bestaudio' in format_id:
-            ydl_opts['format'] = format_id
             if ffmpeg_available:
+                ydl_opts['format'] = format_id
                 ydl_opts['merge_output_format'] = 'mp4'
+            else:
+                ydl_opts['format'] = 'best[ext=mp4]/best'
         else:
             if ffmpeg_available:
                 ydl_opts['format'] = f"{format_id}+bestaudio/bestvideo+bestaudio/best"
                 ydl_opts['merge_output_format'] = 'mp4'
             else:
-                ydl_opts['format'] = f"{format_id}+bestaudio/best[ext=mp4]/best"
+                ydl_opts['format'] = f"{format_id}[ext=mp4]/best[ext=mp4]/best"
 
     try:
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 res = ydl.download([url])
+        except DownloadPausedException:
+            return {
+                "status": "paused",
+                "message": "Download paused by user."
+            }
         except Exception as dl_err:
+            if isinstance(dl_err, DownloadPausedException) or "Download paused by user" in str(dl_err):
+                return {
+                    "status": "paused",
+                    "message": "Download paused by user."
+                }
             if ("twitter.com" in url or "x.com" in url):
                 synd = extract_twitter_syndication(url)
                 if synd and synd.get('formats'):
@@ -725,8 +762,24 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
                 "percent": 100.0,
                 "progress_percent": 100.0
             }))
-        return json.dumps({"status": "completed", "code": res, "file_path": final_path, "file_size": file_size_bytes})
+    except DownloadPausedException:
+        if callback_obj:
+            callback_obj.onProgress(json.dumps({
+                "status": "paused",
+                "percent": 0.0,
+                "title": title
+            }))
+        return json.dumps({"status": "paused"})
     except Exception as e:
+        global _is_paused
+        if _is_paused or "paused" in str(e).lower():
+            if callback_obj:
+                callback_obj.onProgress(json.dumps({
+                    "status": "paused",
+                    "percent": 0.0,
+                    "title": title
+                }))
+            return json.dumps({"status": "paused"})
         err_msg = str(e)
         if "cancelled" in err_msg.lower():
             err_msg = "Download cancelled by user."
@@ -739,11 +792,11 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         return json.dumps({"status": "error", "error": err_msg})
 
 
-def check_updates(installed_app_version: str = "v1.4.2") -> str:
+def check_updates(installed_app_version: str = "v1.4.3") -> str:
     """
     Checks for updates for Droply and yt-dlp core.
     """
-    current_app_version = installed_app_version or "v1.4.2"
+    current_app_version = installed_app_version or "v1.4.3"
     if not current_app_version.startswith("v"):
         current_app_version = f"v{current_app_version}"
 

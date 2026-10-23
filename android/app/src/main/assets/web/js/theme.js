@@ -23,6 +23,9 @@ const ThemeManager = {
   },
 
   setTheme(themeName) {
+    if (!themeName || themeName === 'nord') {
+      themeName = 'dark';
+    }
     this.currentTheme = themeName;
     document.body.setAttribute('data-theme', themeName);
     localStorage.setItem('droply_theme', themeName);

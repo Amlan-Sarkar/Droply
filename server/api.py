@@ -15,14 +15,14 @@ import tempfile
 import subprocess
 import urllib.request
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
 
 # Priority import path for self-updated yt-dlp core engine
 _engine_updates = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")), "Droply", "engine_updates")
@@ -35,47 +35,61 @@ except ImportError:
     imageio_ffmpeg = None
 
 
+_cached_ytdlp_version: Optional[str] = None
+
+
 def _get_ytdlp_version() -> str:
+    global _cached_ytdlp_version
+    if _cached_ytdlp_version and _cached_ytdlp_version != "unknown":
+        return _cached_ytdlp_version
+
+    version_found = "unknown"
+
     # 1. Try yt_dlp.version directly
     try:
         from yt_dlp.version import __version__
         if __version__ and __version__.lower() != "installed":
-            return __version__
+            version_found = __version__
     except Exception:
         pass
 
     # 2. Try get_yt_dlp() provider
-    try:
-        from engine.providers.ytdlp_provider import get_yt_dlp
-        yt_mod = get_yt_dlp()
-        v = getattr(yt_mod, "__version__", None)
-        if v and str(v).lower() != "installed":
-            return str(v)
-        v = getattr(getattr(yt_mod, "version", None), "__version__", None)
-        if v and str(v).lower() != "installed":
-            return str(v)
-    except Exception:
-        pass
+    if version_found == "unknown":
+        try:
+            from engine.providers.ytdlp_provider import get_yt_dlp
+            yt_mod = get_yt_dlp()
+            v = getattr(yt_mod, "__version__", None)
+            if v and str(v).lower() != "installed":
+                version_found = str(v)
+            else:
+                v = getattr(getattr(yt_mod, "version", None), "__version__", None)
+                if v and str(v).lower() != "installed":
+                    version_found = str(v)
+        except Exception:
+            pass
 
     # 3. Try importlib.metadata
-    try:
-        import importlib.metadata
-        v = importlib.metadata.version("yt-dlp")
-        if v:
-            return v
-    except Exception:
-        pass
+    if version_found == "unknown":
+        try:
+            import importlib.metadata
+            v = importlib.metadata.version("yt-dlp")
+            if v:
+                version_found = v
+        except Exception:
+            pass
 
     # 4. Try pkg_resources
-    try:
-        import pkg_resources
-        v = pkg_resources.get_distribution("yt-dlp").version
-        if v:
-            return str(v)
-    except Exception:
-        pass
+    if version_found == "unknown":
+        try:
+            import pkg_resources
+            v = pkg_resources.get_distribution("yt-dlp").version
+            if v:
+                version_found = str(v)
+        except Exception:
+            pass
 
-    return "unknown"
+    _cached_ytdlp_version = version_found
+    return _cached_ytdlp_version
 
 from engine.providers.registry import registry
 from engine.providers.ytdlp_provider import humanize_error
@@ -94,10 +108,24 @@ from engine.file_manager import (
 # Cryptographic dynamic session authentication token
 AUTH_TOKEN = secrets.token_hex(24)
 
-# Active WebSocket connections
+# Active telemetry subscribers
+sse_subscribers: Set[asyncio.Queue] = set()
+_sse_lock = asyncio.Lock()
 active_connections: List[WebSocket] = []
 loop: Optional[asyncio.AbstractEventLoop] = None
 _ws_lock = asyncio.Lock()
+
+CRITICAL_EVENTS = {
+    "task_added",
+    "task_completed",
+    "task_failed",
+    "task_cancelled",
+    "task_removed",
+    "task_updated",
+    "queue_cleared",
+    "initial_state",
+    "resync_required"
+}
 
 
 @asynccontextmanager
@@ -105,10 +133,13 @@ async def lifespan(app: FastAPI):
     global loop
     loop = asyncio.get_running_loop()
 
-    # Forward queue manager events to WebSocket clients
+    # Thread-safe event forwarding from engine background thread to asyncio event loop
     def on_queue_event(data: Dict[str, Any]):
-        if active_connections and loop and loop.is_running():
-            asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
+        if loop and loop.is_running():
+            if sse_subscribers:
+                asyncio.run_coroutine_threadsafe(_dispatch_sse_event(data), loop)
+            if active_connections:
+                asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
 
     queue_manager.add_listener(on_queue_event)
     yield
@@ -180,6 +211,96 @@ async def security_and_auth_middleware(request: Request, call_next):
 
     response = await call_next(request)
     return response
+
+
+async def _dispatch_sse_event(data: Dict[str, Any]):
+    async with _sse_lock:
+        if not sse_subscribers:
+            return
+        event_type = data.get("event")
+        is_critical = event_type in CRITICAL_EVENTS
+
+        for q in list(sse_subscribers):
+            if is_critical:
+                if q.full():
+                    evicted_critical = False
+                    try:
+                        for _ in range(min(50, q.qsize())):
+                            evicted = q.get_nowait()
+                            if evicted.get("event") in CRITICAL_EVENTS:
+                                evicted_critical = True
+                    except asyncio.QueueEmpty:
+                        pass
+                    if evicted_critical:
+                        try:
+                            q.put_nowait({"event": "resync_required"})
+                        except asyncio.QueueFull:
+                            pass
+                try:
+                    q.put_nowait(data)
+                except asyncio.QueueFull:
+                    pass
+            else:
+                # Non-critical event (e.g. task_progress): drop if queue is congested (>80% full)
+                if q.qsize() < 200:
+                    try:
+                        q.put_nowait(data)
+                    except asyncio.QueueFull:
+                        pass
+
+
+@app.get("/api/events/stream")
+async def sse_events_endpoint(request: Request):
+    token = request.query_params.get("token") or request.headers.get("x-auth-token")
+    if not token or not secrets.compare_digest(token, AUTH_TOKEN):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing or invalid token.")
+
+    queue: asyncio.Queue = asyncio.Queue(maxsize=250)
+
+    # Atomic initial snapshot and subscriber registration under _sse_lock
+    async with _sse_lock:
+        sse_subscribers.add(queue)
+        initial_tasks = queue_manager.get_all_tasks()
+        queue.put_nowait({
+            "event": "initial_state",
+            "tasks": initial_tasks
+        })
+
+    async def event_generator():
+        try:
+            # Instruct browser EventSource to reconnect after 1500ms on network drops
+            yield "retry: 1500\n\n"
+
+            while True:
+                if await request.is_disconnected():
+                    break
+
+                try:
+                    data = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    if data.get("event") == "resync_required":
+                        current_tasks = queue_manager.get_all_tasks()
+                        yield f"data: {json.dumps({'event': 'initial_state', 'tasks': current_tasks})}\n\n"
+                    else:
+                        yield f"data: {json.dumps(data)}\n\n"
+                except asyncio.TimeoutError:
+                    # Heartbeat comment to keep HTTP streaming connection alive
+                    yield ": ping\n\n"
+        except (asyncio.CancelledError, GeneratorExit):
+            pass
+        finally:
+            async with _sse_lock:
+                if queue in sse_subscribers:
+                    sse_subscribers.remove(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 async def broadcast_ws(message: Dict[str, Any]):
@@ -577,6 +698,18 @@ async def retry_task(task_id: str):
     return {"success": success}
 
 
+@app.post("/api/tasks/{task_id}/pause")
+async def pause_task(task_id: str):
+    success = queue_manager.pause_task(task_id)
+    return {"success": success}
+
+
+@app.post("/api/tasks/{task_id}/resume")
+async def resume_task(task_id: str):
+    success = queue_manager.resume_task(task_id)
+    return {"success": success}
+
+
 @app.delete("/api/tasks/{task_id}")
 async def remove_task(task_id: str):
     success = queue_manager.remove_task(task_id)
@@ -897,7 +1030,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.4.2"
+    return "v1.4.3"
 
 
 APP_VERSION = _load_app_version()
@@ -1343,6 +1476,8 @@ async def update_ytdlp_endpoint():
                 sys.path.insert(0, updates_base)
 
             importlib.invalidate_caches()
+            global _cached_ytdlp_version
+            _cached_ytdlp_version = None
             try:
                 import yt_dlp.version  # type: ignore
                 importlib.reload(yt_dlp.version)

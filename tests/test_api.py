@@ -127,6 +127,12 @@ class TestAPIEndpoints(unittest.TestCase):
         resp = client.get("/api/proxy/thumbnail?url=invalid")
         self.assertEqual(resp.status_code, 400)
 
+    def test_events_stream_unauthorized(self):
+        raw_client = TestClient(app)
+        resp = raw_client.get("/api/events/stream")
+        self.assertEqual(resp.status_code, 401)
+
 
 if __name__ == "__main__":
     unittest.main()
+

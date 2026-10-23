@@ -49,7 +49,7 @@
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
-        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.4.2</span>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.4.3</span>
         <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
@@ -90,11 +90,12 @@
         </a>
 
         <button class="header-desktop-btn update-desktop-btn" id="header-check-updates" title="Check for Updates">
-          <svg class="header-btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <svg class="header-btn-svg" id="header-update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M23 4v6h-6"></path>
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
           </svg>
-          <span>Check for Updates</span>
+          <span class="update-btn-label">Check for Updates</span>
+          <span class="update-breathing-dot" id="header-update-dot" style="display: none;" title="Update available!"></span>
         </button>
 
         <!-- SERVER STATUS PILL (READY / RECONNECTING) -->
@@ -128,12 +129,12 @@
         <div class="pane-content-single">
           
           <!-- CLEAN INPUT CARD -->
-          <div class="input-omni-card">
+          <div class="input-droply-card input-omni-card">
             
             <!-- Sleek Single-Line Input Bar with inline icons and actions -->
-            <div class="omni-input-bar">
-              <div class="omni-input-prefix">
-                <svg class="omni-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="droply-input-bar omni-input-bar">
+              <div class="droply-input-prefix omni-input-prefix">
+                <svg class="droply-link-icon omni-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
@@ -142,28 +143,28 @@
               <input 
                 type="text"
                 id="single-url-input" 
-                class="omni-input-field" 
+                class="droply-input-field omni-input-field" 
                 placeholder="Paste media or playlist URL (YouTube, Facebook, Instagram, X, TikTok...)" 
                 autocomplete="off"
                 spellcheck="false"
               />
 
-              <button class="btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+              <button class="btn-clear-droply btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
 
-              <div class="omni-bar-actions">
-                <button class="omni-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
+              <div class="droply-bar-actions omni-bar-actions">
+                <button class="droply-action-pill omni-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
                   <svg viewBox="0 0 24 24" fill="currentColor" style="width: 10px; height: 10px; margin-right: 2px;">
                     <polygon points="5,8 19,8 12,17"></polygon>
                   </svg>
                   <span>Batch</span>
                 </button>
 
-                <button class="omni-action-pill btn-paste-omni" id="btn-paste" title="Paste from clipboard">
+                <button class="droply-action-pill omni-action-pill btn-paste-droply btn-paste-omni" id="btn-paste" title="Paste from clipboard">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -171,27 +172,35 @@
                   <span>Paste</span>
                 </button>
 
-                <button class="omni-fetch-btn" id="btn-analyze" title="Analyze media details">
+                <button class="droply-fetch-btn omni-fetch-btn" id="btn-analyze" title="Analyze media details">
                   <span class="btn-text">Analyze</span>
                 </button>
               </div>
             </div>
 
             <!-- Optional Batch Links Drawer -->
-            <div class="omni-batch-drawer" id="omni-batch-drawer" style="display: none;">
-              <textarea 
-                id="batch-urls-input" 
-                class="omni-batch-textarea" 
-                rows="3" 
-                placeholder="Paste multiple URLs (one per line) for batch download..."
-                autocomplete="off"
-                spellcheck="false"
-              ></textarea>
+            <div class="droply-batch-drawer omni-batch-drawer" id="omni-batch-drawer" style="display: none;">
+              <div class="droply-batch-wrapper">
+                <textarea 
+                  id="batch-urls-input" 
+                  class="droply-batch-textarea omni-batch-textarea" 
+                  rows="3" 
+                  placeholder="Paste multiple URLs (one per line) for batch download..."
+                  autocomplete="off"
+                  spellcheck="false"
+                ></textarea>
+                <button class="btn-clear-droply btn-clear-batch" id="btn-clear-batch" title="Clear batch inputs" style="display: none;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <!-- Platforms Chips Row (Without VPN notice) -->
-            <div class="omni-platforms-row">
-              <div class="omni-platform-chips">
+            <div class="droply-platforms-row omni-platforms-row">
+              <div class="droply-platform-chips omni-platform-chips">
                 <span class="platform-chip">YouTube</span>
                 <span class="platform-chip">Facebook</span>
                 <span class="platform-chip">Instagram</span>
@@ -203,7 +212,7 @@
             </div>
 
             <!-- Bottom Trust Badge Row -->
-            <div class="omni-trust-bar">
+            <div class="droply-trust-bar omni-trust-bar">
               <div class="trust-badge-container">
                 <span class="trust-shield-badge">
                   <svg class="trust-shield-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -399,13 +408,19 @@
                 <span class="download-status-badge" id="single-status-badge">Downloading</span>
                 <h4 class="download-title" id="single-progress-title">Video Title</h4>
               </div>
-              <button class="icon-btn-cancel" id="btn-cancel-single" title="Cancel Download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                <span>Cancel</span>
-              </button>
+              <div class="download-card-actions">
+                <button class="icon-btn-pause" id="btn-pause-single" title="Pause Download">
+                  <svg id="single-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                  <span id="single-pause-text">Pause</span>
+                </button>
+                <button class="icon-btn-cancel" id="btn-cancel-single" title="Cancel Download">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>Cancel</span>
+                </button>
+              </div>
             </div>
 
             <!-- ANIMATED PROGRESS BAR -->
@@ -467,16 +482,26 @@
           <!-- BATCH URLS CONTAINER -->
           <div id="batch-container"></div>
 
-          <!-- CAT-INSPIRED CUE DIVIDER -->
+          <!-- CAT-INSPIRED CUE DIVIDER: RESTING CAT ACCENT -->
           <div class="cat-cue-divider">
-            <span class="cat-cue-mark">
-              <svg viewBox="0 0 32 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cat-face-divider-svg">
-                <path d="M 4 17 C 3 13, 3 8, 5 6 L 10 13 L 22 13 L 27 6 C 29 8, 29 13, 28 17 C 24 19, 8 19, 4 17 Z"></path>
-                <path d="M 15 14 L 17 14 L 16 15.5 Z" fill="currentColor"></path>
-                <path d="M 12 15 L 6 14"></path>
-                <path d="M 12 16.5 L 7 17.5"></path>
-                <path d="M 20 15 L 26 14"></path>
-                <path d="M 20 16.5 L 25 17.5"></path>
+            <span class="cat-cue-mark resting-cat-accent" title="Droply Resting Cat">
+              <svg class="resting-cat-svg" viewBox="0 0 54 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Curled sleeping body -->
+                <path d="M 14 18 C 14 10, 24 6, 36 6 C 47 6, 50 11, 50 17 C 50 21, 44 24, 32 24 C 18 24, 14 22, 14 18 Z" fill="currentColor" opacity="0.9" />
+                <!-- Sleeping Cat Head -->
+                <ellipse cx="12" cy="14" rx="7" ry="6" fill="currentColor" />
+                <!-- Left Cute Ear -->
+                <polygon points="7,10 5,3 11,7" fill="currentColor" />
+                <!-- Right Cute Ear -->
+                <polygon points="13,7 18,3 17,10" fill="currentColor" />
+                <!-- Peaceful Sleeping Eye (gentle curved line) -->
+                <path d="M 8 13.5 Q 10 15.5 12 13.5" stroke="var(--bg-card, #0a0d14)" stroke-width="1.3" stroke-linecap="round" fill="none" />
+                <!-- Curled Tail wrapped snugly around body -->
+                <path d="M 50 17 C 52 14, 53 10, 50 8 C 47 6, 43 9, 45 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.85" />
+                <!-- Tucked paw detail -->
+                <ellipse cx="22" cy="22" rx="3.5" ry="1.8" fill="currentColor" opacity="0.5" />
+                <!-- Gentle Zzz sleeping float bubble -->
+                <text x="3" y="6" font-size="5" font-family="sans-serif" font-weight="700" fill="currentColor" opacity="0.6">z</text>
               </svg>
             </span>
           </div>
@@ -805,7 +830,7 @@
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.4.2</span>
+              <span class="ver-value" id="update-cur-ver">v1.4.3</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">

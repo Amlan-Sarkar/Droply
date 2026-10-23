@@ -230,7 +230,20 @@ const Components = {
   _getQueueItemActions(task) {
     if (task.status === 'downloading' || task.status === 'processing') {
       return `
+        <button class="icon-btn-pause" data-action="pause" data-id="${task.id}" title="Pause">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+        </button>
         <button class="icon-btn-cancel" data-action="cancel" data-id="${task.id}" title="Cancel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      `;
+    } else if (task.status === 'paused') {
+      return `
+        <button class="secondary-btn btn-sm" data-action="resume" data-id="${task.id}" title="Resume">
+          <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <span>Resume</span>
+        </button>
+        <button class="icon-btn" data-action="remove" data-id="${task.id}" title="Remove">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       `;
@@ -264,7 +277,19 @@ const Components = {
   },
 
   _getQueueItemMeta(task) {
-    if (task.status === 'failed' || task.status === 'cancelled') {
+    if (task.status === 'paused') {
+      return `
+        <span style="color: #fbbf24; font-weight: 600;">Download Paused (${task.percent ? task.percent.toFixed(1) : '0.0'}%)</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    if (task.status === 'cancelled') {
+      return `
+        <span style="color: #fbbf24; font-weight: 600;">Download Cancelled</span>
+        <span style="color: #a5b4fc;">${task.format_label || ''}</span>
+      `;
+    }
+    if (task.status === 'failed') {
       return `
         <span style="color: #f87171; font-weight: 600;">Download Failed</span>
         <span style="color: #a5b4fc;">${task.format_label || ''}</span>
@@ -304,7 +329,13 @@ const Components = {
     const statusTag = el.querySelector('.status-tag');
     if (statusTag) {
       statusTag.className = `status-tag ${task.status}`;
-      statusTag.textContent = task.status;
+      let label = task.status;
+      if (task.status === 'processing') label = 'Merging';
+      if (task.status === 'downloading') label = 'Downloading';
+      if (task.status === 'paused') label = 'Paused';
+      if (task.status === 'cancelled') label = 'Cancelled';
+      if (task.status === 'failed') label = 'Failed';
+      statusTag.textContent = label;
     }
 
     const metaRow = el.querySelector('.queue-item-meta-row');

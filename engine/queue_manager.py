@@ -18,6 +18,11 @@ from .history_manager import history_manager
 from .file_manager import format_bytes, get_default_download_dir
 
 
+class DownloadPausedException(Exception):
+    """Raised when a download task is paused by user to gracefully halt execution while keeping partial files intact."""
+    pass
+
+
 class DownloadTask:
     def __init__(
         self,
@@ -72,6 +77,18 @@ class DownloadTask:
 
     def is_cancelled(self) -> bool:
         return self._cancelled
+
+    def pause(self):
+        self._paused = True
+        self.status = "paused"
+
+    def resume(self):
+        self._paused = False
+        self._cancelled = False
+        self.status = "queued"
+
+    def is_paused(self) -> bool:
+        return self._paused
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -214,6 +231,24 @@ class QueueManager:
                 return True
         return False
 
+    def pause_task(self, task_id: str) -> bool:
+        with self._lock:
+            task = self.tasks.get(task_id)
+            if task and task.status in ("downloading", "processing", "queued"):
+                task.pause()
+                self._broadcast("task_updated", task)
+                return True
+        return False
+
+    def resume_task(self, task_id: str) -> bool:
+        with self._lock:
+            task = self.tasks.get(task_id)
+            if task and task.status == "paused":
+                task.resume()
+                self._broadcast("task_updated", task)
+                return True
+        return False
+
     def retry_task(self, task_id: str) -> bool:
         with self._lock:
             task = self.tasks.get(task_id)
@@ -310,6 +345,11 @@ class QueueManager:
                     last_percent[0] = pct
                     self._broadcast("task_progress", task)
 
+            def check_stop():
+                if task.is_paused():
+                    raise DownloadPausedException("Download paused by user.")
+                return task.is_cancelled()
+
             res = provider.download(
                 url=task.url,
                 format_id=task.format_id,
@@ -318,7 +358,7 @@ class QueueManager:
                 is_audio=task.is_audio,
                 audio_format=task.audio_format,
                 on_progress=progress_callback,
-                cancel_check=task.is_cancelled,
+                cancel_check=check_stop,
                 title=task.title
             )
 
@@ -347,7 +387,16 @@ class QueueManager:
                 "status": "completed",
             })
 
+        except DownloadPausedException:
+            task.status = "paused"
+            self._broadcast("task_updated", task)
+            return
+
         except Exception as e:
+            if task.is_paused():
+                task.status = "paused"
+                self._broadcast("task_updated", task)
+                return
             if task.is_cancelled():
                 task.status = "cancelled"
                 self._broadcast("task_updated", task)

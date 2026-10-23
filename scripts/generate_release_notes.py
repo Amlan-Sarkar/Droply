@@ -3,7 +3,7 @@ import os
 import re
 
 def main():
-    tag = sys.argv[1] if len(sys.argv) > 1 else "v1.4.2"
+    tag = sys.argv[1] if len(sys.argv) > 1 else "v1.4.3"
     ver = tag.lstrip("v")
     
     notes = ""

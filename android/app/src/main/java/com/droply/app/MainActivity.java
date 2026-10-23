@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
-    private final ExecutorService executor = Executors.newFixedThreadPool(4);
+    private final ExecutorService executor = Executors.newFixedThreadPool(8);
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private String pendingSharedUrl = null;
 
@@ -273,11 +273,45 @@ public class MainActivity extends AppCompatActivity {
                     EngineCallback callback = new EngineCallback();
                     module.callAttr("download_media", url, formatId, isAudio, audioFormat, downloadDir.getAbsolutePath(), title, callback, playlistFolder != null ? playlistFolder : "");
                 } catch (Exception e) {
+                    if (e.getMessage() != null && (e.getMessage().contains("DownloadPausedException") || e.getMessage().contains("Download paused by user"))) {
+                        mainHandler.post(() -> {
+                            String js = "window.dispatchEvent(new CustomEvent('droply_paused', { detail: {} }));";
+                            webView.evaluateJavascript(js, null);
+                        });
+                        return;
+                    }
                     mainHandler.post(() -> {
-                        String errJs = "window.dispatchEvent(new CustomEvent('droply_progress', { detail: { status: 'error', error: " + JSONObjectQuote(e.getMessage()) + " } }));";
+                        String errJs = "window.dispatchEvent(new CustomEvent('droply_error', { detail: { error: " + JSONObjectQuote(e.getMessage()) + " } }));";
                         webView.evaluateJavascript(errJs, null);
                     });
                 }
+            });
+        }
+
+        @JavascriptInterface
+        public void pauseDownload() {
+            executor.execute(() -> {
+                try {
+                    Python py = Python.getInstance();
+                    PyObject module = py.getModule("droply_engine");
+                    module.callAttr("pause_active_download");
+                } catch (Exception ignored) {}
+                mainHandler.post(() -> {
+                    String js = "window.dispatchEvent(new CustomEvent('droply_paused', { detail: {} }));";
+                    webView.evaluateJavascript(js, null);
+                });
+            });
+        }
+
+        @JavascriptInterface
+        public void resumeDownload(String url, String formatId, boolean isAudio, String audioFormat, String title, String playlistFolder) {
+            executor.execute(() -> {
+                try {
+                    Python py = Python.getInstance();
+                    PyObject module = py.getModule("droply_engine");
+                    module.callAttr("resume_active_download");
+                } catch (Exception ignored) {}
+                startDownloadWithFolder(url, formatId, isAudio, audioFormat, title, playlistFolder);
             });
         }
 
@@ -402,7 +436,7 @@ public class MainActivity extends AppCompatActivity {
         public void checkUpdates() {
             executor.execute(() -> {
                 try {
-                    String versionName = "v1.4.2";
+                    String versionName = "v1.4.3";
                     try {
                         versionName = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                     } catch (Exception ignored) {}

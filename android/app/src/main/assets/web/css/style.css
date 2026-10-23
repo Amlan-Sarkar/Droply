@@ -1155,6 +1155,29 @@ body {
   color: #ffffff;
 }
 
+.download-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn-pause {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.icon-btn-pause svg { width: 14px; height: 14px; }
+.icon-btn-pause:hover { background: rgba(245, 158, 11, 0.25); color: #ffffff; }
+
 .icon-btn-cancel {
   display: flex;
   align-items: center;
@@ -2327,6 +2350,7 @@ input:checked + .toggle-slider:before {
    =================================================================== */
 
 /* Clean Minimal Input Card */
+.input-droply-card,
 .input-omni-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -2351,6 +2375,7 @@ input:checked + .toggle-slider:before {
   letter-spacing: 0.3px;
 }
 
+.droply-textarea-wrapper,
 .omni-textarea-wrapper {
   position: relative;
   background: rgba(10, 14, 23, 0.85);
@@ -2359,11 +2384,13 @@ input:checked + .toggle-slider:before {
   transition: all 0.2s ease;
 }
 
+.droply-textarea-wrapper:focus-within,
 .omni-textarea-wrapper:focus-within {
   border-color: #00e5a3;
   box-shadow: 0 0 0 3px rgba(0, 229, 163, 0.15);
 }
 
+.droply-textarea,
 .omni-textarea {
   width: 100%;
   box-sizing: border-box;
@@ -2379,11 +2406,13 @@ input:checked + .toggle-slider:before {
   min-height: 64px;
 }
 
+.droply-textarea::placeholder,
 .omni-textarea::placeholder {
   color: #64748b;
   font-size: 13.5px;
 }
 
+.btn-clear-droply,
 .btn-clear-omni {
   position: absolute;
   top: 50%;
@@ -2408,6 +2437,7 @@ input:checked + .toggle-slider:before {
   z-index: 5;
 }
 
+.btn-clear-droply svg,
 .btn-clear-omni svg {
   width: 14px !important;
   height: 14px !important;
@@ -2416,6 +2446,8 @@ input:checked + .toggle-slider:before {
   display: block;
 }
 
+.btn-clear-droply:hover,
+.btn-clear-droply:active,
 .btn-clear-omni:hover,
 .btn-clear-omni:active {
   background: rgba(255, 255, 255, 0.18) !important;
@@ -2423,6 +2455,8 @@ input:checked + .toggle-slider:before {
   color: #ffffff !important;
 }
 
+.btn-clear-droply:hover svg,
+.btn-clear-droply:active svg,
 .btn-clear-omni:hover svg,
 .btn-clear-omni:active svg {
   stroke: #ffffff !important;
@@ -3211,6 +3245,37 @@ input:checked + .toggle-slider:before {
 .cat-cue-mark:hover {
   opacity: 1;
   transform: scale(1.1);
+}
+
+.resting-cat-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5a3;
+  animation: resting-cat-breathe 4s ease-in-out infinite;
+}
+
+.resting-cat-svg {
+  width: 50px;
+  height: 24px;
+  color: inherit;
+  transition: all 0.25s ease;
+}
+
+.resting-cat-accent:hover .resting-cat-svg {
+  filter: drop-shadow(0 0 10px rgba(0, 229, 163, 0.6));
+  transform: scale(1.1);
+}
+
+@keyframes resting-cat-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.05) translateY(-1px);
+    opacity: 1;
+  }
 }
 
 /* Brand Paw Accent */

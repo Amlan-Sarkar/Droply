@@ -211,14 +211,14 @@ def main():
 
     # Wait for server to come online
     server_ready = False
-    for _ in range(80):
+    for _ in range(100):
         if not server_thread.is_alive():
             print("Fatal error: DroplyServer background thread terminated.")
             break
         if is_port_in_use(port, args.host):
             server_ready = True
             break
-        time.sleep(0.1)
+        time.sleep(0.04)
 
     if args.headless:
         close_splash()
@@ -249,6 +249,7 @@ def main():
             icon_path = None
 
         print("Launching native Windows desktop application window...")
+        # Create window hidden so no black/blank canvas flash appears while WebView2 warms up
         window = webview.create_window(
             title="Droply",
             url=app_url,
@@ -256,13 +257,36 @@ def main():
             height=820,
             min_size=(920, 640),
             text_select=True,
-            background_color='#0a0d14'
+            background_color='#0a0d14',
+            hidden=True
         )
+
+        window_revealed = False
+
+        def reveal_window():
+            nonlocal window_revealed
+            if not window_revealed:
+                window_revealed = True
+                try:
+                    window.show()
+                except Exception:
+                    pass
+                close_splash()
+
+        # Reveal the window as soon as the DOM & CSS are loaded
+        window.events.loaded += lambda: reveal_window()
+
+        # Resilient fallback timer: reveal window after 1.5s if loaded event is missed
+        def _fallback_reveal():
+            time.sleep(1.5)
+            reveal_window()
+
+        threading.Thread(target=_fallback_reveal, daemon=True, name="DroplyRevealFallback").start()
 
         def set_win32_window_icon():
             """Ensures the Droply icon is set on the Win32 window handle and taskbar."""
             if sys.platform == "win32" and icon_path and os.path.exists(icon_path):
-                time.sleep(1.2)
+                time.sleep(0.6)
                 try:
                     import ctypes
                     user32 = ctypes.windll.user32
@@ -292,8 +316,7 @@ def main():
         threading.Thread(target=set_win32_window_icon, daemon=True).start()
 
         def on_window_ready():
-            """Dismiss bootloader splash once the browser window is painted."""
-            time.sleep(0.4)
+            """Called once the pywebview GUI thread is running."""
             close_splash()
 
         try:

@@ -48,7 +48,6 @@
         </div>
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw" title="Droply Feline Polish">🐾</span></span>
-          <span class="brand-tagline">Universal Media Downloader</span>
         </div>
       </div>
 
@@ -110,26 +109,25 @@
       <section class="tab-pane active" id="pane-single">
         <div class="pane-content-single">
           
-          <!-- CLEAN OMNIDOWNLOADER-STYLE INPUT CARD -->
-          <div class="input-omni-card">
+          <!-- CLEAN DROPLY INPUT CARD -->
+          <div class="input-droply-card input-omni-card">
             <div class="input-card-title-row">
-              <label class="input-section-label" for="single-url-input">Paste Media URL</label>
+              <label class="input-section-label" for="single-url-input">Paste Media Link</label>
               <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
-                <span class="detect-icon" id="detect-icon">🌐</span>
                 <span class="detect-text" id="detect-name">None</span>
               </div>
             </div>
 
-            <div class="omni-textarea-wrapper">
+            <div class="droply-textarea-wrapper omni-textarea-wrapper">
               <textarea 
                 id="single-url-input" 
-                class="omni-textarea" 
+                class="droply-textarea omni-textarea" 
                 rows="2"
-                placeholder="Paste video, playlist, or batch links (one per line)" 
+                placeholder="Paste video or audio link (supports playlists & batches)" 
                 autocomplete="off"
                 spellcheck="false"
               ></textarea>
-              <button class="btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+              <button class="btn-clear-droply btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -315,13 +313,19 @@
                 <span class="download-status-badge" id="single-status-badge">Downloading</span>
                 <h4 class="download-title" id="single-progress-title">Video Title</h4>
               </div>
-              <button class="icon-btn-cancel" id="btn-cancel-single" title="Cancel Download">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                <span>Cancel</span>
-              </button>
+              <div class="download-card-actions">
+                <button class="icon-btn-pause" id="btn-pause-single" title="Pause Download">
+                  <svg id="single-pause-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                  <span id="single-pause-text">Pause</span>
+                </button>
+                <button class="icon-btn-cancel" id="btn-cancel-single" title="Cancel Download">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  <span>Cancel</span>
+                </button>
+              </div>
             </div>
 
             <!-- ANIMATED PROGRESS BAR -->
@@ -383,12 +387,26 @@
           <!-- BATCH URLS CONTAINER -->
           <div id="batch-container"></div>
 
-          <!-- CAT-INSPIRED CUE DIVIDER -->
+          <!-- CAT-INSPIRED CUE DIVIDER: RESTING CAT ACCENT -->
           <div class="cat-cue-divider">
-            <span class="cat-cue-mark" title="Droply Feline Polish">
-              <svg viewBox="0 0 24 14" fill="currentColor" style="width: 22px; height: 12px;">
-                <polygon points="2,13 6,1 10,13"></polygon>
-                <polygon points="14,13 18,1 22,13"></polygon>
+            <span class="cat-cue-mark resting-cat-accent" title="Droply Resting Cat">
+              <svg class="resting-cat-svg" viewBox="0 0 54 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Curled sleeping body -->
+                <path d="M 14 18 C 14 10, 24 6, 36 6 C 47 6, 50 11, 50 17 C 50 21, 44 24, 32 24 C 18 24, 14 22, 14 18 Z" fill="currentColor" opacity="0.9" />
+                <!-- Sleeping Cat Head -->
+                <ellipse cx="12" cy="14" rx="7" ry="6" fill="currentColor" />
+                <!-- Left Cute Ear -->
+                <polygon points="7,10 5,3 11,7" fill="currentColor" />
+                <!-- Right Cute Ear -->
+                <polygon points="13,7 18,3 17,10" fill="currentColor" />
+                <!-- Peaceful Sleeping Eye (gentle curved line) -->
+                <path d="M 8 13.5 Q 10 15.5 12 13.5" stroke="var(--bg-card, #0a0d14)" stroke-width="1.3" stroke-linecap="round" fill="none" />
+                <!-- Curled Tail wrapped snugly around body -->
+                <path d="M 50 17 C 52 14, 53 10, 50 8 C 47 6, 43 9, 45 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.85" />
+                <!-- Tucked paw detail -->
+                <ellipse cx="22" cy="22" rx="3.5" ry="1.8" fill="currentColor" opacity="0.5" />
+                <!-- Gentle Zzz sleeping float bubble -->
+                <text x="3" y="6" font-size="5" font-family="sans-serif" font-weight="700" fill="currentColor" opacity="0.6">z</text>
               </svg>
             </span>
           </div>
@@ -546,7 +564,7 @@
               <div class="setting-item">
                 <div class="setting-info">
                   <label>Application Theme</label>
-                  <span>Choose your preferred desktop aesthetic.</span>
+                  <span>Choose your preferred appearance.</span>
                 </div>
                 <div class="setting-control">
                   <div class="theme-chips-row">
@@ -562,10 +580,6 @@
                       <span class="theme-color-preview cyber"></span>
                       <span>Cyberpunk Cyan</span>
                     </button>
-                    <button class="theme-chip" data-theme="nord">
-                      <span class="theme-color-preview nord"></span>
-                      <span>Nordic Slate</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -573,8 +587,8 @@
               <!-- 6. Notifications & Behavior -->
               <div class="setting-item">
                 <div class="setting-info">
-                  <label>Desktop Notifications</label>
-                  <span>Show a desktop notification banner when long downloads finish.</span>
+                  <label>Download Notifications</label>
+                  <span>Show a notification banner when downloads finish.</span>
                 </div>
                 <div class="setting-control">
                   <label class="toggle-switch">
@@ -630,38 +644,92 @@
 
     <!-- CHECK FOR UPDATES MODAL (OMNIDOWNLOADER STYLE) -->
     <div class="modal-overlay" id="update-modal" style="display: none;">
-      <div class="modal-card update-modal-card">
-        <div class="update-modal-header">
-          <div class="update-modal-icon" id="update-modal-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="9 12 11 14 15 10"></polyline>
-            </svg>
-          </div>
-          <h3 class="update-modal-title" id="update-modal-title">Droply is Up to Date</h3>
-        </div>
-
-        <div class="update-modal-body">
-          <div class="update-version-row">
-            <span class="update-ver-label">Installed: <strong id="update-ver-installed">v1.4.2</strong></span>
-            <span class="update-ver-dot">•</span>
-            <span class="update-ver-label">Latest: <strong id="update-ver-latest">v1.4.2</strong></span>
-          </div>
-          <p class="update-modal-desc" id="update-modal-desc">
-            You are running the newest release of Droply. You can also update the embedded yt-dlp core engine for latest platform fixes.
-          </p>
-          <div id="update-status-msg" style="display: none; font-size: 13px; color: #38bdf8; margin-top: 12px; font-weight: 500;"></div>
-        </div>
-
-        <div class="update-modal-actions">
-          <button class="secondary-btn" id="btn-close-update-modal">Close</button>
-          <button class="primary-btn btn-update-core" id="btn-update-ytdlp">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px;">
+      <div class="modal-card update-modal-card omni-update-card">
+        <!-- Header -->
+        <div class="omni-update-header">
+          <div class="update-pulse-icon" id="update-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span id="btn-update-ytdlp-text">Update yt-dlp Core</span>
+          </div>
+          <div class="update-title-wrap">
+            <h3 class="update-dialog-title" id="update-modal-title">Application Update Available <span class="brand-paw">🐾</span></h3>
+            <p class="update-dialog-sub" id="update-modal-desc">A newer version of Droply is ready to install</p>
+          </div>
+          <button class="btn-close-modal-x" id="btn-close-update-modal" title="Close dialog">✕</button>
+        </div>
+
+        <!-- Body -->
+        <div class="omni-update-body">
+          <!-- Versions Comparison Card -->
+          <div class="update-version-card">
+            <div class="ver-col">
+              <span class="ver-label">INSTALLED VERSION</span>
+              <span class="ver-value" id="update-cur-ver">v1.4.3</span>
+            </div>
+            <div class="ver-arrow">➔</div>
+            <div class="ver-col">
+              <span class="ver-label">LATEST RELEASE</span>
+              <span class="ver-value highlight-ver" id="update-new-ver">...</span>
+            </div>
+          </div>
+
+          <!-- Metadata row -->
+          <div class="update-meta-row">
+            <span class="meta-item"><span class="meta-icon">🗓</span> Released: <strong id="update-release-date">Today</strong></span>
+            <span class="meta-item"><span class="meta-icon">📥</span> Size: <strong id="update-release-size">~65 MB</strong></span>
+          </div>
+
+          <!-- What's new in this release section -->
+          <div class="update-changelog-wrap">
+            <div class="changelog-tag">WHAT'S NEW IN THIS RELEASE:</div>
+            <div class="changelog-scrollbox" id="update-changelog-content">
+              <div class="changelog-placeholder">Fetching release highlights...</div>
+            </div>
+          </div>
+
+          <!-- Live Download Progress Card (visible during downloading / completed) -->
+          <div class="update-dl-progress-box" id="update-dl-progress-box" style="display: none;">
+            <div class="dl-progress-header">
+              <span class="dl-status-title" id="update-dl-status-title">Downloading installer...</span>
+              <span class="dl-percent-badge" id="update-dl-percent">0%</span>
+            </div>
+            <div class="dl-bar-track">
+              <div class="dl-bar-fill" id="update-dl-bar-fill" style="width: 0%;"></div>
+            </div>
+            <div class="dl-progress-footer">
+              <span class="dl-bytes-text" id="update-dl-bytes">0 MB / 0 MB</span>
+              <span class="dl-speed-text" id="update-dl-speed">0 MB/s</span>
+            </div>
+          </div>
+
+          <div id="update-status-msg" style="display: none; font-size: 13px; color: #38bdf8; margin-top: 10px; font-weight: 500;"></div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="omni-update-footer">
+          <a class="update-btn-action btn-view-github" id="btn-view-github" href="https://github.com/Amlan-Sarkar/Droply/releases" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>View on GitHub</span>
+          </a>
+
+          <button class="update-btn-action btn-cancel-dl" id="btn-cancel-installer-dl" style="display: none;">
+            <span>Cancel Download</span>
+          </button>
+
+          <button class="update-btn-action btn-primary-dl" id="btn-installer-primary">
+            <svg id="primary-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="btn-installer-primary-text">Download Update</span>
           </button>
         </div>
       </div>

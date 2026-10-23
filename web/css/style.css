@@ -1136,6 +1136,29 @@ body {
   color: #ffffff;
 }
 
+.download-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn-pause {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.icon-btn-pause svg { width: 14px; height: 14px; }
+.icon-btn-pause:hover { background: rgba(245, 158, 11, 0.25); color: #ffffff; }
+
 .icon-btn-cancel {
   display: flex;
   align-items: center;
@@ -2364,45 +2387,47 @@ input:checked + .toggle-slider:before {
   font-size: 13.5px;
 }
 
+.btn-clear-droply,
 .btn-clear-omni {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  right: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #94a3b8;
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
+  position: static;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
   cursor: pointer;
   transition: all 0.15s ease;
-  z-index: 5;
+  flex-shrink: 0;
 }
 
+.btn-clear-droply svg,
 .btn-clear-omni svg {
-  width: 14px !important;
-  height: 14px !important;
+  width: 14px;
+  height: 14px;
   stroke: #94a3b8;
   stroke-width: 2.5;
   display: block;
 }
 
+.btn-clear-droply:hover,
+.btn-clear-droply:active,
 .btn-clear-omni:hover,
 .btn-clear-omni:active {
-  background: rgba(255, 255, 255, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
 }
 
+.btn-clear-droply:hover svg,
+.btn-clear-droply:active svg,
 .btn-clear-omni:hover svg,
 .btn-clear-omni:active svg {
   stroke: #ffffff !important;
@@ -3194,6 +3219,37 @@ input:checked + .toggle-slider:before {
   transform: scale(1.15);
 }
 
+.resting-cat-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #10b981;
+  animation: resting-cat-breathe 4s ease-in-out infinite;
+}
+
+.resting-cat-svg {
+  width: 50px;
+  height: 24px;
+  color: inherit;
+  transition: all 0.25s ease;
+}
+
+.resting-cat-accent:hover .resting-cat-svg {
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.6));
+  transform: scale(1.1);
+}
+
+@keyframes resting-cat-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.05) translateY(-1px);
+    opacity: 1;
+  }
+}
+
 .cat-face-divider-svg {
   width: 28px;
   height: 18px;
@@ -3456,6 +3512,7 @@ input:checked + .toggle-slider:before {
 }
 
 /* ================= DESKTOP INPUT CARD ================= */
+.input-droply-card,
 .input-omni-card {
   background: #0d1219;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -3467,11 +3524,13 @@ input:checked + .toggle-slider:before {
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
+.input-droply-card:focus-within,
 .input-omni-card:focus-within {
   border-color: rgba(0, 229, 163, 0.35);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 163, 0.08);
 }
 
+.droply-input-bar,
 .omni-input-bar {
   display: flex;
   align-items: center;
@@ -3481,13 +3540,16 @@ input:checked + .toggle-slider:before {
   padding: 4px 6px 4px 14px;
   gap: 10px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
 
+.droply-input-bar:focus-within,
 .omni-input-bar:focus-within {
   border-color: rgba(0, 229, 163, 0.6);
   box-shadow: 0 0 0 1px rgba(0, 229, 163, 0.25);
 }
 
+.droply-input-prefix,
 .omni-input-prefix {
   display: flex;
   align-items: center;
@@ -3495,11 +3557,13 @@ input:checked + .toggle-slider:before {
   flex-shrink: 0;
 }
 
+.droply-link-icon,
 .omni-link-icon {
   width: 17px;
   height: 17px;
 }
 
+.droply-input-field,
 .omni-input-field {
   flex: 1;
   background: transparent;
@@ -3512,37 +3576,52 @@ input:checked + .toggle-slider:before {
   min-width: 0;
 }
 
+.droply-input-field::placeholder,
 .omni-input-field::placeholder {
   color: #64748b;
   font-size: 13.5px;
 }
 
+/* Clear button placed in input bar left to the Batch button */
+.btn-clear-droply,
 .btn-clear-omni {
-  background: transparent;
-  border: none;
-  color: #64748b;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  position: static !important;
+  transform: none !important;
+  background: transparent !important;
+  border: none !important;
+  color: #64748b !important;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  border-radius: 50% !important;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  padding: 0;
-  transition: color 0.15s, background 0.15s;
+  padding: 0 !important;
+  margin: 0 2px 0 0 !important;
+  transition: all 0.15s ease;
+  z-index: 2;
 }
 
+.btn-clear-droply:hover,
 .btn-clear-omni:hover {
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.12) !important;
 }
 
+.btn-clear-droply svg,
 .btn-clear-omni svg {
-  width: 14px;
-  height: 14px;
+  width: 14px !important;
+  height: 14px !important;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  display: block;
 }
 
+.droply-bar-actions,
 .omni-bar-actions {
   display: flex;
   align-items: center;
@@ -3550,6 +3629,7 @@ input:checked + .toggle-slider:before {
   flex-shrink: 0;
 }
 
+.droply-action-pill,
 .omni-action-pill {
   display: inline-flex;
   align-items: center;
@@ -3566,28 +3646,33 @@ input:checked + .toggle-slider:before {
   user-select: none;
 }
 
+.droply-action-pill svg,
 .omni-action-pill svg {
   width: 14px;
   height: 14px;
   color: #94a3b8;
 }
 
+.droply-action-pill:hover,
 .omni-action-pill:hover {
   background: #1e293b;
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+.droply-action-pill.active,
 .omni-action-pill.active {
   background: rgba(99, 102, 241, 0.15);
   border-color: var(--accent-primary, #6366f1);
   color: var(--accent-primary, #6366f1);
 }
 
+.droply-action-pill.active svg,
 .omni-action-pill.active svg {
   color: var(--accent-primary, #6366f1);
 }
 
+.droply-fetch-btn,
 .omni-fetch-btn {
   display: inline-flex;
   align-items: center;
@@ -3606,16 +3691,20 @@ input:checked + .toggle-slider:before {
   user-select: none;
 }
 
+.droply-fetch-btn:hover,
 .omni-fetch-btn:hover {
   box-shadow: 0 4px 20px var(--accent-glow, rgba(99, 102, 241, 0.55));
   transform: translateY(-1px);
   filter: brightness(1.08);
 }
 
+.droply-fetch-btn:active,
 .omni-fetch-btn:active {
   transform: translateY(0);
 }
 
+/* Batch input drawer & clear button */
+.droply-batch-drawer,
 .omni-batch-drawer {
   margin-top: 10px;
   animation: slide-drawer 0.2s ease;
@@ -3626,6 +3715,12 @@ input:checked + .toggle-slider:before {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.droply-batch-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.droply-batch-textarea,
 .omni-batch-textarea {
   width: 100%;
   background: #06090e;
@@ -3634,12 +3729,62 @@ input:checked + .toggle-slider:before {
   color: #f1f5f9;
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
   font-size: 12.5px;
-  padding: 10px 12px;
+  padding: 10px 38px 10px 12px !important;
   outline: none;
   resize: vertical;
   line-height: 1.5;
+  box-sizing: border-box;
 }
 
+.btn-clear-batch {
+  position: absolute !important;
+  top: 9px !important;
+  right: 10px !important;
+  z-index: 5;
+}
+
+/* Header Check for Updates: spinning arrow and breathing dot */
+.update-desktop-btn {
+  position: relative;
+}
+
+.header-btn-svg.spinning,
+.update-desktop-btn.checking .header-btn-svg {
+  animation: spin-clockwise 0.85s linear infinite !important;
+}
+
+@keyframes spin-clockwise {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.update-breathing-dot {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-primary, #6366f1);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-glow, rgba(99, 102, 241, 0.5));
+  animation: breathing-dot 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes breathing-dot {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.85;
+    box-shadow: 0 0 4px 1px var(--accent-glow, rgba(99, 102, 241, 0.4));
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 12px 3px var(--accent-glow, rgba(99, 102, 241, 0.9));
+  }
+}
+
+.droply-platforms-row,
 .omni-platforms-row {
   display: flex;
   align-items: center;
@@ -3649,6 +3794,7 @@ input:checked + .toggle-slider:before {
   margin-top: 16px;
 }
 
+.droply-platform-chips,
 .omni-platform-chips {
   display: flex;
   align-items: center;
@@ -3674,6 +3820,7 @@ input:checked + .toggle-slider:before {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+.droply-trust-bar,
 .omni-trust-bar {
   display: flex;
   align-items: center;
