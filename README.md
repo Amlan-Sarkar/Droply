@@ -387,7 +387,7 @@ Droply is distributed under the [MIT License](LICENSE).
 <div align="center">
 <br>
 
-Made with care, a little curiosity, and a sleeping cat. 🐈  
+Made with care, a little curiosity, and a feline friend. 🐈  
 **Yours Truly, Droply**
 
 </div>
