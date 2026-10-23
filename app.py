@@ -207,14 +207,14 @@ class NativeSplashManager:
             except Exception:
                 pass
 
-            w, h = 560, 380
+            w, h = 560, 420
             sw = self.root.winfo_screenwidth()
             sh = self.root.winfo_screenheight()
             x = (sw - w) // 2
             y = (sh - h) // 2
             self.root.geometry(f'{w}x{h}+{x}+{y}')
 
-            canvas = tk.Canvas(self.root, width=w, height=h, bg='#0a0d14', highlightthickness=0)
+            canvas = tk.Canvas(self.root, width=w, height=h, bg='#050814', highlightthickness=0)
             canvas.pack(fill='both', expand=True)
 
             base_path = get_resource_path("assets/splash_base.png")
@@ -227,13 +227,13 @@ class NativeSplashManager:
                 bg_image = ImageTk.PhotoImage(pil_img)
                 canvas.create_image(0, 0, image=bg_image, anchor='nw')
 
-            bar_x = (w - 280) // 2
-            bar_y = 252
-            bar_w = 280
-            bar_h = 6
+            bar_x = 140
+            bar_y = 330
+            bar_w = 260
+            bar_h = 8
 
             progress_rect = canvas.create_rectangle(bar_x, bar_y, bar_x, bar_y + bar_h, fill='#38bdf8', outline='')
-            status_item = canvas.create_text(w // 2, 276, text=self._status, fill='#94a3b8', font=('Segoe UI', 9))
+            status_item = canvas.create_text(w // 2, 356, text=self._status, fill='#7dd3fc', font=('Segoe UI', 9))
 
             self._ready_event.set()
 
