@@ -1278,6 +1278,7 @@ class DroplyApp {
       }
     } catch (e) {
       console.error("Load settings error:", e);
+    }
   }
 
   async loadSystemStatus() {
@@ -1694,6 +1695,7 @@ class DroplyApp {
       }
     });
   }
+}
 
   // ================= BACKGROUND STARTUP UPDATE CHECK =================
   async checkUpdatesOnStartup() {

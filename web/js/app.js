@@ -1695,6 +1695,7 @@ class DroplyApp {
       }
     });
   }
+}
 
   // ================= BACKGROUND STARTUP UPDATE CHECK =================
   async checkUpdatesOnStartup() {
