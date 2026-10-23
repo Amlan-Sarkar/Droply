@@ -1,5 +1,5 @@
 /**
- * Droply Client API & WebSocket Manager
+ * Droply Client API & Event Stream Manager
  * Full desktop server bridge + native mobile persistent client engine
  */
 
@@ -11,7 +11,6 @@ class DroplyAPI {
     }
     this.baseUrl = origin;
     this.authToken = window.__DROPLY_AUTH_TOKEN__ || (document.querySelector('meta[name="droply-auth"]')?.content) || '';
-    this.ws = null;
     this.eventSource = null;
     this.listeners = {};
     this.activeMobileTask = null;
@@ -319,10 +318,6 @@ class DroplyAPI {
     } catch (e) {
       setTimeout(() => this.initEventStream(), 2000);
     }
-  }
-
-  initWebSocket() {
-    this.initEventStream();
   }
 
   // ---------------- REST & NATIVE APIS ----------------

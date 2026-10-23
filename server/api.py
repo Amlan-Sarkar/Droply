@@ -1,6 +1,6 @@
 """
-Droply - FastAPI Server & WebSocket Bridge
-Provides REST endpoints and real-time WebSocket broadcasting.
+Droply - FastAPI Server & Telemetry Bridge
+Provides REST endpoints and real-time SSE event streaming.
 """
 
 import os
@@ -19,7 +19,7 @@ from typing import Dict, Any, List, Optional, Set
 from contextlib import asynccontextmanager
 from pydantic import BaseModel, Field
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request, status, Response
+from fastapi import FastAPI, HTTPException, Request, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, StreamingResponse
@@ -111,9 +111,7 @@ AUTH_TOKEN = secrets.token_hex(24)
 # Active telemetry subscribers
 sse_subscribers: Set[asyncio.Queue] = set()
 _sse_lock = asyncio.Lock()
-active_connections: List[WebSocket] = []
 loop: Optional[asyncio.AbstractEventLoop] = None
-_ws_lock = asyncio.Lock()
 
 CRITICAL_EVENTS = {
     "task_added",
@@ -138,8 +136,6 @@ async def lifespan(app: FastAPI):
         if loop and loop.is_running():
             if sse_subscribers:
                 asyncio.run_coroutine_threadsafe(_dispatch_sse_event(data), loop)
-            if active_connections:
-                asyncio.run_coroutine_threadsafe(broadcast_ws(data), loop)
 
     queue_manager.add_listener(on_queue_event)
     yield
@@ -301,52 +297,6 @@ async def sse_events_endpoint(request: Request):
             "X-Accel-Buffering": "no"
         }
     )
-
-
-async def broadcast_ws(message: Dict[str, Any]):
-    async with _ws_lock:
-        dead = []
-        for ws in list(active_connections):
-            try:
-                await asyncio.wait_for(ws.send_json(message), timeout=2.0)
-            except Exception:
-                dead.append(ws)
-                try:
-                    await ws.close()
-                except Exception:
-                    pass
-        for ws in dead:
-            if ws in active_connections:
-                active_connections.remove(ws)
-
-
-@app.websocket("/ws/events")
-async def websocket_endpoint(websocket: WebSocket):
-    token = websocket.query_params.get("token") or websocket.headers.get("x-auth-token")
-    if not token or not secrets.compare_digest(token, AUTH_TOKEN):
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-        return
-    await websocket.accept()
-    async with _ws_lock:
-        active_connections.append(websocket)
-    try:
-        # Send initial snapshot of all active tasks
-        async with _ws_lock:
-            await websocket.send_json({
-                "event": "initial_state",
-                "tasks": queue_manager.get_all_tasks()
-            })
-        while True:
-            # Keep connection alive
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        pass
-    except Exception:
-        pass
-    finally:
-        async with _ws_lock:
-            if websocket in active_connections:
-                active_connections.remove(websocket)
 
 
 # ---------------- API REQUEST MODELS ----------------

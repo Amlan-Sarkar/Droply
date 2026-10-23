@@ -61,19 +61,6 @@ body[data-theme="cyber"] {
   --accent-glow: rgba(6, 182, 212, 0.35);
 }
 
-/* Nordic Slate Theme */
-body[data-theme="nord"] {
-  --bg-primary: #181d27;
-  --bg-secondary: #1f2533;
-  --bg-card: rgba(36, 44, 58, 0.75);
-  --bg-card-hover: rgba(45, 55, 72, 0.85);
-  --bg-input: rgba(26, 32, 44, 0.8);
-  --accent-primary: #38bdf8;
-  --accent-secondary: #818cf8;
-  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-  --accent-glow: rgba(56, 189, 248, 0.3);
-}
-
 /* Base Resets */
 *, *::before, *::after {
   box-sizing: border-box;

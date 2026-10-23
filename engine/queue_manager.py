@@ -1,14 +1,13 @@
 """
 Droply - Queue & Download Manager
 Coordinates concurrent download jobs, batch queues, status tracking,
-cancellation, retries, and WebSocket event broadcasts.
+cancellation, retries, and real-time event broadcasts.
 """
 
 import os
 import time
 import uuid
 import threading
-import asyncio
 from typing import Dict, Any, List, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor
 
