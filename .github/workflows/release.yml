@@ -53,7 +53,7 @@ jobs:
 
       - name: Build Standalone (Windows)
         run: |
-          pyinstaller --noconfirm --name Droply --onedir --windowed --noconsole --icon Droply.ico --add-data "web;web" --add-data "assets;assets" --add-data "Droply.ico;." --add-data "VERSION;." --collect-all imageio_ffmpeg --collect-all pywebview --collect-all pythonnet --hidden-import tkinter --hidden-import tkinter.filedialog --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.lifespan.on app.py
+          pyinstaller --noconfirm --name Droply --onedir --windowed --noconsole --icon Droply.ico --add-data "web;web" --add-data "assets;assets" --add-data "Droply.ico;." --add-data "VERSION;." --collect-all imageio_ffmpeg --collect-all pywebview --collect-all pythonnet --hidden-import tkinter --hidden-import tkinter.filedialog --hidden-import uvicorn.logging --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto --hidden-import uvicorn.lifespan.on app.py
           New-Item -ItemType Directory -Force -Path dist/Droply/bin
           if (Get-Command ffmpeg -ErrorAction SilentlyContinue) {
             Copy-Item (Get-Command ffmpeg).Source -Destination dist/Droply/bin/ffmpeg.exe

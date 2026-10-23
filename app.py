@@ -144,7 +144,8 @@ def run_server(host: str, port: int):
             port=port,
             log_level="warning",
             access_log=False,
-            log_config=None  # Safe: do not override logging with raw console StreamHandlers
+            log_config=None,  # Safe: do not override logging with raw console StreamHandlers
+            ws="none"
         )
         server = uvicorn.Server(config)
         server.run()
