@@ -269,13 +269,15 @@ def main():
             if not window_revealed:
                 window_revealed = True
                 try:
-                    window.show()
+                    if window is not None:
+                        window.show()
                 except Exception:
                     pass
                 close_splash()
 
-        # Reveal the window as soon as the DOM & CSS are loaded
-        window.events.loaded += lambda: reveal_window()
+        if window is not None:
+            # Reveal the window as soon as the DOM & CSS are loaded
+            window.events.loaded += lambda: reveal_window()
 
         # Resilient fallback timer: reveal window after 1.5s if loaded event is missed
         def _fallback_reveal():
