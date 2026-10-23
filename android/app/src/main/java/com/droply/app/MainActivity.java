@@ -487,7 +487,7 @@ public class MainActivity extends AppCompatActivity {
         public void checkUpdates() {
             executor.execute(() -> {
                 try {
-                    String versionName = "v1.4.3";
+                    String versionName = "v1.4.4";
                     try {
                         versionName = "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
                     } catch (Exception ignored) {}

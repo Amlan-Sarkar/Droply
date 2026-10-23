@@ -92,7 +92,7 @@
         <div class="pane-content-single">
           
           <!-- CLEAN DROPLY INPUT CARD -->
-          <div class="input-droply-card input-omni-card">
+          <div class="input-droply-card">
             <div class="input-card-title-row">
               <label class="input-section-label" for="single-url-input">Paste Media Link</label>
               <div class="platform-detect-badge" id="detected-badge" style="opacity: 0;">
@@ -100,16 +100,16 @@
               </div>
             </div>
 
-            <div class="droply-textarea-wrapper omni-textarea-wrapper">
+            <div class="droply-textarea-wrapper">
               <textarea 
                 id="single-url-input" 
-                class="droply-textarea omni-textarea" 
+                class="droply-textarea" 
                 rows="2"
                 placeholder="Paste video or audio link (supports playlists & batches)" 
                 autocomplete="off"
                 spellcheck="false"
               ></textarea>
-              <button class="btn-clear-droply btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+              <button class="btn-clear-droply" id="btn-clear" title="Clear input" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -117,8 +117,8 @@
               </button>
             </div>
 
-            <div class="omni-input-actions">
-              <button class="secondary-btn btn-paste-omni" id="btn-paste" title="Paste from clipboard">
+            <div class="droply-input-actions">
+              <button class="secondary-btn btn-paste-droply" id="btn-paste" title="Paste from clipboard">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                   <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -126,8 +126,8 @@
                 <span>Paste</span>
               </button>
 
-              <button class="primary-btn btn-fetch-omni" id="btn-analyze">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <button class="primary-btn droply-fetch-btn" id="btn-analyze" title="Analyze media details">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="btn-icon">
                   <circle cx="11" cy="11" r="8"></circle>
                   <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
@@ -229,12 +229,12 @@
                   </div>
                 </div>
 
-                <!-- FORMAT SELECTION SECTION (OMNIDOWNLOADER STYLE) -->
+                <!-- FORMAT SELECTION SECTION (DROPLY NATIVE STYLE) -->
                 <div class="format-selection-wrap" id="video-formats-section">
                   <div class="format-header">
                     <label class="section-label">Select Download Quality</label>
                   </div>
-                  <div class="formats-chip-grid omni-quality-chips-grid" id="video-formats-grid">
+                  <div class="formats-chip-grid droply-quality-chips-grid" id="video-formats-grid">
                     <!-- Populated dynamically with actual qualities returned by source -->
                   </div>
                 </div>
@@ -243,19 +243,19 @@
                   <div class="format-header">
                     <label class="section-label">Select Audio Format</label>
                   </div>
-                  <div class="formats-chip-grid omni-quality-chips-grid" id="audio-formats-grid">
+                  <div class="formats-chip-grid droply-quality-chips-grid" id="audio-formats-grid">
                     <!-- Populated dynamically with audio formats -->
                   </div>
                 </div>
 
-                <!-- ESTIMATED DOWNLOAD SIZE BANNER (OMNIDOWNLOADER STYLE) -->
-                <div class="omni-size-banner" id="omni-size-banner">
+                <!-- ESTIMATED DOWNLOAD SIZE BANNER (DROPLY NATIVE STYLE) -->
+                <div class="droply-size-banner" id="droply-size-banner">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
-                  <span>Estimated Download Size: <strong id="omni-estimated-size">Calculating...</strong></span>
+                  <span>Estimated Download Size: <strong id="droply-estimated-size">Calculating...</strong></span>
                 </div>
 
                 <!-- SAVE DIRECTORY PICKER -->
@@ -369,26 +369,16 @@
           <!-- BATCH URLS CONTAINER -->
           <div id="batch-container"></div>
 
-          <!-- CAT-INSPIRED CUE DIVIDER: RESTING CAT ACCENT -->
+          <!-- CAT-INSPIRED CUE DIVIDER -->
           <div class="cat-cue-divider">
-            <span class="cat-cue-mark resting-cat-accent" title="Droply Resting Cat">
-              <svg class="resting-cat-svg" viewBox="0 0 54 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Curled sleeping body -->
-                <path d="M 14 18 C 14 10, 24 6, 36 6 C 47 6, 50 11, 50 17 C 50 21, 44 24, 32 24 C 18 24, 14 22, 14 18 Z" fill="currentColor" opacity="0.9" />
-                <!-- Sleeping Cat Head -->
-                <ellipse cx="12" cy="14" rx="7" ry="6" fill="currentColor" />
-                <!-- Left Cute Ear -->
-                <polygon points="7,10 5,3 11,7" fill="currentColor" />
-                <!-- Right Cute Ear -->
-                <polygon points="13,7 18,3 17,10" fill="currentColor" />
-                <!-- Peaceful Sleeping Eye (gentle curved line) -->
-                <path d="M 8 13.5 Q 10 15.5 12 13.5" stroke="var(--bg-card, #0a0d14)" stroke-width="1.3" stroke-linecap="round" fill="none" />
-                <!-- Curled Tail wrapped snugly around body -->
-                <path d="M 50 17 C 52 14, 53 10, 50 8 C 47 6, 43 9, 45 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.85" />
-                <!-- Tucked paw detail -->
-                <ellipse cx="22" cy="22" rx="3.5" ry="1.8" fill="currentColor" opacity="0.5" />
-                <!-- Gentle Zzz sleeping float bubble -->
-                <text x="3" y="6" font-size="5" font-family="sans-serif" font-weight="700" fill="currentColor" opacity="0.6">z</text>
+            <span class="cat-cue-mark">
+              <svg viewBox="0 0 32 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="cat-face-divider-svg">
+                <path d="M 4 17 C 3 13, 3 8, 5 6 L 10 13 L 22 13 L 27 6 C 29 8, 29 13, 28 17 C 24 19, 8 19, 4 17 Z"></path>
+                <path d="M 15 14 L 17 14 L 16 15.5 Z" fill="currentColor"></path>
+                <path d="M 12 15 L 6 14"></path>
+                <path d="M 12 16.5 L 7 17.5"></path>
+                <path d="M 20 15 L 26 14"></path>
+                <path d="M 20 16.5 L 25 17.5"></path>
               </svg>
             </span>
           </div>
@@ -399,7 +389,24 @@
               <h3 class="recent-title">Recent Downloads (<span id="recent-downloads-count">0</span>)</h3>
               <button class="subtle-link-btn" id="btn-clear-recent-downloads">Clear All</button>
             </div>
-            <div class="downloader-queue-list" id="downloader-queue-list"></div>
+            <div class="downloader-queue-list" id="downloader-queue-list">
+              <div class="downloader-cat-idle">
+                <svg class="cat-idle-svg" viewBox="0 0 120 70" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M 28 50 C 28 36, 46 26, 66 26 C 86 26, 98 36, 98 50 C 98 58, 84 62, 62 62 C 38 62, 28 58, 28 50 Z"></path>
+                  <path d="M 24 43 C 18 39, 14 33, 17 27 C 19 24, 23 26, 26 28 C 30 25, 35 24, 38 27 C 42 32, 39 39, 34 44"></path>
+                  <path d="M 18 27 L 16 16 L 24 24"></path>
+                  <path d="M 32 24 L 40 16 L 38 27"></path>
+                  <path d="M 20 33 Q 23 36 26 33"></path>
+                  <path d="M 29 33 Q 32 36 35 33"></path>
+                  <path d="M 98 48 C 106 43, 112 47, 110 53 C 108 59, 101 60, 93 60"></path>
+                  <path d="M 15 37 L 6 37"></path>
+                  <path d="M 15 40 L 7 42"></path>
+                  <path d="M 37 37 L 46 37"></path>
+                  <path d="M 36 40 L 45 42"></path>
+                </svg>
+                <div class="cat-idle-text">Ready for media. Paste a link above to begin downloading.</div>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -624,11 +631,11 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- CHECK FOR UPDATES MODAL (OMNIDOWNLOADER STYLE) -->
+    <!-- CHECK FOR UPDATES MODAL (DROPLY NATIVE STYLE) -->
     <div class="modal-overlay" id="update-modal" style="display: none;">
-      <div class="modal-card update-modal-card omni-update-card">
+      <div class="modal-card update-modal-card droply-update-card droply-update-dialog">
         <!-- Header -->
-        <div class="omni-update-header">
+        <div class="droply-update-header">
           <div class="update-pulse-icon" id="update-modal-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -644,12 +651,12 @@
         </div>
 
         <!-- Body -->
-        <div class="omni-update-body">
+        <div class="droply-update-body">
           <!-- Versions Comparison Card -->
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.4.3</span>
+              <span class="ver-value" id="update-cur-ver">v1.4.4</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">
@@ -691,7 +698,7 @@
         </div>
 
         <!-- Footer Actions -->
-        <div class="omni-update-footer">
+        <div class="droply-update-footer">
           <a class="update-btn-action btn-view-github" id="btn-view-github" href="https://github.com/Amlan-Sarkar/Droply/releases" target="_blank">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>

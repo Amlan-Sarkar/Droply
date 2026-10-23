@@ -980,7 +980,7 @@ def _load_app_version():
                         return ver if ver.startswith("v") else f"v{ver}"
             except Exception:
                 pass
-    return "v1.4.3"
+    return "v1.4.4"
 
 
 APP_VERSION = _load_app_version()

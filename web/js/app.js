@@ -55,6 +55,17 @@ class DroplyApp {
       });
     });
 
+    // Mobile bottom navigation tabs (Native Android & responsive view)
+    const mobileTabs = document.querySelectorAll('.mobile-nav-btn');
+    mobileTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.getAttribute('data-tab');
+        if (target) {
+          this.switchTab(target);
+        }
+      });
+    });
+
     // Top-left brand logo/title returns to Downloader
     const brandBtn = document.getElementById('header-brand-btn');
     if (brandBtn) {
@@ -92,6 +103,9 @@ class DroplyApp {
     document.querySelectorAll('.nav-tab').forEach(t => {
       t.classList.toggle('active', t.getAttribute('data-tab') === tabName);
     });
+    document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+    });
     document.querySelectorAll('.tab-pane').forEach(p => {
       p.classList.toggle('active', p.id === `pane-${tabName}`);
     });
@@ -107,6 +121,32 @@ class DroplyApp {
       this.loadHistory();
     } else if (tabName === 'settings') {
       this.loadSettings();
+    }
+  }
+
+  setAnalyzeLoading(isLoading) {
+    const btn = document.getElementById('btn-analyze');
+    if (!btn) return;
+    if (isLoading) {
+      btn.disabled = true;
+      btn.classList.add('is-analyzing');
+      btn.innerHTML = `
+        <svg class="btn-spinner-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="9" stroke-opacity="0.25"></circle>
+          <path d="M12 3a9 9 0 0 1 9 9" stroke-linecap="round"></path>
+        </svg>
+        <span class="btn-text">Analyzing...</span>
+      `;
+    } else {
+      btn.disabled = false;
+      btn.classList.remove('is-analyzing');
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="btn-icon">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="btn-text">Analyze</span>
+      `;
     }
   }
 
@@ -147,7 +187,7 @@ class DroplyApp {
 
     // Batch Drawer Toggle button
     const btnBatchToggle = document.getElementById('btn-batch-toggle');
-    const batchDrawer = document.getElementById('omni-batch-drawer');
+    const batchDrawer = document.getElementById('droply-batch-drawer');
     const batchTextarea = document.getElementById('batch-urls-input');
     const btnClearBatch = document.getElementById('btn-clear-batch');
 
@@ -266,11 +306,11 @@ class DroplyApp {
         this.selectedFormat = preferred;
         const grid = document.getElementById('video-formats-grid');
         if (grid && preferred) {
-          grid.querySelectorAll('.omni-quality-chip').forEach(c => {
+          grid.querySelectorAll('.droply-quality-chip').forEach(c => {
             c.classList.toggle('selected', c.getAttribute('data-fid') === preferred.format_id);
           });
         }
-        const sizeEl = document.getElementById('omni-estimated-size');
+        const sizeEl = document.getElementById('droply-estimated-size');
         if (sizeEl) sizeEl.textContent = (preferred && preferred.filesize_str) ? preferred.filesize_str : 'Standard';
       }
     });
@@ -290,11 +330,11 @@ class DroplyApp {
         this.selectedFormat = preferred;
         const grid = document.getElementById('audio-formats-grid');
         if (grid && preferred) {
-          grid.querySelectorAll('.omni-quality-chip').forEach(c => {
+          grid.querySelectorAll('.droply-quality-chip').forEach(c => {
             c.classList.toggle('selected', c.getAttribute('data-fid') === preferred.format_id);
           });
         }
-        const sizeEl = document.getElementById('omni-estimated-size');
+        const sizeEl = document.getElementById('droply-estimated-size');
         if (sizeEl) sizeEl.textContent = (preferred && preferred.filesize_str) ? preferred.filesize_str : '~3.5 MB';
       }
     });
@@ -611,7 +651,7 @@ class DroplyApp {
     }
 
     document.getElementById('analyze-skeleton').style.display = 'grid';
-    document.getElementById('btn-analyze').disabled = true;
+    this.setAnalyzeLoading(true);
 
     // Case 1: Multiple URLs pasted
     if (urls.length > 1) {
@@ -631,7 +671,7 @@ class DroplyApp {
       } catch (err) {
         this.showAnalyzeError(err);
       } finally {
-        document.getElementById('btn-analyze').disabled = false;
+        this.setAnalyzeLoading(false);
       }
       return;
     }
@@ -723,7 +763,7 @@ class DroplyApp {
     } catch (err) {
       this.showAnalyzeError(err);
     } finally {
-      document.getElementById('btn-analyze').disabled = false;
+      this.setAnalyzeLoading(false);
     }
   }
 
@@ -1268,7 +1308,7 @@ class DroplyApp {
   async loadSystemStatus() {
     try {
       const status = await api.getSystemStatus();
-      const appVer = status.app_version || 'v1.4.3';
+      const appVer = status.app_version || 'v1.4.4';
       const rawYtdlp = status.ytdlp_version;
 
       const verPill = document.getElementById('header-version-pill');
@@ -1448,7 +1488,7 @@ class DroplyApp {
       const curVerEl = document.getElementById('update-cur-ver');
       const newVerEl = document.getElementById('update-new-ver');
 
-      if (curVerEl) curVerEl.textContent = 'v1.4.3';
+      if (curVerEl) curVerEl.textContent = 'v1.4.4';
       if (newVerEl) newVerEl.textContent = '...';
       if (titleEl) titleEl.textContent = 'Checking for Updates...';
       if (descEl) descEl.textContent = 'Contacting update servers to verify Droply release and platform core engine status...';
@@ -1457,8 +1497,8 @@ class DroplyApp {
       try {
         const info = await api.checkUpdates();
         currentUpdateInfo = info;
-        const appInst = info.app_installed || 'v1.4.3';
-        const appLatest = info.app_latest || 'v1.4.3';
+        const appInst = info.app_installed || 'v1.4.4';
+        const appLatest = info.app_latest || 'v1.4.4';
         const isUpToDate = Boolean(info.app_up_to_date);
 
         if (curVerEl) curVerEl.textContent = appInst;
@@ -1496,8 +1536,8 @@ class DroplyApp {
           downloadState = 'can-download';
         }
       } catch (e) {
-        if (curVerEl) curVerEl.textContent = 'v1.4.3';
-        if (newVerEl) newVerEl.textContent = 'v1.4.3';
+        if (curVerEl) curVerEl.textContent = 'v1.4.4';
+        if (newVerEl) newVerEl.textContent = 'v1.4.4';
         if (titleEl) titleEl.textContent = 'Droply Core Engine';
         if (descEl) descEl.textContent = 'Verified online. You can check the embedded yt-dlp core engine.';
         if (changelogEl) changelogEl.innerHTML = renderChangelog('');

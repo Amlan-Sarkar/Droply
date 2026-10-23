@@ -384,7 +384,7 @@ def analyze_url(url: str) -> str:
                 }
                 return json.dumps(result)
 
-            # Single Video Extraction (OmniDownloader-style Resolution Tiers)
+            # Single Video Extraction (Droply-style Resolution Tiers)
             raw_formats = info.get("formats", [])
             duration = info.get("duration") or 0
 
@@ -789,11 +789,11 @@ def download_media(url: str, format_id: str, is_audio: bool, audio_format: str, 
         return json.dumps({"status": "error", "error": err_msg})
 
 
-def check_updates(installed_app_version: str = "v1.4.3") -> str:
+def check_updates(installed_app_version: str = "v1.4.4") -> str:
     """
     Checks for updates for Droply and yt-dlp core.
     """
-    current_app_version = installed_app_version or "v1.4.3"
+    current_app_version = installed_app_version or "v1.4.4"
     if not current_app_version.startswith("v"):
         current_app_version = f"v{current_app_version}"
 

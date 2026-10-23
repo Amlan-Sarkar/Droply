@@ -85,7 +85,7 @@ const Components = {
     const initialSelectedId = selectedFormatId || defaultFmt.format_id;
     if (!selectedFormatId && formats.length > 0) {
       onSelect(defaultFmt);
-      const sizeEl = document.getElementById('omni-estimated-size');
+      const sizeEl = document.getElementById('droply-estimated-size');
       if (sizeEl) sizeEl.textContent = defaultFmt.filesize_str || 'Standard';
     }
 
@@ -93,7 +93,7 @@ const Components = {
       const isSelected = (fmt.format_id === initialSelectedId);
       const chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = `omni-quality-chip ${isSelected ? 'selected' : ''}`;
+      chip.className = `droply-quality-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
       chip.innerHTML = `
@@ -102,9 +102,9 @@ const Components = {
       `;
 
       chip.addEventListener('click', () => {
-        container.querySelectorAll('.omni-quality-chip').forEach(c => c.classList.remove('selected'));
+        container.querySelectorAll('.droply-quality-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
-        const sizeEl = document.getElementById('omni-estimated-size');
+        const sizeEl = document.getElementById('droply-estimated-size');
         if (sizeEl) sizeEl.textContent = fmt.filesize_str || 'Standard';
         onSelect(fmt);
       });
@@ -131,7 +131,7 @@ const Components = {
       const isSelected = (fmt.format_id === initialSelectedId);
       const chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = `omni-quality-chip ${isSelected ? 'selected' : ''}`;
+      chip.className = `droply-quality-chip ${isSelected ? 'selected' : ''}`;
       chip.setAttribute('data-fid', fmt.format_id);
 
       chip.innerHTML = `
@@ -140,9 +140,9 @@ const Components = {
       `;
 
       chip.addEventListener('click', () => {
-        container.querySelectorAll('.omni-quality-chip').forEach(c => c.classList.remove('selected'));
+        container.querySelectorAll('.droply-quality-chip').forEach(c => c.classList.remove('selected'));
         chip.classList.add('selected');
-        const sizeEl = document.getElementById('omni-estimated-size');
+        const sizeEl = document.getElementById('droply-estimated-size');
         if (sizeEl) sizeEl.textContent = fmt.filesize_str || '~3.5 MB';
         onSelect(fmt);
       });
@@ -180,7 +180,7 @@ const Components = {
     card.id = `q-task-${task.id}`;
 
     if (task.status === 'completed') {
-      card.className = 'omni-recent-card';
+      card.className = 'droply-recent-card';
       const isAudio = Boolean(task.is_audio);
       const tagType = isAudio ? 'AUDIO' : 'VIDEO';
       const tagText = isAudio ? 'Music • Tap to play' : 'Movies • Tap to watch';
@@ -190,18 +190,18 @@ const Components = {
       const safeTitle = this.escapeHtml(task.title || 'Downloaded Media');
 
       card.innerHTML = `
-        <button class="omni-play-badge" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Tap to play">
+        <button class="droply-play-badge" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Tap to play">
           <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
         </button>
-        <div class="omni-recent-info" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
-          <div class="omni-recent-title" title="${safeTitleAttr}">${safeTitle}</div>
-          <div class="omni-recent-sub">
-            <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${tagType}</span>
-            <span class="omni-tag-text">${tagText}</span>
+        <div class="droply-recent-info" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
+          <div class="droply-recent-title" title="${safeTitleAttr}">${safeTitle}</div>
+          <div class="droply-recent-sub">
+            <span class="droply-tag-pill ${isAudio ? 'audio' : 'video'}">${tagType}</span>
+            <span class="droply-tag-text">${tagText}</span>
           </div>
         </div>
-        <div class="omni-recent-actions">
-          <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
+        <div class="droply-recent-actions">
+          <button class="btn-droply-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             <span>Open</span>
           </button>
@@ -292,7 +292,7 @@ const Components = {
       const safePath = this.escapeAttr(task.file_path || '');
       const safeId = this.escapeAttr(task.id || '');
       return `
-        <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
+        <button class="btn-droply-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
           <span>Open</span>
         </button>
@@ -366,8 +366,8 @@ const Components = {
     const el = document.getElementById(`q-task-${task.id}`);
     if (!el) return false;
 
-    // If transitioned to completed, replace with Omni completed card!
-    if (task.status === 'completed' && !el.classList.contains('omni-recent-card')) {
+    // If transitioned to completed, replace with Droply completed card!
+    if (task.status === 'completed' && !el.classList.contains('droply-recent-card')) {
       const newCard = this.renderQueueItem(task);
       el.replaceWith(newCard);
       return true;
@@ -452,7 +452,7 @@ const Components = {
         <div class="history-filename" title="${safeTitleAttr}">${safeTitle}</div>
         <div class="history-meta-sub">
           <span class="history-platform-badge">${safePlatform}</span>
-          <span class="omni-tag-pill ${isAudio ? 'audio' : 'video'}">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
+          <span class="droply-tag-pill ${isAudio ? 'audio' : 'video'}">${isAudio ? 'AUDIO' : 'VIDEO'}</span>
           ${sizeStr ? `<span>${safeSize}</span>` : ''}
           ${formatLabel ? `<span class="history-format-pill">${safeFormat}</span>` : ''}
           ${safeDate ? `<span>${safeDate}</span>` : ''}
@@ -460,7 +460,7 @@ const Components = {
       </div>
       <div class="history-actions">
         ${filePath ? `
-          <button class="btn-omni-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Open with compatible app">
+          <button class="btn-droply-open" data-action="open-file" data-path="${safePath}" data-id="${safeId}" title="Open with compatible app">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
             <span>Open</span>
           </button>
@@ -474,10 +474,10 @@ const Components = {
     return card;
   },
 
-  // Render Omni-style Playlist Card with Quality Selection & Full Video List
+  // Render Droply Playlist Card with Quality Selection & Full Video List
   renderPlaylistCard(data, onDownloadSelected) {
     const card = document.createElement('div');
-    card.className = 'omni-playlist-card';
+    card.className = 'droply-playlist-card';
 
     const entries = data.playlist_entries || [];
     const count = data.playlist_count || entries.length;
@@ -550,69 +550,69 @@ const Components = {
 
     card.innerHTML = `
       <!-- TOP PLAYLIST HEADER -->
-      <div class="omni-playlist-header">
-        ${thumb ? `<img src="${thumb}" alt="thumb" class="omni-playlist-thumb" />` : `<div class="omni-playlist-thumb placeholder">📑</div>`}
-        <div class="omni-playlist-info">
-          <div class="omni-playlist-badge">
+      <div class="droply-playlist-header">
+        ${thumb ? `<img src="${thumb}" alt="thumb" class="droply-playlist-thumb" />` : `<div class="droply-playlist-thumb placeholder">📑</div>`}
+        <div class="droply-playlist-info">
+          <div class="droply-playlist-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             <span>Playlist • ${count} Videos</span>
           </div>
-          <h3 class="omni-playlist-title">${data.title || 'Playlist'}</h3>
-          <div class="omni-playlist-author">Curated by <span>${data.uploader || 'Creator'}</span> • Total duration: ${data.duration_str || 'Various'}</div>
+          <h3 class="droply-playlist-title">${data.title || 'Playlist'}</h3>
+          <div class="droply-playlist-author">Curated by <span>${data.uploader || 'Creator'}</span> • Total duration: ${data.duration_str || 'Various'}</div>
         </div>
       </div>
 
       <!-- PLAYLIST QUALITY SELECTOR (Applied to all videos at once!) -->
-      <div class="omni-playlist-quality-wrap">
-        <label class="omni-sublabel">Select Download Quality:</label>
-        <div class="omni-quality-chips-grid">
-          <button class="omni-q-chip" data-quality="2160p">
+      <div class="droply-playlist-quality-wrap">
+        <label class="droply-sublabel">Select Download Quality:</label>
+        <div class="droply-quality-chips-grid">
+          <button class="droply-q-chip" data-quality="2160p">
             <span class="q-label">4K UHD</span>
             <span class="q-est">~2160p</span>
           </button>
-          <button class="omni-q-chip" data-quality="1440p">
+          <button class="droply-q-chip" data-quality="1440p">
             <span class="q-label">2K QHD</span>
             <span class="q-est">~1440p</span>
           </button>
-          <button class="omni-q-chip" data-quality="1080p">
+          <button class="droply-q-chip" data-quality="1080p">
             <span class="q-label">Full HD 1080p</span>
             <span class="q-est">~FHD</span>
           </button>
-          <button class="omni-q-chip" data-quality="720p">
+          <button class="droply-q-chip" data-quality="720p">
             <span class="q-label">HD 720p</span>
             <span class="q-est">~Standard</span>
           </button>
-          <button class="omni-q-chip" data-quality="480p">
+          <button class="droply-q-chip" data-quality="480p">
             <span class="q-label">Standard 480p</span>
             <span class="q-est">~SD</span>
           </button>
-          <button class="omni-q-chip active" data-quality="best">
+          <button class="droply-q-chip active" data-quality="best">
             <span class="q-label">Best Auto</span>
             <span class="q-est">~Top Quality</span>
           </button>
-          <button class="omni-q-chip" data-quality="audio_mp3">
+          <button class="droply-q-chip" data-quality="audio_mp3">
             <span class="q-label">Audio Only (MP3)</span>
             <span class="q-est">~320k</span>
           </button>
-          <button class="omni-q-chip" data-quality="audio_m4a">
+          <button class="droply-q-chip" data-quality="audio_m4a">
             <span class="q-label">Audio Only (M4A)</span>
             <span class="q-est">~HQ AAC</span>
           </button>
         </div>
 
         <!-- ESTIMATED SIZE BANNER -->
-        <div class="omni-size-banner">
+        <div class="droply-size-banner">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           <span>Estimated Download Size: <strong id="playlist-est-size">${calcTotalEstimatedSize()}</strong></span>
         </div>
       </div>
 
       <!-- SELECTION CONTROLS HEADER -->
-      <div class="omni-selection-bar">
-        <div class="omni-selection-count">
+      <div class="droply-selection-bar">
+        <div class="droply-selection-count">
           <span id="playlist-selected-count">${selectedIndices.size}</span> of ${count} videos selected
         </div>
-        <div class="omni-selection-btns">
+        <div class="droply-selection-btns">
           <button class="text-action-btn" id="btn-select-all">Select All</button>
           <span class="divider">|</span>
           <button class="text-action-btn" id="btn-deselect-all">Deselect All</button>
@@ -620,12 +620,12 @@ const Components = {
       </div>
 
       <!-- SCROLLABLE LIST OF ALL PLAYLIST VIDEOS -->
-      <div class="omni-playlist-scrollable" id="playlist-videos-container">
+      <div class="droply-playlist-scrollable" id="playlist-videos-container">
         ${renderVideoRows()}
       </div>
 
       <!-- PRIMARY DOWNLOAD ACTION -->
-      <div class="omni-playlist-footer">
+      <div class="droply-playlist-footer">
         <button class="primary-btn btn-download-playlist-now" id="btn-download-playlist-now">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span id="btn-download-playlist-text">Download Playlist (${selectedIndices.size} Videos • ${calcTotalEstimatedSize()})</span>
@@ -662,9 +662,9 @@ const Components = {
     };
 
     // Quality chip click handlers
-    card.querySelectorAll('.omni-q-chip').forEach(chip => {
+    card.querySelectorAll('.droply-q-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        card.querySelectorAll('.omni-q-chip').forEach(c => c.classList.remove('active'));
+        card.querySelectorAll('.droply-q-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
 
         selectedQuality = chip.getAttribute('data-quality');
@@ -747,7 +747,7 @@ const Components = {
   // Render Batch URLs Card (for multiple pasted links)
   renderBatchCard(batchData, onDownloadSelected) {
     const card = document.createElement('div');
-    card.className = 'omni-playlist-card omni-batch-card';
+    card.className = 'droply-playlist-card droply-batch-card';
 
     const items = batchData.items || [];
     const selectedIndices = new Set(items.map((_, i) => i));
@@ -756,59 +756,59 @@ const Components = {
     let audioFormat = 'mp3';
 
     card.innerHTML = `
-      <div class="omni-playlist-header">
-        <div class="omni-playlist-thumb placeholder">🔗</div>
-        <div class="omni-playlist-info">
-          <div class="omni-playlist-badge">
+      <div class="droply-playlist-header">
+        <div class="droply-playlist-thumb placeholder">🔗</div>
+        <div class="droply-playlist-info">
+          <div class="droply-playlist-badge">
             <span>Multiple Media Links • ${items.length} URLs</span>
           </div>
-          <h3 class="omni-playlist-title">Batch Download Links</h3>
-          <div class="omni-playlist-author">All recognized video and audio URLs will download directly.</div>
+          <h3 class="droply-playlist-title">Batch Download Links</h3>
+          <div class="droply-playlist-author">All recognized video and audio URLs will download directly.</div>
         </div>
       </div>
 
-      <div class="omni-playlist-quality-wrap">
-        <label class="omni-sublabel">Select Download Quality Preset:</label>
-        <div class="omni-quality-chips-grid">
-          <button class="omni-q-chip" data-quality="2160p">
+      <div class="droply-playlist-quality-wrap">
+        <label class="droply-sublabel">Select Download Quality Preset:</label>
+        <div class="droply-quality-chips-grid">
+          <button class="droply-q-chip" data-quality="2160p">
             <span class="q-label">4K 2160p</span>
           </button>
-          <button class="omni-q-chip" data-quality="1440p">
+          <button class="droply-q-chip" data-quality="1440p">
             <span class="q-label">2K 1440p</span>
           </button>
-          <button class="omni-q-chip" data-quality="1080p">
+          <button class="droply-q-chip" data-quality="1080p">
             <span class="q-label">Full HD 1080p</span>
           </button>
-          <button class="omni-q-chip" data-quality="720p">
+          <button class="droply-q-chip" data-quality="720p">
             <span class="q-label">HD 720p</span>
           </button>
-          <button class="omni-q-chip" data-quality="480p">
+          <button class="droply-q-chip" data-quality="480p">
             <span class="q-label">Standard 480p</span>
           </button>
-          <button class="omni-q-chip active" data-quality="best">
+          <button class="droply-q-chip active" data-quality="best">
             <span class="q-label">Best Auto</span>
           </button>
-          <button class="omni-q-chip" data-quality="audio_mp3">
+          <button class="droply-q-chip" data-quality="audio_mp3">
             <span class="q-label">Audio Only (MP3)</span>
           </button>
-          <button class="omni-q-chip" data-quality="audio_m4a">
+          <button class="droply-q-chip" data-quality="audio_m4a">
             <span class="q-label">Audio Only (M4A)</span>
           </button>
         </div>
       </div>
 
-      <div class="omni-selection-bar">
-        <div class="omni-selection-count">
+      <div class="droply-selection-bar">
+        <div class="droply-selection-count">
           <span id="batch-selected-count">${selectedIndices.size}</span> of ${items.length} items selected
         </div>
-        <div class="omni-selection-btns">
+        <div class="droply-selection-btns">
           <button class="text-action-btn" id="btn-batch-select-all">Select All</button>
           <span class="divider">|</span>
           <button class="text-action-btn" id="btn-batch-deselect-all">Deselect All</button>
         </div>
       </div>
 
-      <div class="omni-playlist-scrollable" id="batch-items-container">
+      <div class="droply-playlist-scrollable" id="batch-items-container">
         ${items.map((it, idx) => `
           <div class="playlist-video-row selected" data-idx="${idx}">
             <input type="checkbox" class="playlist-chk custom-checkbox" data-idx="${idx}" checked />
@@ -823,7 +823,7 @@ const Components = {
         `).join('')}
       </div>
 
-      <div class="omni-playlist-footer">
+      <div class="droply-playlist-footer">
         <button class="primary-btn btn-download-playlist-now" id="btn-download-batch-now">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           <span id="btn-download-batch-text">Download All (${selectedIndices.size} Items)</span>
@@ -840,9 +840,9 @@ const Components = {
       if (dlBtn) dlBtn.disabled = selectedIndices.size === 0;
     };
 
-    card.querySelectorAll('.omni-q-chip').forEach(chip => {
+    card.querySelectorAll('.droply-q-chip').forEach(chip => {
       chip.addEventListener('click', () => {
-        card.querySelectorAll('.omni-q-chip').forEach(c => c.classList.remove('active'));
+        card.querySelectorAll('.droply-q-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         selectedQuality = chip.getAttribute('data-quality');
         isAudio = selectedQuality.startsWith('audio_');

@@ -31,7 +31,7 @@
         <div class="brand-text">
           <span class="brand-name">Drop<span class="gradient-text">ly</span><span class="brand-paw">🐾</span></span>
         </div>
-        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.4.3</span>
+        <span class="desktop-pill-badge pill-version" id="header-version-pill">v1.4.4</span>
         <span class="desktop-pill-badge pill-engine" id="header-engine-pill">Engine Core</span>
       </div>
 
@@ -111,12 +111,12 @@
         <div class="pane-content-single">
           
           <!-- CLEAN INPUT CARD -->
-          <div class="input-droply-card input-omni-card">
+          <div class="input-droply-card">
             
             <!-- Sleek Single-Line Input Bar with inline icons and actions -->
-            <div class="droply-input-bar omni-input-bar">
-              <div class="droply-input-prefix omni-input-prefix">
-                <svg class="droply-link-icon omni-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="droply-input-bar">
+              <div class="droply-input-prefix">
+                <svg class="droply-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
@@ -125,28 +125,28 @@
               <input 
                 type="text"
                 id="single-url-input" 
-                class="droply-input-field omni-input-field" 
+                class="droply-input-field" 
                 placeholder="Paste media or playlist URL (YouTube, Facebook, Instagram, X, TikTok...)" 
                 autocomplete="off"
                 spellcheck="false"
               />
 
-              <button class="btn-clear-droply btn-clear-omni" id="btn-clear" title="Clear input" style="display: none;">
+              <button class="btn-clear-droply" id="btn-clear" title="Clear input" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <line x1="18" y1="6" x2="6" y2="18"></line>
                   <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
 
-              <div class="droply-bar-actions omni-bar-actions">
-                <button class="droply-action-pill omni-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
+              <div class="droply-bar-actions">
+                <button class="droply-action-pill btn-batch-toggle" id="btn-batch-toggle" title="Toggle Batch Links Input">
                   <svg viewBox="0 0 24 24" fill="currentColor" style="width: 10px; height: 10px; margin-right: 2px;">
                     <polygon points="5,8 19,8 12,17"></polygon>
                   </svg>
                   <span>Batch</span>
                 </button>
 
-                <button class="droply-action-pill omni-action-pill btn-paste-droply btn-paste-omni" id="btn-paste" title="Paste from clipboard">
+                <button class="droply-action-pill btn-paste-droply" id="btn-paste" title="Paste from clipboard">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
@@ -154,18 +154,22 @@
                   <span>Paste</span>
                 </button>
 
-                <button class="droply-fetch-btn omni-fetch-btn" id="btn-analyze" title="Analyze media details">
+                <button class="droply-fetch-btn" id="btn-analyze" title="Analyze media details">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="btn-icon">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
                   <span class="btn-text">Analyze</span>
                 </button>
               </div>
             </div>
 
             <!-- Optional Batch Links Drawer -->
-            <div class="droply-batch-drawer omni-batch-drawer" id="omni-batch-drawer" style="display: none;">
+            <div class="droply-batch-drawer" id="droply-batch-drawer" style="display: none;">
               <div class="droply-batch-wrapper">
                 <textarea 
                   id="batch-urls-input" 
-                  class="droply-batch-textarea omni-batch-textarea" 
+                  class="droply-batch-textarea" 
                   rows="3" 
                   placeholder="Paste multiple URLs (one per line) for batch download..."
                   autocomplete="off"
@@ -181,8 +185,8 @@
             </div>
 
             <!-- Platforms Chips Row (Without VPN notice) -->
-            <div class="droply-platforms-row omni-platforms-row">
-              <div class="droply-platform-chips omni-platform-chips">
+            <div class="droply-platforms-row">
+              <div class="droply-platform-chips">
                 <span class="platform-chip">YouTube</span>
                 <span class="platform-chip">Facebook</span>
                 <span class="platform-chip">Instagram</span>
@@ -194,7 +198,7 @@
             </div>
 
             <!-- Bottom Trust Badge Row -->
-            <div class="droply-trust-bar omni-trust-bar">
+            <div class="droply-trust-bar">
               <div class="trust-badge-container">
                 <span class="trust-shield-badge">
                   <svg class="trust-shield-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -318,7 +322,7 @@
                   <div class="format-header">
                     <label class="section-label">Select Download Quality</label>
                   </div>
-                  <div class="formats-chip-grid omni-quality-chips-grid" id="video-formats-grid">
+                  <div class="formats-chip-grid droply-quality-chips-grid" id="video-formats-grid">
                     <!-- Populated dynamically with actual qualities returned by source -->
                   </div>
                 </div>
@@ -327,19 +331,19 @@
                   <div class="format-header">
                     <label class="section-label">Select Audio Format</label>
                   </div>
-                  <div class="formats-chip-grid omni-quality-chips-grid" id="audio-formats-grid">
+                  <div class="formats-chip-grid droply-quality-chips-grid" id="audio-formats-grid">
                     <!-- Populated dynamically with audio formats -->
                   </div>
                 </div>
 
                 <!-- ESTIMATED DOWNLOAD SIZE BANNER -->
-                <div class="omni-size-banner" id="omni-size-banner">
+                <div class="droply-size-banner" id="droply-size-banner">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="16" x2="12" y2="12"></line>
                     <line x1="12" y1="8" x2="12.01" y2="8"></line>
                   </svg>
-                  <span>Estimated Download Size: <strong id="omni-estimated-size">Calculating...</strong></span>
+                  <span>Estimated Download Size: <strong id="droply-estimated-size">Calculating...</strong></span>
                 </div>
 
                 <!-- AUTHENTICATION / COOKIES BADGE & QUICK CONFIG -->
@@ -777,13 +781,13 @@
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- CHECK FOR UPDATES MODAL -->
+    <!-- CHECK FOR UPDATES MODAL (DROPLY NATIVE STYLE) -->
     <div class="modal-overlay" id="update-modal" style="display: none;">
-      <div class="modal-card omni-update-dialog">
-        <!-- Top Header -->
-        <div class="omni-update-header">
-          <div class="update-icon-badge">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#00e5a3" stroke-width="2.2">
+      <div class="modal-card droply-update-card droply-update-dialog">
+        <!-- Header -->
+        <div class="droply-update-header">
+          <div class="update-pulse-icon" id="update-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -797,12 +801,12 @@
         </div>
 
         <!-- Body -->
-        <div class="omni-update-body">
+        <div class="droply-update-body">
           <!-- Versions Comparison Card -->
           <div class="update-version-card">
             <div class="ver-col">
               <span class="ver-label">INSTALLED VERSION</span>
-              <span class="ver-value" id="update-cur-ver">v1.4.3</span>
+              <span class="ver-value" id="update-cur-ver">v1.4.4</span>
             </div>
             <div class="ver-arrow">➔</div>
             <div class="ver-col">
@@ -844,7 +848,7 @@
         </div>
 
         <!-- Footer Actions -->
-        <div class="omni-update-footer">
+        <div class="droply-update-footer">
           <a class="update-btn-action btn-view-github" id="btn-view-github" href="https://github.com/Amlan-Sarkar/Droply/releases" target="_blank">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -869,6 +873,33 @@
         </div>
       </div>
     </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION (Native Android & Responsive Web) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <button class="mobile-nav-btn active" data-tab="single" id="mobile-nav-single">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span class="mobile-nav-label">Downloader</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="history" id="mobile-nav-history">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v5h5"></path>
+          <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path>
+          <path d="M12 7v5l4 2"></path>
+        </svg>
+        <span class="mobile-nav-label">History</span>
+      </button>
+      <button class="mobile-nav-btn" data-tab="settings" id="mobile-nav-settings">
+        <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span class="mobile-nav-label">Settings</span>
+      </button>
+    </nav>
 
   </div>
 

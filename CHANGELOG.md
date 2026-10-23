@@ -2,6 +2,22 @@
 
 All notable changes to Droply will be documented in this file.
 
+## [1.4.4]
+
+- **Android Resting Cat & Empty State Proportions:**
+  - Applied strict scale constraints to the idle resting cat illustration on Android mobile viewports (`76px × 42px`), preventing fullscreen expansion on high-DPI displays.
+  - Centered welcome media instructions with clean, balanced line-height and typography.
+- **Subtle Outline Cat-Face Divider:**
+  - Replaced the solid neon green sleeping cat accent with a delicate, geometric outline cat-face divider featuring whisker details and subtle gradient hairlines.
+- **Theme-Adaptive "Analyze" Button with Dynamic Loading State:**
+  - Upgraded the Analyze button from hardcoded neon green to dynamic theme-adaptive gradient and glow (`var(--accent-gradient)` / `var(--accent-glow)`).
+  - Added real-time analysis transition: button color smoothly shifts to a muted translucent neutral state with an animated circular spinner icon and *"Analyzing..."* progress indicator, seamlessly returning to the primary state once metadata fetching resolves.
+- **Interactive Android Mobile Bottom Navigation:**
+  - Connected responsive bottom navigation bar tabs (**Downloader**, **History**, **Settings**) to the tab router, enabling smooth pane switching on mobile devices.
+- **Update Modal Dimension Constraints:**
+  - Resolved oversized SVG icon and external link badge expansion inside the "Check for Updates" modal on Android.
+  - Applied strict constraints and responsive styling for release note cards, version badges, and action buttons.
+
 ## [1.4.3]
 
 - **Android ForegroundService (Background Download Resilience):**
