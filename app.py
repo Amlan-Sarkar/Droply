@@ -87,6 +87,7 @@ elif getattr(sys, "frozen", False) and _log_file:
 
 import time
 import socket
+import argparse
 import threading
 import webbrowser
 import uvicorn
