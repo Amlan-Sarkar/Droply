@@ -14,8 +14,6 @@ class DroplyApp {
     this.settings = {};
 
     this.init();
-    // Safety fallback: ensure splash always dismisses even on slow network
-    setTimeout(() => this.dismissSplash(), 2000);
   }
 
   async init() {
@@ -35,30 +33,16 @@ class DroplyApp {
     // Start background polling fallback for resilient download tracking
     this.startTaskPolling();
 
-    // Smoothly dismiss in-app splash screen once initial setup completes
-    this.dismissSplash();
-
     // Check for updates in the background on startup (spins circular arrow and shows breathing dot if available)
     this.checkUpdatesOnStartup();
   }
 
   dismissSplash() {
+    // No-op compatibility stub (desktop uses native ~50ms boot splash)
     const splash = document.getElementById('app-splash');
-    if (!splash) return;
-    const statusLabel = document.getElementById('splash-status-label');
-    if (statusLabel) {
-      statusLabel.textContent = 'Services Online';
-      statusLabel.style.color = '#34d399';
+    if (splash && splash.parentElement) {
+      splash.parentElement.removeChild(splash);
     }
-    // Fast, seamless transition into the app interface
-    setTimeout(() => {
-      splash.classList.add('fade-out');
-      setTimeout(() => {
-        if (splash && splash.parentElement) {
-          splash.parentElement.removeChild(splash);
-        }
-      }, 300);
-    }, 120);
   }
 
   // ================= TABS NAVIGATION =================

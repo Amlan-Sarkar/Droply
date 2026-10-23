@@ -87,6 +87,7 @@ android {
         main {
             assets.srcDirs = ['src/main/assets']
             python.srcDirs = ['src/main/python']
+            jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
 }

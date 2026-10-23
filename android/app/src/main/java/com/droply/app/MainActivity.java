@@ -57,8 +57,78 @@ public class MainActivity extends AppCompatActivity {
         // Setup WebView
         setupWebView();
 
+        // Bind foreground service listener to reflect background downloads in WebView
+        setupDownloadListener();
+
         // Handle incoming share intents (e.g. from YouTube, Twitter, Instagram apps)
         handleIncomingIntent(getIntent());
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        setupDownloadListener();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        DownloadForegroundService.setDownloadListener(null);
+    }
+
+    private void setupDownloadListener() {
+        DownloadForegroundService.setDownloadListener(new DownloadForegroundService.DownloadListener() {
+            @Override
+            public void onProgress(String progressJson) {
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_progress', { detail: " + progressJson + " }));";
+                        webView.evaluateJavascript(js, null);
+                    }
+                });
+            }
+
+            @Override
+            public void onComplete(String completeJson) {
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_completed', { detail: " + completeJson + " }));";
+                        webView.evaluateJavascript(js, null);
+                        Toast.makeText(MainActivity.this, "Download completed!", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String errorJson) {
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_error', { detail: " + errorJson + " }));";
+                        webView.evaluateJavascript(js, null);
+                    }
+                });
+            }
+
+            @Override
+            public void onPaused() {
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_paused', { detail: {} }));";
+                        webView.evaluateJavascript(js, null);
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled() {
+                mainHandler.post(() -> {
+                    if (webView != null) {
+                        String js = "window.dispatchEvent(new CustomEvent('droply_cancelled', { detail: {} }));";
+                        webView.evaluateJavascript(js, null);
+                    }
+                });
+            }
+        });
     }
 
     private void initPython() {
@@ -71,11 +141,16 @@ public class MainActivity extends AppCompatActivity {
     private void setupFfmpeg() {
         executor.execute(() -> {
             try {
-                File nativeLib = new File(getApplicationInfo().nativeLibraryDir, "libffmpeg.so");
                 String ffmpegPath = null;
+                // 1. Check native library directory (where NDK arm64-v8a libffmpeg.so is extracted)
+                File nativeLib = new File(getApplicationInfo().nativeLibraryDir, "libffmpeg.so");
                 if (nativeLib.exists()) {
+                    nativeLib.setExecutable(true, false);
                     ffmpegPath = nativeLib.getAbsolutePath();
-                } else {
+                }
+
+                // 2. Check internal files directory fallback
+                if (ffmpegPath == null) {
                     File internalFfmpeg = new File(getFilesDir(), "ffmpeg");
                     if (internalFfmpeg.exists()) {
                         internalFfmpeg.setExecutable(true, false);
@@ -91,6 +166,23 @@ public class MainActivity extends AppCompatActivity {
                             internalFfmpeg.setExecutable(true, false);
                             ffmpegPath = internalFfmpeg.getAbsolutePath();
                         } catch (Exception ignored) {}
+                    }
+                }
+
+                // 3. Check system and app candidate paths
+                if (ffmpegPath == null) {
+                    String[] candidates = {
+                            "/data/data/com.droply.app/lib/libffmpeg.so",
+                            "/data/user/0/com.droply.app/lib/libffmpeg.so",
+                            "/system/bin/ffmpeg"
+                    };
+                    for (String c : candidates) {
+                        File f = new File(c);
+                        if (f.exists()) {
+                            f.setExecutable(true, false);
+                            ffmpegPath = f.getAbsolutePath();
+                            break;
+                        }
                     }
                 }
 
@@ -256,63 +348,29 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void startDownloadWithFolder(String url, String formatId, boolean isAudio, String audioFormat, String title, String playlistFolder) {
-            executor.execute(() -> {
-                File downloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Droply");
-                if (playlistFolder != null && !playlistFolder.trim().isEmpty()) {
-                    String cleanFolder = playlistFolder.replaceAll("[\\\\/*?:\"<>|]", "").trim();
-                    downloadDir = new File(downloadDir, cleanFolder);
-                }
-                if (!downloadDir.exists()) {
-                    downloadDir.mkdirs();
-                }
-
-                try {
-                    Python py = Python.getInstance();
-                    PyObject module = py.getModule("droply_engine");
-
-                    EngineCallback callback = new EngineCallback();
-                    module.callAttr("download_media", url, formatId, isAudio, audioFormat, downloadDir.getAbsolutePath(), title, callback, playlistFolder != null ? playlistFolder : "");
-                } catch (Exception e) {
-                    if (e.getMessage() != null && (e.getMessage().contains("DownloadPausedException") || e.getMessage().contains("Download paused by user"))) {
-                        mainHandler.post(() -> {
-                            String js = "window.dispatchEvent(new CustomEvent('droply_paused', { detail: {} }));";
-                            webView.evaluateJavascript(js, null);
-                        });
-                        return;
-                    }
-                    mainHandler.post(() -> {
-                        String errJs = "window.dispatchEvent(new CustomEvent('droply_error', { detail: { error: " + JSONObjectQuote(e.getMessage()) + " } }));";
-                        webView.evaluateJavascript(errJs, null);
-                    });
-                }
+            mainHandler.post(() -> {
+                DownloadForegroundService.startDownload(MainActivity.this, url, formatId, isAudio, audioFormat, title, playlistFolder);
             });
         }
 
         @JavascriptInterface
         public void pauseDownload() {
-            executor.execute(() -> {
-                try {
-                    Python py = Python.getInstance();
-                    PyObject module = py.getModule("droply_engine");
-                    module.callAttr("pause_active_download");
-                } catch (Exception ignored) {}
-                mainHandler.post(() -> {
-                    String js = "window.dispatchEvent(new CustomEvent('droply_paused', { detail: {} }));";
-                    webView.evaluateJavascript(js, null);
-                });
-            });
+            Intent pauseIntent = new Intent(MainActivity.this, DownloadForegroundService.class);
+            pauseIntent.setAction(DownloadForegroundService.ACTION_PAUSE_DOWNLOAD);
+            startService(pauseIntent);
         }
 
         @JavascriptInterface
         public void resumeDownload(String url, String formatId, boolean isAudio, String audioFormat, String title, String playlistFolder) {
-            executor.execute(() -> {
-                try {
-                    Python py = Python.getInstance();
-                    PyObject module = py.getModule("droply_engine");
-                    module.callAttr("resume_active_download");
-                } catch (Exception ignored) {}
-                startDownloadWithFolder(url, formatId, isAudio, audioFormat, title, playlistFolder);
-            });
+            Intent resumeIntent = new Intent(MainActivity.this, DownloadForegroundService.class);
+            resumeIntent.setAction(DownloadForegroundService.ACTION_RESUME_DOWNLOAD);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_URL, url);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_FORMAT_ID, formatId);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_IS_AUDIO, isAudio);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_AUDIO_FORMAT, audioFormat);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_TITLE, title);
+            resumeIntent.putExtra(DownloadForegroundService.EXTRA_PLAYLIST_FOLDER, playlistFolder);
+            ContextCompat.startForegroundService(MainActivity.this, resumeIntent);
         }
 
         @JavascriptInterface
@@ -341,17 +399,9 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void cancelDownload() {
-            executor.execute(() -> {
-                try {
-                    Python py = Python.getInstance();
-                    PyObject module = py.getModule("droply_engine");
-                    module.callAttr("cancel_active_download");
-                } catch (Exception ignored) {}
-                mainHandler.post(() -> {
-                    String js = "window.dispatchEvent(new CustomEvent('droply_cancelled', { detail: {} }));";
-                    webView.evaluateJavascript(js, null);
-                });
-            });
+            Intent cancelIntent = new Intent(MainActivity.this, DownloadForegroundService.class);
+            cancelIntent.setAction(DownloadForegroundService.ACTION_CANCEL_DOWNLOAD);
+            startService(cancelIntent);
         }
 
         @JavascriptInterface
@@ -418,6 +468,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     Uri fileUri = FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", file);
+                    MediaStoreHelper.indexMediaFile(MainActivity.this, file, mimeType.startsWith("audio"));
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(fileUri, mimeType);
                     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);

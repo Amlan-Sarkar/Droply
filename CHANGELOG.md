@@ -4,6 +4,21 @@ All notable changes to Droply will be documented in this file.
 
 ## [1.4.3]
 
+- **Android ForegroundService (Background Download Resilience):**
+  - Implemented `DownloadForegroundService` with `FOREGROUND_SERVICE_DATA_SYNC` and CPU WakeLock.
+  - Prevents downloads from terminating or freezing when switching apps or turning off/locking the screen.
+  - Displays real-time throttled progress in the Android notification drawer with direct Cancel controls and tap-to-open actions upon completion.
+- **Android MediaStore Automatic Indexing:**
+  - Introduced `MediaStoreHelper` utilizing `MediaScannerConnection` and system broadcast triggers.
+  - Downloaded `.mp4`, `.mkv`, `.webm` videos and `.mp3`, `.m4a` audio files now register in Android's MediaStore immediately, making them appear instantly in Google Photos, Samsung Gallery, and music players.
+- **Android ARM64 FFmpeg NDK Integration:**
+  - Configured native library packaging (`android:extractNativeLibs="true"` and `jniLibs/arm64-v8a` sourceSets).
+  - Integrated executable permission enforcement and automated engine path resolution, allowing Android devices with an ARM64 FFmpeg package to merge 1080p, 1440p, and 4K video+audio YouTube streams.
+- **Native Windows Splash Screen with Real-Time Progress Bar:**
+  - Replaced redundant in-app HTML splash overlay with a native Windows splash screen featuring the Droply droplet emblem and a live, moving progress bar tracking actual engine initialization (*"Starting engine..."*, *"Spinning up local API server..."*, *"Connecting media services..."*).
+  - Automatically closes as soon as WebView2 renders, transitioning the user straight into the download interface with zero artificial delays.
+- **Cat Icon Polish & Reversion:**
+  - Restored the clean minimalist cat-face outline icon (`.cat-face-divider-svg`) across header and UI accents.
 - **Cross-Platform Pause & Resume (Windows & Android):**
   - Instant pause and resume capabilities for active downloads and queued items.
   - Keeps partial `.part` download files intact on pause, enabling byte-level resumption via HTTP Range requests without re-downloading from scratch.
@@ -21,7 +36,6 @@ All notable changes to Droply will be documented in this file.
   - Dropped Nordic Slate theme across desktop and Android, defaulting cleanly to Neon Midnight.
   - Replaced generic orange YouTube detected badge icon with a clean, text-only source badge.
   - Updated settings wording from "Desktop Notifications" to "Download Notifications" and "desktop aesthetic" to "appearance".
-  - Replaced triangular accents with a breathing **Resting Cat silhouette** (`.resting-cat-accent`).
 - **Update System Modal Synchronization:**
   - Fixed non-functional "Check for updates" icon on Android by syncing modern update modal markup and adding full null-safety to update dialog handlers.
 - **Real-Time SSE Telemetry Stream:**

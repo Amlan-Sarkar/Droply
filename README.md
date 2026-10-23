@@ -92,7 +92,7 @@ Filename sanitization preserves original media titles while removing reserved fi
 
 ### ⚡ Instant Splash & Fast Boot
 
-Instant ~50ms visual feedback on launch with Droply's glowing cyber-cat mascot splash window (*“🐾 Waking up Droply...”*), paired with engine lazy-loading and non-blocking background prewarming so you jump straight to the download interface.
+Instant ~50ms visual feedback on launch with Droply's glowing droplet emblem splash window, paired with dynamic real-time engine startup progress tracking (*"Starting engine..."*) and background prewarming so you jump straight to the download interface.
 
 </td>
 </tr>
@@ -115,7 +115,7 @@ Smart error detection identifies country-level ISP blocks and geo-restrictions, 
 </table>
 
 <div align="center">
-  <img src="assets/splash.png" width="520" alt="Droply Cyber-Cat Splash Screen" style="border-radius: 14px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); margin: 18px 0;">
+  <img src="assets/splash.png" width="520" alt="Droply Native Splash Screen" style="border-radius: 14px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); margin: 18px 0;">
 </div>
 
 ### More built in

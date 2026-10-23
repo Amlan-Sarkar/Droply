@@ -91,6 +91,7 @@ import argparse
 import threading
 import webbrowser
 import uvicorn
+from typing import Optional
 
 # On Windows, instantly hide any attached console window so no terminal appears
 if sys.platform == "win32":
@@ -173,6 +174,93 @@ def close_splash():
         pyi_splash = None
 
 
+class NativeSplashManager:
+    """
+    Native Windows splash window matching Droply droplet design with real,
+    dynamic progress tracking as the engine and interface boot up.
+    """
+    def __init__(self):
+        self.root = None
+        self._ready_event = threading.Event()
+        self._stop_event = threading.Event()
+        self._target_progress = 15.0
+        self._status = "Starting engine..."
+        self.thread = None
+        if sys.platform == "win32" and "--headless" not in sys.argv:
+            try:
+                self.thread = threading.Thread(target=self._run, daemon=True, name="DroplyNativeSplash")
+                self.thread.start()
+                self._ready_event.wait(0.6)
+            except Exception:
+                pass
+
+    def _run(self):
+        try:
+            import tkinter as tk
+            from PIL import Image, ImageTk
+
+            self.root = tk.Tk()
+            self.root.overrideredirect(True)
+            self.root.configure(bg='#0a0d14')
+            try:
+                self.root.attributes('-topmost', True)
+            except Exception:
+                pass
+
+            w, h = 560, 380
+            sw = self.root.winfo_screenwidth()
+            sh = self.root.winfo_screenheight()
+            x = (sw - w) // 2
+            y = (sh - h) // 2
+            self.root.geometry(f'{w}x{h}+{x}+{y}')
+
+            canvas = tk.Canvas(self.root, width=w, height=h, bg='#0a0d14', highlightthickness=0)
+            canvas.pack(fill='both', expand=True)
+
+            base_path = get_resource_path("assets/splash_base.png")
+            if not os.path.exists(base_path):
+                base_path = get_resource_path("assets/splash.png")
+
+            bg_image = None
+            if os.path.exists(base_path):
+                pil_img = Image.open(base_path)
+                bg_image = ImageTk.PhotoImage(pil_img)
+                canvas.create_image(0, 0, image=bg_image, anchor='nw')
+
+            bar_x = (w - 280) // 2
+            bar_y = 252
+            bar_w = 280
+            bar_h = 6
+
+            progress_rect = canvas.create_rectangle(bar_x, bar_y, bar_x, bar_y + bar_h, fill='#38bdf8', outline='')
+            status_item = canvas.create_text(w // 2, 276, text=self._status, fill='#94a3b8', font=('Segoe UI', 9))
+
+            self._ready_event.set()
+
+            current_pct = 10.0
+            while not self._stop_event.is_set():
+                if current_pct < self._target_progress:
+                    current_pct = min(self._target_progress, current_pct + 2.0)
+                    fill_w = int(bar_w * (current_pct / 100.0))
+                    canvas.coords(progress_rect, bar_x, bar_y, bar_x + fill_w, bar_y + bar_h)
+
+                canvas.itemconfig(status_item, text=self._status)
+                self.root.update()
+                time.sleep(0.016)
+
+            self.root.destroy()
+        except Exception:
+            pass
+
+    def update_progress(self, percent: float, text: Optional[str] = None):
+        self._target_progress = max(self._target_progress, percent)
+        if text:
+            self._status = text
+
+    def close(self):
+        self._stop_event.set()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Droply - Universal Local Media Downloader")
     parser.add_argument("--host", default="127.0.0.1", help="Host interface (default: 127.0.0.1)")
@@ -180,6 +268,10 @@ def main():
     parser.add_argument("--web", action="store_true", help="Launch in standard web browser instead of native window")
     parser.add_argument("--headless", action="store_true", help="Run server only without opening GUI or browser")
     args = parser.parse_args()
+
+    splash = NativeSplashManager()
+    close_splash() # Handover from PyInstaller boot splash to live progress splash
+    splash.update_progress(20, "Starting engine...")
 
     port = args.port
     if is_port_in_use(port, args.host):
@@ -199,6 +291,7 @@ def main():
         name="DroplyServer"
     )
     server_thread.start()
+    splash.update_progress(40, "Spinning up local API server...")
 
     # Launch non-essential background tasks in parallel without delaying the UI transition
     def _prewarm_background_tasks():
@@ -219,9 +312,13 @@ def main():
         if is_port_in_use(port, args.host):
             server_ready = True
             break
+        splash.update_progress(55, "Connecting media services...")
         time.sleep(0.04)
 
+    splash.update_progress(75, "Preparing interface...")
+
     if args.headless:
+        splash.close()
         close_splash()
         print("Server running in headless mode. Press Ctrl+C to stop.")
         try:
@@ -232,6 +329,7 @@ def main():
             sys.exit(0)
 
     if args.web:
+        splash.close()
         close_splash()
         print(f"Opening browser at: {app_url}")
         webbrowser.open(app_url)
@@ -268,6 +366,9 @@ def main():
             nonlocal window_revealed
             if not window_revealed:
                 window_revealed = True
+                splash.update_progress(100, "Services Online")
+                time.sleep(0.12)
+                splash.close()
                 try:
                     if window is not None:
                         window.show()
@@ -320,15 +421,18 @@ def main():
 
         def on_window_ready():
             """Called once the pywebview GUI thread is running."""
+            splash.close()
             close_splash()
 
         try:
             webview.start(on_window_ready, gui="edgechromium", icon=icon_path)
         except Exception:
             webview.start(on_window_ready, icon=icon_path)
+        splash.close()
         close_splash()
         print("Desktop application window closed.")
     except Exception as e:
+        splash.close()
         close_splash()
         print(f"Native window encountered: {e}. Falling back to default browser...")
         webbrowser.open(app_url)
